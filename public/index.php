@@ -78,6 +78,9 @@ $module = (string) ($_GET['module'] ?? '');
 if (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
 }
+if ($module === 'reports' && isset($_GET['export'])) {
+    authorize('reports.export');
+}
 $createPermissions = ['masters' => 'masters.create', 'production' => 'production.create', 'procurement' => 'procurement.create', 'budgets' => 'budgets.create', 'machinery' => 'machinery.create', 'costs' => 'costs.create', 'inventory' => 'inventory.create', 'labor' => 'labor.create'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($createPermissions[$module])) {
     authorize($createPermissions[$module]);

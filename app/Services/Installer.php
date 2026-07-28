@@ -16,6 +16,7 @@ final class Installer
     public function install(array $input, array $logo): void
     {
         $this->validate($input, $logo);
+        $this->ensureConfigCanBeWritten();
         $logoPath = $this->storeLogo($logo);
 
         $this->connection->beginTransaction();
@@ -112,7 +113,14 @@ final class Installer
         if (!is_numeric($input['farm_hectares']) || (float) $input['farm_hectares'] < 0) {
             throw new RuntimeException('La superficie del fundo debe ser un número válido.');
         }
-        if ($input['season_end'] <= $input['season_start']) {
+        $start = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $input['season_start']);
+        $end = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $input['season_end']);
+        $startErrors = \DateTimeImmutable::getLastErrors();
+        $endErrors = \DateTimeImmutable::getLastErrors();
+        if (!$start || !$end || ($startErrors !== false && ($startErrors['warning_count'] > 0 || $startErrors['error_count'] > 0)) || ($endErrors !== false && ($endErrors['warning_count'] > 0 || $endErrors['error_count'] > 0))) {
+            throw new RuntimeException('Las fechas de la temporada no son válidas.');
+        }
+        if ($end <= $start) {
             throw new RuntimeException('El término de la temporada debe ser posterior al inicio.');
         }
         if (($logo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -190,12 +198,29 @@ final class Installer
         }
     }
 
+    private function ensureConfigCanBeWritten(): void
+    {
+        $directory = $this->rootPath . '/config';
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+            throw new RuntimeException('No fue posible preparar el directorio de configuración.');
+        }
+        if (!is_writable($directory)) {
+            throw new RuntimeException('El directorio de configuración no tiene permisos de escritura.');
+        }
+    }
+
     private function writeConfig(): void
     {
-        $config = var_export(require $this->rootPath . '/config/config.example.php', true);
+        $source = require $this->rootPath . '/config/config.example.php';
+        $source['security']['csrf_key'] = bin2hex(random_bytes(32));
+        $config = var_export($source, true);
         $path = $this->rootPath . '/config/config.php';
         $temporary = $path . '.tmp';
-        file_put_contents($temporary, "<?php\n\ndeclare(strict_types=1);\n\nreturn " . $config . ";\n", LOCK_EX);
-        rename($temporary, $path);
+        if (file_put_contents($temporary, "<?php\n\ndeclare(strict_types=1);\n\nreturn " . $config . ";\n", LOCK_EX) === false || !rename($temporary, $path)) {
+            if (is_file($temporary)) {
+                unlink($temporary);
+            }
+            throw new RuntimeException('No fue posible guardar la configuración de la aplicación.');
+        }
     }
 }
