@@ -13,6 +13,8 @@ if ($setupRequired) {
     exit;
 }
 
+(new CampoSur\Services\MigrationRunner(database()->connection(), dirname(__DIR__)))->run();
+
 $auth = (new CampoSur\Controllers\AuthController())->handle();
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -27,10 +29,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 }
 
-$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.manage', 'costs' => 'costs.manage', 'inventory' => 'inventory.manage', 'reports' => 'reports.view', 'labor' => 'labor.manage', 'settings' => 'setup.manage', 'audit' => 'reports.view'];
+if (($_GET['asset'] ?? '') === 'logo') {
+    $query = database()->connection()->prepare('SELECT logo_path FROM companies WHERE id = ? LIMIT 1');
+    $query->execute([(int) $_SESSION['company_id']]);
+    $relativePath = (string) $query->fetchColumn();
+    $file = realpath(dirname(__DIR__) . '/' . $relativePath);
+    $uploads = realpath(dirname(__DIR__) . '/storage/uploads');
+    if (!$file || !$uploads || !str_starts_with($file, $uploads) || !is_file($file)) {
+        http_response_code(404);
+        exit;
+    }
+    $mime = mime_content_type($file);
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: private, max-age=3600');
+    readfile($file);
+    exit;
+}
+
+$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage'];
 $module = (string) ($_GET['module'] ?? '');
 if (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
+}
+$createPermissions = ['masters' => 'masters.create', 'production' => 'production.create', 'procurement' => 'procurement.create', 'budgets' => 'budgets.create', 'machinery' => 'machinery.create', 'costs' => 'costs.create', 'inventory' => 'inventory.create', 'labor' => 'labor.create'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($createPermissions[$module])) {
+    authorize($createPermissions[$module]);
+}
+
+if ($module === 'catalogs') {
+    $catalogs = (new CampoSur\Controllers\CatalogController())->handle();
+    extract($catalogs, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/catalogs.php';
+    exit;
+}
+
+if ($module === 'machinery') {
+    $machinery = (new CampoSur\Controllers\MachineryController())->handle();
+    extract($machinery, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/machinery.php';
+    exit;
+}
+
+if ($module === 'budgets') {
+    $budgets = (new CampoSur\Controllers\BudgetController())->handle();
+    extract($budgets, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/budgets.php';
+    exit;
+}
+
+if ($module === 'production') {
+    $production = (new CampoSur\Controllers\ProductionController())->handle();
+    extract($production, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/production.php';
+    exit;
+}
+
+if ($module === 'profile') {
+    $profile = (new CampoSur\Controllers\ProfileController())->handle();
+    extract($profile, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/profile.php';
+    exit;
+}
+
+if ($module === 'procurement') {
+    $procurement = (new CampoSur\Controllers\ProcurementController())->handle();
+    extract($procurement, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/procurement.php';
+    exit;
 }
 
 if ($module === 'users') {

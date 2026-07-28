@@ -12,7 +12,7 @@
     .shell { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
     .sidebar { display: flex; flex-direction: column; padding: 25px 16px 18px; background: var(--ink); color: #eff6ed; }
     .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 32px; font-weight: 800; font-size: 21px; letter-spacing: -.8px; }
-    .brand-mark { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; color: var(--ink); background: var(--lime); font-size: 18px; }
+    .brand-mark { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; color: var(--ink); background: var(--lime); font-size: 18px; }.brand-logo { width: 31px; height: 31px; border-radius: 9px; object-fit: cover; background: #fff; }
     .workspace { margin: 0 10px 8px; color: #90a69d; font-size: 10px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; }
     .farm-select { display: flex; align-items: center; justify-content: space-between; margin: 0 6px 27px; padding: 10px 11px; border: 1px solid #466459; border-radius: 8px; background: #24463c; font-size: 12px; }
     .farm-select b { color: #fff; }
@@ -88,21 +88,27 @@
 <body>
   <main class="shell">
     <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">✦</span><span>CampoSur</span></div>
+      <div class="brand"><?php if ($logoUrl): ?><img class="brand-logo" src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo de <?= htmlspecialchars($companyName) ?>"><?php else: ?><span class="brand-mark">✦</span><?php endif; ?><span><?= htmlspecialchars($companyName) ?></span></div>
       <p class="workspace">Empresa activa</p>
       <div class="farm-select"><b><?= htmlspecialchars($companyName) ?></b><span>⌄</span></div>
       <nav class="nav">
         <a class="nav-item active" href="/"><span class="nav-icon">▦</span><span>Resumen ejecutivo</span></a>
         <p class="nav-label">Operación</p>
         <a class="nav-item" href="?module=masters"><span class="nav-icon">◫</span><span>Administración</span></a>
+        <a class="nav-item" href="?module=procurement"><span class="nav-icon">▥</span><span>Compras</span></a>
+        <a class="nav-item" href="?module=production"><span class="nav-icon">◉</span><span>Producción</span></a>
         <a class="nav-item" href="?module=labor"><span class="nav-icon">♟</span><span>Mano de obra</span></a>
         <a class="nav-item" href="?module=costs&category=INVERSION"><span class="nav-icon">◒</span><span>Inversiones</span></a>
+        <a class="nav-item" href="?module=budgets"><span class="nav-icon">▥</span><span>Presupuestos</span></a>
         <a class="nav-item" href="?module=costs&category=SERVICIOS_GASTOS"><span class="nav-icon">▤</span><span>Servicios y gastos</span></a>
         <a class="nav-item" href="?module=inventory"><span class="nav-icon">▣</span><span>Bodega</span></a>
+        <a class="nav-item" href="?module=machinery"><span class="nav-icon">⚙</span><span>Maquinaria</span></a>
         <p class="nav-label">Gestión</p>
         <a class="nav-item" href="?module=reports"><span class="nav-icon">◌</span><span>Informes</span></a>
         <a class="nav-item" href="?module=users"><span class="nav-icon">♙</span><span>Usuarios y roles</span></a>
         <a class="nav-item" href="?module=settings"><span class="nav-icon">⚙</span><span>Configuración</span></a>
+        <a class="nav-item" href="?module=catalogs"><span class="nav-icon">◫</span><span>Catálogos</span></a>
+        <a class="nav-item" href="?module=profile"><span class="nav-icon">◉</span><span>Mi perfil</span></a>
         <a class="nav-item" href="?module=audit"><span class="nav-icon">◷</span><span>Actividad</span></a>
       </nav>
       <div class="user"><span class="avatar"><?= htmlspecialchars(strtoupper(substr($currentUser, 0, 2))) ?></span><div class="user-info"><b><?= htmlspecialchars($currentUser) ?></b><small>Administrador</small></div></div>

@@ -37,7 +37,10 @@ final class LaborManagement
         if (trim((string) ($input['full_name'] ?? '')) === '') {
             throw new RuntimeException('El nombre del trabajador es obligatorio.');
         }
-        $this->execute('INSERT INTO workers (company_id, full_name, tax_id, worker_type, default_rate) VALUES (?, ?, ?, ?, ?)', [$this->companyId, trim($input['full_name']), trim($input['tax_id']) ?: null, $input['worker_type'], $input['default_rate'] ?: 0]);
+        if (!(new CatalogLookup($this->connection, $this->companyId))->exists('WORKER_TYPE', (string) $input['worker_type'])) {
+            throw new RuntimeException('El tipo de trabajador no está habilitado.');
+        }
+        $this->execute('INSERT INTO workers (company_id, full_name, tax_id, worker_type, default_rate) VALUES (?, ?, ?, ?, ?)', [$this->companyId, trim($input['full_name']), trim($input['tax_id']) ?: null, strtoupper(trim($input['worker_type'])), $input['default_rate'] ?: 0]);
     }
 
     public function createEntry(array $input, int $userId): void
@@ -52,6 +55,9 @@ final class LaborManagement
         }
         $this->belongs('workers', $input['worker_id']);
         $this->belongs('seasons', $input['season_id']);
+        if (!(new CatalogLookup($this->connection, $this->companyId))->exists('LABOR_TYPE', (string) $input['labor_type'])) {
+            throw new RuntimeException('El tipo de labor no está habilitado.');
+        }
         if (!empty($input['farm_id'])) {
             $this->belongs('farms', $input['farm_id']);
         }

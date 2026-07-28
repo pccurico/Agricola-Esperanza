@@ -34,7 +34,11 @@ final class InventoryManagement
                 throw new RuntimeException('Completa los datos del insumo.');
             }
         }
-        $this->execute('INSERT INTO inventory_items (company_id, sku, name, category, unit, minimum_stock) VALUES (?, ?, ?, ?, ?, ?)', [$this->companyId, strtoupper(trim($input['sku'])), trim($input['name']), $input['category'], trim($input['unit']), $input['minimum_stock'] ?: 0]);
+        $catalogs = new CatalogLookup($this->connection, $this->companyId);
+        if (!$catalogs->exists('INVENTORY_CATEGORY', (string) $input['category']) || !$catalogs->exists('MEASUREMENT_UNIT', (string) $input['unit'])) {
+            throw new RuntimeException('La categoría o unidad del insumo no está habilitada.');
+        }
+        $this->execute('INSERT INTO inventory_items (company_id, sku, name, category, unit, minimum_stock) VALUES (?, ?, ?, ?, ?, ?)', [$this->companyId, strtoupper(trim($input['sku'])), trim($input['name']), strtoupper(trim($input['category'])), strtoupper(trim($input['unit'])), $input['minimum_stock'] ?: 0]);
     }
 
     public function createMovement(array $input, int $userId): void
@@ -46,6 +50,9 @@ final class InventoryManagement
             throw new RuntimeException('La cantidad debe ser mayor que cero.');
         }
         $this->belongs('inventory_items', $input['item_id']);
+        if (!(new CatalogLookup($this->connection, $this->companyId))->exists('INVENTORY_MOVEMENT_TYPE', (string) $input['movement_type'])) {
+            throw new RuntimeException('El tipo de movimiento no está habilitado.');
+        }
         $this->execute('INSERT INTO inventory_movements (company_id, item_id, movement_type, quantity, unit_cost, movement_date, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$this->companyId, (int) $input['item_id'], $input['movement_type'], $input['quantity'], $input['unit_cost'] ?: 0, $input['movement_date'], trim($input['reference']) ?: null, $userId]);
     }
 

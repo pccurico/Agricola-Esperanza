@@ -21,9 +21,11 @@ final class Installer
         $this->connection->beginTransaction();
 
         try {
-            $this->runSqlFile($this->rootPath . '/database/migrations/001_initial_schema.sql');
-            $this->runSqlFile($this->rootPath . '/database/migrations/002_labor_schema.sql');
-            $this->runSqlFile($this->rootPath . '/database/seeds/001_permissions.sql');
+            $this->runSqlFile($this->rootPath . '/database/schema.sql');
+            $this->registerBaselineSchema();
+            $this->runSeed('001_permissions', $this->rootPath . '/database/seeds/001_permissions.sql');
+            $this->runSeed('002_system_catalogs', $this->rootPath . '/database/seeds/002_system_catalogs.sql');
+            $this->runSeed('003_catalog_values', $this->rootPath . '/database/seeds/003_catalog_values.sql');
 
             $company = $this->connection->prepare(
                 'INSERT INTO companies (legal_name, trade_name, tax_id, logo_path, email, phone, commune, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -71,6 +73,17 @@ final class Installer
                 'INSERT INTO seasons (company_id, name, starts_on, ends_on) VALUES (?, ?, ?, ?)'
             );
             $season->execute([$companyId, $input['season_name'], $input['season_start'], $input['season_end']]);
+
+            $center = $this->connection->prepare('INSERT INTO cost_centers (company_id, code, name, category) VALUES (?, ?, ?, ?)');
+            foreach ([
+                ['ADM-001', 'Administración general', 'ADMINISTRACION'],
+                ['MO-001', 'Mano de obra agrícola', 'MANO_DE_OBRA'],
+                ['INV-001', 'Inversiones y proyectos', 'INVERSION'],
+                ['SG-001', 'Servicios y gastos generales', 'SERVICIOS_GASTOS'],
+                ['BOD-001', 'Bodega e insumos', 'BODEGA'],
+            ] as [$code, $name, $category]) {
+                $center->execute([$companyId, $code, $name, $category]);
+            }
 
             $this->connection->commit();
             $this->writeConfig();
@@ -129,6 +142,32 @@ final class Installer
             throw new RuntimeException('No fue posible guardar el logo.');
         }
         return 'storage/uploads/' . $filename;
+    }
+
+    private function registerBaselineSchema(): void
+    {
+        $versions = [
+            '001_initial_schema',
+            '002_labor_schema',
+            '003_production_schema',
+            '004_procurement_schema',
+            '005_budget_schema',
+            '006_machinery_schema',
+            '007_module_permissions',
+            '008_platform_entities',
+            '009_system_logs',
+            '010_system_catalogs',
+            '011_catalog_backed_values',
+        ];
+        $statement = $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)');
+        foreach ($versions as $version) {
+            $statement->execute([$version]);
+        }
+    }
+
+    private function runSeed(string $version, string $path): void
+    {
+        $this->runSqlFile($path);
     }
 
     private function runSqlFile(string $path): void

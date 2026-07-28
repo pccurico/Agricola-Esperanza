@@ -26,6 +26,20 @@ require_once __DIR__ . '/Controllers/SettingsController.php';
 require_once __DIR__ . '/Services/AuditLog.php';
 require_once __DIR__ . '/Controllers/AuditController.php';
 require_once __DIR__ . '/Services/DashboardService.php';
+require_once __DIR__ . '/Services/ProductionManagement.php';
+require_once __DIR__ . '/Controllers/ProductionController.php';
+require_once __DIR__ . '/Services/MigrationRunner.php';
+require_once __DIR__ . '/Services/ProfileService.php';
+require_once __DIR__ . '/Controllers/ProfileController.php';
+require_once __DIR__ . '/Services/ProcurementManagement.php';
+require_once __DIR__ . '/Controllers/ProcurementController.php';
+require_once __DIR__ . '/Services/BudgetManagement.php';
+require_once __DIR__ . '/Controllers/BudgetController.php';
+require_once __DIR__ . '/Services/MachineryManagement.php';
+require_once __DIR__ . '/Controllers/MachineryController.php';
+require_once __DIR__ . '/Services/CatalogManagement.php';
+require_once __DIR__ . '/Services/CatalogLookup.php';
+require_once __DIR__ . '/Controllers/CatalogController.php';
 
 $configPath = dirname(__DIR__) . '/config/config.php';
 $config = file_exists($configPath)
@@ -33,6 +47,14 @@ $config = file_exists($configPath)
     : require dirname(__DIR__) . '/config/config.example.php';
 
 date_default_timezone_set($config['app']['timezone']);
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_samesite', 'Lax');
+if (($config['app']['environment'] ?? 'production') === 'production') {
+    ini_set('session.cookie_secure', '1');
+}
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
 
 function app_config(string $key, mixed $default = null): mixed
 {
@@ -47,6 +69,10 @@ function app_config(string $key, mixed $default = null): mixed
     }
 
     return $value;
+}
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name((string) ($config['security']['session_name'] ?? 'camposur_session'));
 }
 
 function database(): Database

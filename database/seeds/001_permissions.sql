@@ -1,4 +1,4 @@
-INSERT INTO permissions (code, name, module) VALUES
+INSERT IGNORE INTO permissions (code, name, module) VALUES
 ('dashboard.view', 'Ver dashboard', 'dashboard'),
 ('setup.manage', 'Completar configuración inicial', 'setup'),
 ('users.view', 'Ver usuarios', 'users'),
