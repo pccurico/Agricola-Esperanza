@@ -19,8 +19,6 @@ final class Installer
         $this->ensureConfigCanBeWritten();
         $logoPath = $this->storeLogo($logo);
 
-        $this->connection->beginTransaction();
-
         try {
             $this->runSqlFile($this->rootPath . '/database/schema.sql');
             $this->registerBaselineSchema();
@@ -28,6 +26,7 @@ final class Installer
             $this->runSeed('002_system_catalogs', $this->rootPath . '/database/seeds/002_system_catalogs.sql');
             $this->runSeed('003_catalog_values', $this->rootPath . '/database/seeds/003_catalog_values.sql');
 
+            $this->connection->beginTransaction();
             $company = $this->connection->prepare(
                 'INSERT INTO companies (legal_name, trade_name, tax_id, logo_path, email, phone, commune, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             );
@@ -65,28 +64,9 @@ final class Installer
                 $input['admin_phone'] ?: null,
             ]);
 
-            $farm = $this->connection->prepare(
-                'INSERT INTO farms (company_id, name, code, location, hectares) VALUES (?, ?, ?, ?, ?)'
-            );
-            $farm->execute([$companyId, $input['farm_name'], strtoupper($input['farm_code']), $input['farm_location'] ?: null, $input['farm_hectares']]);
-
-            $season = $this->connection->prepare(
-                'INSERT INTO seasons (company_id, name, starts_on, ends_on) VALUES (?, ?, ?, ?)'
-            );
-            $season->execute([$companyId, $input['season_name'], $input['season_start'], $input['season_end']]);
-
-            $center = $this->connection->prepare('INSERT INTO cost_centers (company_id, code, name, category) VALUES (?, ?, ?, ?)');
-            foreach ([
-                ['ADM-001', 'Administración general', 'ADMINISTRACION'],
-                ['MO-001', 'Mano de obra agrícola', 'MANO_DE_OBRA'],
-                ['INV-001', 'Inversiones y proyectos', 'INVERSION'],
-                ['SG-001', 'Servicios y gastos generales', 'SERVICIOS_GASTOS'],
-                ['BOD-001', 'Bodega e insumos', 'BODEGA'],
-            ] as [$code, $name, $category]) {
-                $center->execute([$companyId, $code, $name, $category]);
+            if ($this->connection->inTransaction()) {
+                $this->connection->commit();
             }
-
-            $this->connection->commit();
             $this->writeConfig();
         } catch (\Throwable $exception) {
             if ($this->connection->inTransaction()) {
@@ -98,10 +78,10 @@ final class Installer
 
     private function validate(array $input, array $logo): void
     {
-        $required = ['legal_name', 'trade_name', 'admin_name', 'admin_email', 'admin_password', 'farm_name', 'farm_code', 'farm_hectares', 'season_name', 'season_start', 'season_end'];
+        $required = ['legal_name', 'trade_name', 'admin_name', 'admin_email', 'admin_password'];
         foreach ($required as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa todos los campos obligatorios.');
+                throw new RuntimeException('Por favor, completa todos los campos obligatorios.');
             }
         }
         if (!filter_var($input['admin_email'], FILTER_VALIDATE_EMAIL)) {
@@ -109,19 +89,6 @@ final class Installer
         }
         if (strlen($input['admin_password']) < 10) {
             throw new RuntimeException('La contraseña debe tener al menos 10 caracteres.');
-        }
-        if (!is_numeric($input['farm_hectares']) || (float) $input['farm_hectares'] < 0) {
-            throw new RuntimeException('La superficie del fundo debe ser un número válido.');
-        }
-        $start = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $input['season_start']);
-        $end = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $input['season_end']);
-        $startErrors = \DateTimeImmutable::getLastErrors();
-        $endErrors = \DateTimeImmutable::getLastErrors();
-        if (!$start || !$end || ($startErrors !== false && ($startErrors['warning_count'] > 0 || $startErrors['error_count'] > 0)) || ($endErrors !== false && ($endErrors['warning_count'] > 0 || $endErrors['error_count'] > 0))) {
-            throw new RuntimeException('Las fechas de la temporada no son válidas.');
-        }
-        if ($end <= $start) {
-            throw new RuntimeException('El término de la temporada debe ser posterior al inicio.');
         }
         if (($logo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             if ($logo['error'] !== UPLOAD_ERR_OK || $logo['size'] > 2 * 1024 * 1024) {
@@ -176,6 +143,7 @@ final class Installer
             '019_tasks_calendar_permissions',
             '020_document_permissions',
             '021_api_token_permissions',
+            '022_complete_module_permissions',
         ];
         $statement = $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)');
         foreach ($versions as $version) {

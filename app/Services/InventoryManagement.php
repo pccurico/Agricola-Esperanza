@@ -31,7 +31,7 @@ final class InventoryManagement
     {
         foreach (['sku', 'name', 'unit', 'category'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa los datos del insumo.');
+                throw new RuntimeException('Por favor, completa los datos del insumo.');
             }
         }
         $catalogs = new CatalogLookup($this->connection, $this->companyId);

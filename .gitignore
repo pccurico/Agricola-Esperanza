@@ -1,5 +1,6 @@
 config/config.php
 storage/logs/*
 storage/uploads/*
+config/config.php
 !.gitkeep
 .DS_Store

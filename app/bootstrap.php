@@ -5,7 +5,9 @@ declare(strict_types=1);
 use CampoSur\Core\Database;
 
 require_once __DIR__ . '/Core/Database.php';
+require_once __DIR__ . '/Services/InputNormalizer.php';
 require_once __DIR__ . '/Services/Installer.php';
+require_once __DIR__ . '/Services/InstallationStatus.php';
 require_once __DIR__ . '/Controllers/SetupController.php';
 require_once __DIR__ . '/Services/Auth.php';
 require_once __DIR__ . '/Controllers/AuthController.php';

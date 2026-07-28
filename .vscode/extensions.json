@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug",
+        "ms-vscode.powershell",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql"
+    ]
+}

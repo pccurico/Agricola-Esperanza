@@ -41,7 +41,7 @@ final class CostManagement
     {
         foreach (['season_id', 'cost_center_id', 'entry_date', 'description', 'amount'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa los campos obligatorios del costo.');
+                throw new RuntimeException('Por favor, completa los datos del costo.');
             }
         }
         if (!is_numeric($input['amount']) || (float) $input['amount'] <= 0) {

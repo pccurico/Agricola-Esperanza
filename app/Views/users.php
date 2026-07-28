@@ -8,6 +8,7 @@
 </head>
 <body class="admin-page">
     <main class="admin-shell">
+        <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
         <header class="admin-header"><div><p class="eyebrow">Gestión de accesos</p><h1>Usuarios y roles</h1><p class="setup-copy">Controla quién puede consultar y operar cada módulo.</p></div><a class="secondary-link" href="/">Volver al dashboard</a></header>
         <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
         <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>

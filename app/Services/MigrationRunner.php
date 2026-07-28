@@ -31,7 +31,6 @@ final class MigrationRunner
             if ($check->fetchColumn()) {
                 continue;
             }
-            $this->connection->beginTransaction();
             try {
                 foreach (preg_split('/;\s*(?:\r?\n|$)/', file_get_contents($path)) as $statement) {
                     if (trim($statement) !== '') {
@@ -39,9 +38,10 @@ final class MigrationRunner
                     }
                 }
                 $this->connection->prepare('INSERT INTO schema_migrations (version) VALUES (?)')->execute([$version]);
-                $this->connection->commit();
             } catch (\Throwable $exception) {
-                $this->connection->rollBack();
+                if ($this->connection->inTransaction()) {
+                    $this->connection->rollBack();
+                }
                 throw $exception;
             }
         }

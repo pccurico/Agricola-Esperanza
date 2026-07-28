@@ -45,7 +45,7 @@ final class MachineryManagement
     {
         foreach (['code', 'name', 'machinery_type'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa los datos de la maquinaria.');
+                throw new RuntimeException('Por favor, completa los datos de la maquinaria.');
             }
         }
         if (!(new CatalogLookup($this->connection, $this->companyId))->exists('MACHINERY_TYPE', (string) $input['machinery_type'])) {

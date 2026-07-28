@@ -1,10 +1,15 @@
 [CmdletBinding()]
 param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot)
+    [string]$ProjectRoot
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$dotSourced = $MyInvocation.InvocationName -eq '.'
+$scriptDirectory = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $ProjectRoot = Split-Path -Parent $scriptDirectory
+}
 $failures = 0
 $warnings = 0
 
@@ -87,8 +92,10 @@ foreach ($seed in $seeds) {
 
 if ($failures -gt 0) {
     Write-Host "Validación SQL finalizada con $failures fallo(s) y $warnings advertencia(s)." -ForegroundColor Red
+    if ($dotSourced) { return }
     exit 1
 }
 
 Write-Host "Validación SQL finalizada correctamente con $warnings advertencia(s)." -ForegroundColor Green
+if ($dotSourced) { return }
 exit 0

@@ -47,7 +47,7 @@ final class LaborManagement
     {
         foreach (['worker_id', 'season_id', 'labor_date', 'labor_type', 'quantity', 'unit_rate'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa todos los datos de la labor.');
+                throw new RuntimeException('Por favor, completa los datos de la labor.');
             }
         }
         if ((float) $input['quantity'] <= 0 || (float) $input['unit_rate'] < 0) {

@@ -36,7 +36,7 @@ final class ProductionManagement
     {
         foreach (['season_id', 'production_date', 'activity', 'quantity', 'unit'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa todos los datos de producción.');
+                throw new RuntimeException('Por favor, completa los datos de producción.');
             }
         }
         if (!is_numeric($input['quantity']) || (float) $input['quantity'] <= 0) {

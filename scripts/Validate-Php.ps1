@@ -1,11 +1,16 @@
 [CmdletBinding()]
 param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$ProjectRoot,
     [switch]$SkipLint
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$dotSourced = $MyInvocation.InvocationName -eq '.'
+$scriptDirectory = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $ProjectRoot = Split-Path -Parent $scriptDirectory
+}
 $failures = 0
 $warnings = 0
 
@@ -29,13 +34,14 @@ $phpFiles += @(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'public') -Fil
 Write-Result 'Archivos PHP encontrados' ($phpFiles.Count -gt 0) "$($phpFiles.Count) archivo(s)."
 
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+$phpPath = if ($null -ne $phpCommand) { $phpCommand.Source } elseif (Test-Path -LiteralPath 'C:\wamp64\bin\php\php8.2.29\php.exe') { 'C:\wamp64\bin\php\php8.2.29\php.exe' } else { $null }
 if ($SkipLint) {
     Write-Result 'PHP lint' $true 'Omitido por parámetro.' -Warning
-} elseif ($null -eq $phpCommand) {
-    Write-Result 'PHP lint' $true 'PHP no está disponible; se mantiene validación estática.' -Warning
+} elseif ($null -eq $phpPath) {
+    Write-Result 'PHP lint' $true 'PHP 8.2.29 no está disponible; se mantiene validación estática.' -Warning
 } else {
     foreach ($file in $phpFiles) {
-        & $phpCommand.Source -l $file.FullName *> $null
+        & $phpPath -l $file.FullName *> $null
         Write-Result "PHP lint: $($file.Name)" ($LASTEXITCODE -eq 0) 'Sintaxis válida.'
     }
 }
@@ -45,6 +51,7 @@ $bootstrapText = if (Test-Path $bootstrap) { Get-Content -Raw -LiteralPath $boot
 $requiredClasses = @(
     'Core/Database.php',
     'Services/Installer.php',
+    'Services/InstallationStatus.php',
     'Controllers/SetupController.php',
     'Services/MigrationRunner.php'
 )
@@ -67,7 +74,7 @@ $unsafePatterns = @(
     'shell_exec\(',
     'system\(',
     'passthru\(',
-    'exec\('
+    '(?<!->)\bexec\s*\('
 )
 foreach ($pattern in $unsafePatterns) {
     $matches = @($phpFiles | Select-String -Pattern $pattern -AllMatches)
@@ -76,8 +83,10 @@ foreach ($pattern in $unsafePatterns) {
 
 if ($failures -gt 0) {
     Write-Host "Validación PHP finalizada con $failures fallo(s) y $warnings advertencia(s)." -ForegroundColor Red
+    if ($dotSourced) { return }
     exit 1
 }
 
 Write-Host "Validación PHP finalizada correctamente con $warnings advertencia(s)." -ForegroundColor Green
+if ($dotSourced) { return }
 exit 0

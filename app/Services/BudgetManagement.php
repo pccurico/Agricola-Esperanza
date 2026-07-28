@@ -33,7 +33,7 @@ final class BudgetManagement
     {
         foreach (['season_id', 'cost_center_id', 'period_start', 'period_end', 'amount'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa todos los datos del presupuesto.');
+                throw new RuntimeException('Por favor, completa los datos del presupuesto.');
             }
         }
         if ($input['period_end'] <= $input['period_start'] || !is_numeric($input['amount']) || (float) $input['amount'] <= 0) {

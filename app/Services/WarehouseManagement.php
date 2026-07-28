@@ -149,7 +149,7 @@ final class WarehouseManagement
     {
         foreach ($fields as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa los datos obligatorios.');
+                throw new RuntimeException('Por favor, completa los datos necesarios.');
             }
         }
     }

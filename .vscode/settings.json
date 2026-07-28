@@ -1,0 +1,22 @@
+{
+    "files.encoding": "utf8",
+    "files.eol": "\\n",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.formatOnSave": false,
+    "php.validate.enable": true,
+    "php.validate.executablePath": "C:\\wamp64\\bin\\php\\php8.2.29\\php.exe",
+    "php.suggest.basic": true,
+    "powershell.codeFormatting.preset": "Custom",
+    "powershell.codeFormatting.openBraceOnSameLine": true,
+    "files.associations": {
+        "*.sql": "sql",
+        "*.ps1": "powershell",
+        "*.php": "php"
+    },
+    "search.exclude": {
+        "**/storage/uploads/**": true,
+        "**/storage/logs/**": true,
+        "**/config/config.php": true
+    }
+}

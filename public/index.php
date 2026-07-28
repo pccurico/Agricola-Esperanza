@@ -2,9 +2,22 @@
 
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/bootstrap.php';
 
-$setupRequired = !file_exists(dirname(__DIR__) . '/config/config.php');
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+$configPath = dirname(__DIR__) . '/config/config.php';
+$setupRequired = !file_exists($configPath);
+
+if (!$setupRequired) {
+    try {
+        $setupRequired = !(new CampoSur\Services\InstallationStatus(database()->connection()))->isComplete();
+    } catch (\Throwable) {
+        $setupRequired = true;
+    }
+}
 
 if (!$setupRequired && isset($_GET['api'])) {
     $headers = function_exists('getallheaders') ? getallheaders() : [];

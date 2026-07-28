@@ -165,6 +165,7 @@ CREATE TABLE inventory_movements (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     item_id BIGINT UNSIGNED NOT NULL,
+    warehouse_id BIGINT UNSIGNED NULL,
     season_id BIGINT UNSIGNED NULL,
     block_id BIGINT UNSIGNED NULL,
     movement_type ENUM('IN','OUT','ADJUSTMENT') NOT NULL,

@@ -19,24 +19,17 @@ final class SetupController
         }
 
         $data = [
-            'legal_name' => trim((string) ($_POST['legal_name'] ?? '')),
-            'trade_name' => trim((string) ($_POST['trade_name'] ?? '')),
-            'tax_id' => trim((string) ($_POST['tax_id'] ?? '')),
-            'company_email' => trim((string) ($_POST['company_email'] ?? '')),
-            'company_phone' => trim((string) ($_POST['company_phone'] ?? '')),
-            'commune' => trim((string) ($_POST['commune'] ?? '')),
-            'region' => trim((string) ($_POST['region'] ?? '')),
-            'admin_name' => trim((string) ($_POST['admin_name'] ?? '')),
-            'admin_email' => trim((string) ($_POST['admin_email'] ?? '')),
-            'admin_phone' => trim((string) ($_POST['admin_phone'] ?? '')),
+            'legal_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['legal_name'] ?? '')),
+            'trade_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['trade_name'] ?? '')),
+            'tax_id' => \CampoSur\Services\InputNormalizer::rut((string) ($_POST['tax_id'] ?? '')),
+            'company_email' => \CampoSur\Services\InputNormalizer::email((string) ($_POST['company_email'] ?? '')),
+            'company_phone' => \CampoSur\Services\InputNormalizer::phone((string) ($_POST['company_phone'] ?? '')),
+            'commune' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['commune'] ?? '')),
+            'region' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['region'] ?? '')),
+            'admin_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['admin_name'] ?? '')),
+            'admin_email' => \CampoSur\Services\InputNormalizer::email((string) ($_POST['admin_email'] ?? '')),
+            'admin_phone' => \CampoSur\Services\InputNormalizer::phone((string) ($_POST['admin_phone'] ?? '')),
             'admin_password' => (string) ($_POST['admin_password'] ?? ''),
-            'farm_name' => trim((string) ($_POST['farm_name'] ?? '')),
-            'farm_code' => trim((string) ($_POST['farm_code'] ?? '')),
-            'farm_location' => trim((string) ($_POST['farm_location'] ?? '')),
-            'farm_hectares' => trim((string) ($_POST['farm_hectares'] ?? '')),
-            'season_name' => trim((string) ($_POST['season_name'] ?? '')),
-            'season_start' => trim((string) ($_POST['season_start'] ?? '')),
-            'season_end' => trim((string) ($_POST['season_end'] ?? '')),
         ];
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

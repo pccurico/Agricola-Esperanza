@@ -38,27 +38,50 @@ final class ProcurementManagement
 
     public function createOrder(array $input, int $userId): void
     {
-        foreach (['supplier_id', 'order_number', 'order_date'] as $field) {
+        foreach (['supplier_id', 'order_number', 'order_date', 'description', 'quantity', 'unit_price'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa los datos obligatorios de la orden.');
+                throw new RuntimeException('Por favor, completa los datos de la orden y su primera línea.');
             }
+        }
+        if ((float) $input['quantity'] <= 0 || (float) $input['unit_price'] < 0) {
+            throw new RuntimeException('La cantidad debe ser mayor que cero y el precio no puede ser negativo.');
         }
         $supplier = $this->connection->prepare('SELECT id FROM suppliers WHERE id = ? AND company_id = ? AND active = 1');
         $supplier->execute([(int) $input['supplier_id'], $this->companyId]);
         if (!$supplier->fetchColumn()) {
-            throw new RuntimeException('El proveedor no pertenece a esta empresa.');
+            throw new RuntimeException('El proveedor no pertenece a esta agrícola.');
         }
         foreach ([['seasons', $input['season_id'] ?? null], ['farms', $input['farm_id'] ?? null]] as [$table, $id]) {
             if ($id) {
                 $reference = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ?');
                 $reference->execute([(int) $id, $this->companyId]);
                 if (!$reference->fetchColumn()) {
-                    throw new RuntimeException('Una referencia seleccionada no pertenece a esta empresa.');
+                    throw new RuntimeException('Una referencia seleccionada no pertenece a esta agrícola.');
                 }
             }
         }
-        $query = $this->connection->prepare('INSERT INTO purchase_orders (company_id, supplier_id, season_id, farm_id, order_number, order_date, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-        $query->execute([$this->companyId, (int) $input['supplier_id'], $input['season_id'] ?: null, $input['farm_id'] ?: null, strtoupper(trim($input['order_number'])), $input['order_date'], trim($input['notes']) ?: null, $userId]);
+        $itemId = !empty($input['item_id']) ? (int) $input['item_id'] : null;
+        if ($itemId !== null) {
+            $item = $this->connection->prepare('SELECT id FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1');
+            $item->execute([$itemId, $this->companyId]);
+            if (!$item->fetchColumn()) {
+                throw new RuntimeException('El insumo seleccionado no pertenece a esta agrícola.');
+            }
+        }
+        $this->connection->beginTransaction();
+        try {
+            $query = $this->connection->prepare('INSERT INTO purchase_orders (company_id, supplier_id, season_id, farm_id, order_number, order_date, status, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, \'SENT\', ?, ?)');
+            $query->execute([$this->companyId, (int) $input['supplier_id'], $input['season_id'] ?: null, $input['farm_id'] ?: null, strtoupper(trim($input['order_number'])), $input['order_date'], trim($input['notes']) ?: null, $userId]);
+            $orderId = (int) $this->connection->lastInsertId();
+            $line = $this->connection->prepare('INSERT INTO purchase_order_items (purchase_order_id, item_id, description, quantity, unit_price) VALUES (?, ?, ?, ?, ?)');
+            $line->execute([$orderId, $itemId, trim($input['description']), $input['quantity'], $input['unit_price']]);
+            $this->connection->commit();
+        } catch (\Throwable $exception) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function receiveOrder(array $input, int $userId): int
@@ -147,6 +170,8 @@ final class ProcurementManagement
         $seasons->execute([$this->companyId]);
         $farms = $this->connection->prepare('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name');
         $farms->execute([$this->companyId]);
-        return ['supplier_options' => $suppliers->fetchAll(), 'season_options' => $seasons->fetchAll(), 'farm_options' => $farms->fetchAll()];
+        $items = $this->connection->prepare('SELECT id, sku, name FROM inventory_items WHERE company_id = ? AND active = 1 ORDER BY name');
+        $items->execute([$this->companyId]);
+        return ['supplier_options' => $suppliers->fetchAll(), 'season_options' => $seasons->fetchAll(), 'farm_options' => $farms->fetchAll(), 'item_options' => $items->fetchAll()];
     }
 }
