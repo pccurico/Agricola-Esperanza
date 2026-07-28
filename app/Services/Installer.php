@@ -158,6 +158,16 @@ final class Installer
             '009_system_logs',
             '010_system_catalogs',
             '011_catalog_backed_values',
+            '012_purchase_receptions',
+            '013_procurement_reception_permission',
+            '014_inventory_warehouse_scope',
+            '015_warehouse_permissions',
+            '016_internal_request_items',
+            '017_internal_request_permissions',
+            '018_notification_permissions',
+            '019_tasks_calendar_permissions',
+            '020_document_permissions',
+            '021_api_token_permissions',
         ];
         $statement = $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)');
         foreach ($versions as $version) {

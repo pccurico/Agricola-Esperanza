@@ -40,6 +40,20 @@ require_once __DIR__ . '/Controllers/MachineryController.php';
 require_once __DIR__ . '/Services/CatalogManagement.php';
 require_once __DIR__ . '/Services/CatalogLookup.php';
 require_once __DIR__ . '/Controllers/CatalogController.php';
+require_once __DIR__ . '/Services/WarehouseManagement.php';
+require_once __DIR__ . '/Controllers/WarehouseController.php';
+require_once __DIR__ . '/Services/InternalRequestManagement.php';
+require_once __DIR__ . '/Controllers/InternalRequestController.php';
+require_once __DIR__ . '/Services/NotificationManagement.php';
+require_once __DIR__ . '/Controllers/NotificationController.php';
+require_once __DIR__ . '/Services/TaskCalendarManagement.php';
+require_once __DIR__ . '/Controllers/TaskCalendarController.php';
+require_once __DIR__ . '/Services/DocumentManagement.php';
+require_once __DIR__ . '/Controllers/DocumentController.php';
+require_once __DIR__ . '/Services/ApiTokenManagement.php';
+require_once __DIR__ . '/Controllers/ApiTokenController.php';
+require_once __DIR__ . '/Services/ApiAuthenticator.php';
+require_once __DIR__ . '/Controllers/ApiController.php';
 
 $configPath = dirname(__DIR__) . '/config/config.php';
 $config = file_exists($configPath)

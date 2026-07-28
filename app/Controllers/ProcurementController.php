@@ -22,9 +22,13 @@ final class ProcurementController
                 (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'purchase_order');
                 $success = 'Orden de compra creada correctamente.';
             }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'receive_order') {
+                $service->receiveOrder($_POST, (int) $_SESSION['user_id']);
+                $success = 'Recepción registrada y existencias actualizadas.';
+            }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();
         }
-        return [...$service->options(), 'suppliers' => $service->suppliers(), 'orders' => $service->orders(), 'error' => $error, 'success' => $success];
+        return [...$service->options(), 'suppliers' => $service->suppliers(), 'orders' => $service->orders(), 'reception_lines' => $service->receptionOptions(), 'error' => $error, 'success' => $success];
     }
 }

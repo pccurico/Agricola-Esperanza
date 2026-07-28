@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     item_id BIGINT UNSIGNED NOT NULL,
+    warehouse_id BIGINT UNSIGNED NULL,
     season_id BIGINT UNSIGNED NULL,
     block_id BIGINT UNSIGNED NULL,
     movement_type VARCHAR(40) NOT NULL,
@@ -179,6 +180,7 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_inventory_movements_company FOREIGN KEY (company_id) REFERENCES companies(id),
     CONSTRAINT fk_inventory_movements_item FOREIGN KEY (item_id) REFERENCES inventory_items(id),
+    CONSTRAINT fk_inventory_movements_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_season FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_block FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_user FOREIGN KEY (created_by) REFERENCES users(id),
@@ -311,6 +313,36 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     received_quantity DECIMAL(15,3) NOT NULL DEFAULT 0,
     CONSTRAINT fk_purchase_items_order FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_purchase_items_inventory FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS purchase_receptions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    purchase_order_id BIGINT UNSIGNED NOT NULL,
+    document_id BIGINT UNSIGNED NULL,
+    received_on DATE NOT NULL,
+    status VARCHAR(40) NOT NULL DEFAULT 'POSTED',
+    notes VARCHAR(255) NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_receptions_company FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT fk_receptions_order FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id),
+    CONSTRAINT fk_receptions_document FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE SET NULL,
+    CONSTRAINT fk_receptions_user FOREIGN KEY (created_by) REFERENCES users(id),
+    KEY idx_receptions_company_date (company_id, received_on, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS purchase_reception_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reception_id BIGINT UNSIGNED NOT NULL,
+    purchase_order_item_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NULL,
+    quantity DECIMAL(15,3) NOT NULL,
+    unit_cost DECIMAL(15,2) NOT NULL DEFAULT 0,
+    CONSTRAINT fk_reception_items_reception FOREIGN KEY (reception_id) REFERENCES purchase_receptions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_reception_items_order_item FOREIGN KEY (purchase_order_item_id) REFERENCES purchase_order_items(id),
+    CONSTRAINT fk_reception_items_inventory FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE SET NULL,
+    KEY idx_reception_items_order (purchase_order_item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS budgets (
@@ -475,12 +507,14 @@ CREATE TABLE IF NOT EXISTS inventory_lots (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     item_id BIGINT UNSIGNED NOT NULL,
+    warehouse_id BIGINT UNSIGNED NULL,
     lot_number VARCHAR(80) NOT NULL,
     expires_on DATE NULL,
     quantity DECIMAL(15,3) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_inventory_lots_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
     CONSTRAINT fk_inventory_lots_item FOREIGN KEY (item_id) REFERENCES inventory_items(id),
+    CONSTRAINT fk_inventory_lots_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
     UNIQUE KEY uq_inventory_lots_item_number (item_id, lot_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -516,6 +550,18 @@ CREATE TABLE IF NOT EXISTS internal_requests (
     CONSTRAINT fk_requests_user FOREIGN KEY (requested_by) REFERENCES users(id),
     CONSTRAINT fk_requests_farm FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE SET NULL,
     KEY idx_requests_status (company_id, status, requested_on)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS internal_request_items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    request_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    quantity DECIMAL(15,3) NOT NULL,
+    fulfilled_quantity DECIMAL(15,3) NOT NULL DEFAULT 0,
+    notes VARCHAR(255) NULL,
+    CONSTRAINT fk_request_items_request FOREIGN KEY (request_id) REFERENCES internal_requests(id) ON DELETE CASCADE,
+    CONSTRAINT fk_request_items_item FOREIGN KEY (item_id) REFERENCES inventory_items(id),
+    UNIQUE KEY uq_request_items_item (request_id, item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS documents (

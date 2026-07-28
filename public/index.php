@@ -6,6 +6,20 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 
 $setupRequired = !file_exists(dirname(__DIR__) . '/config/config.php');
 
+if (!$setupRequired && isset($_GET['api'])) {
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authorization = (string) ($headers['Authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? '');
+    $identity = (new CampoSur\Services\ApiAuthenticator(database()->connection()))->authenticate($authorization);
+    if (!$identity) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(401);
+        echo json_encode(['error' => 'Credenciales API inválidas'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    (new CampoSur\Controllers\ApiController())->handle($identity);
+    exit;
+}
+
 if ($setupRequired) {
     $setup = (new CampoSur\Controllers\SetupController())->handle();
     extract($setup, EXTR_SKIP);
@@ -29,6 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 }
 
+if (($_GET['asset'] ?? '') === 'attachment') {
+    authorize('documents.view');
+    $attachment = (new CampoSur\Services\DocumentManagement(database()->connection(), (int) $_SESSION['company_id'], dirname(__DIR__)))->attachment((int) ($_GET['id'] ?? 0));
+    if (!$attachment) {
+        http_response_code(404);
+        exit;
+    }
+    header('Content-Type: ' . $attachment['mime_type']);
+    header('Content-Disposition: attachment; filename="' . str_replace('"', '', $attachment['original_name']) . '"');
+    readfile($attachment['path']);
+    exit;
+}
+
 if (($_GET['asset'] ?? '') === 'logo') {
     $query = database()->connection()->prepare('SELECT logo_path FROM companies WHERE id = ? LIMIT 1');
     $query->execute([(int) $_SESSION['company_id']]);
@@ -46,7 +73,7 @@ if (($_GET['asset'] ?? '') === 'logo') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage'];
+$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage'];
 $module = (string) ($_GET['module'] ?? '');
 if (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
@@ -54,6 +81,88 @@ if (isset($modulePermissions[$module])) {
 $createPermissions = ['masters' => 'masters.create', 'production' => 'production.create', 'procurement' => 'procurement.create', 'budgets' => 'budgets.create', 'machinery' => 'machinery.create', 'costs' => 'costs.create', 'inventory' => 'inventory.create', 'labor' => 'labor.create'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($createPermissions[$module])) {
     authorize($createPermissions[$module]);
+}
+if (in_array($module, ['procurement', 'receptions'], true) && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'receive_order') {
+    authorize('procurement.receive');
+}
+
+if ($module === 'receptions') {
+    $receptions = (new CampoSur\Controllers\ProcurementController())->handle();
+    extract($receptions, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/purchase_receptions.php';
+    exit;
+}
+
+if ($module === 'notifications') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize('notifications.update');
+    }
+    $notifications = (new CampoSur\Controllers\NotificationController())->handle();
+    extract($notifications, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/notifications.php';
+    exit;
+}
+
+if ($module === 'planning') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize(($_POST['action'] ?? '') === 'create_event' ? 'calendar.create' : (($_POST['action'] ?? '') === 'update_task' ? 'tasks.update' : 'tasks.create'));
+    }
+    $planning = (new CampoSur\Controllers\TaskCalendarController())->handle();
+    extract($planning, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/tasks_calendar.php';
+    exit;
+}
+
+if ($module === 'documents') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize('documents.create');
+    }
+    $documents = (new CampoSur\Controllers\DocumentController())->handle();
+    extract($documents, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/documents.php';
+    exit;
+}
+
+if ($module === 'api') {
+    authorize('api_tokens.manage');
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize('api_tokens.manage');
+    }
+    $api = (new CampoSur\Controllers\ApiTokenController())->handle();
+    extract($api, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/api_tokens.php';
+    exit;
+}
+
+if ($module === 'requests') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $actionPermission = match ($_POST['action'] ?? '') {
+            'approve_request' => 'requests.approve',
+            'fulfill_request' => 'requests.fulfill',
+            default => 'requests.create',
+        };
+        authorize($actionPermission);
+    }
+    $requests = (new CampoSur\Controllers\InternalRequestController())->handle();
+    extract($requests, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/internal_requests.php';
+    exit;
+}
+
+if ($module === 'warehouses') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $actionPermission = match ($_POST['action'] ?? '') {
+            'approve_transfer' => 'transfer.approve',
+            'create_transfer' => 'transfer.create',
+            'create_lot' => 'lot.create',
+            default => 'warehouse.create',
+        };
+        authorize($actionPermission);
+    }
+    $warehouses = (new CampoSur\Controllers\WarehouseController())->handle();
+    extract($warehouses, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/warehouses.php';
+    exit;
 }
 
 if ($module === 'catalogs') {

@@ -96,12 +96,19 @@
         <p class="nav-label">Operación</p>
         <a class="nav-item" href="?module=masters"><span class="nav-icon">◫</span><span>Administración</span></a>
         <a class="nav-item" href="?module=procurement"><span class="nav-icon">▥</span><span>Compras</span></a>
+        <a class="nav-item" href="?module=receptions"><span class="nav-icon">⇩</span><span>Recepciones</span></a>
         <a class="nav-item" href="?module=production"><span class="nav-icon">◉</span><span>Producción</span></a>
         <a class="nav-item" href="?module=labor"><span class="nav-icon">♟</span><span>Mano de obra</span></a>
         <a class="nav-item" href="?module=costs&category=INVERSION"><span class="nav-icon">◒</span><span>Inversiones</span></a>
         <a class="nav-item" href="?module=budgets"><span class="nav-icon">▥</span><span>Presupuestos</span></a>
         <a class="nav-item" href="?module=costs&category=SERVICIOS_GASTOS"><span class="nav-icon">▤</span><span>Servicios y gastos</span></a>
         <a class="nav-item" href="?module=inventory"><span class="nav-icon">▣</span><span>Bodega</span></a>
+        <a class="nav-item" href="?module=warehouses"><span class="nav-icon">⌂</span><span>Bodegas y lotes</span></a>
+        <a class="nav-item" href="?module=requests"><span class="nav-icon">≡</span><span>Solicitudes internas</span></a>
+        <a class="nav-item" href="?module=notifications"><span class="nav-icon">◉</span><span>Notificaciones</span></a>
+        <a class="nav-item" href="?module=planning"><span class="nav-icon">▣</span><span>Tareas y calendario</span></a>
+        <a class="nav-item" href="?module=documents"><span class="nav-icon">▤</span><span>Documentos</span></a>
+        <a class="nav-item" href="?module=api"><span class="nav-icon">↔</span><span>API e integraciones</span></a>
         <a class="nav-item" href="?module=machinery"><span class="nav-icon">⚙</span><span>Maquinaria</span></a>
         <p class="nav-label">Gestión</p>
         <a class="nav-item" href="?module=reports"><span class="nav-icon">◌</span><span>Informes</span></a>
