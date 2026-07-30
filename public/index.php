@@ -86,7 +86,7 @@ if (($_GET['asset'] ?? '') === 'logo') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage'];
+$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage'];
 $module = (string) ($_GET['module'] ?? '');
 if (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
@@ -136,6 +136,17 @@ if ($module === 'documents') {
     $documents = (new CampoSur\Controllers\DocumentController())->handle();
     extract($documents, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/documents.php';
+    exit;
+}
+
+if ($module === 'demo') {
+    authorize('demo.manage');
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize('demo.manage');
+    }
+    $demo = (new CampoSur\Controllers\DemoDataController())->handle();
+    extract($demo, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/demo_data_manager.php';
     exit;
 }
 

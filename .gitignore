@@ -4,3 +4,5 @@ storage/uploads/*
 config/config.php
 !.gitkeep
 .DS_Store
+scripts/*
+docs/*

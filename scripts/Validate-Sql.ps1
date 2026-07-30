@@ -5,6 +5,9 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion.Major -ge 5) {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+}
 $dotSourced = $MyInvocation.InvocationName -eq '.'
 $scriptDirectory = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {

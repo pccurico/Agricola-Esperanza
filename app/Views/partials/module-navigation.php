@@ -37,6 +37,9 @@ $navigationGroups = [
         ['profile', 'dashboard.view', '◉', 'Mi perfil'],
         ['audit', 'reports.view', '◷', 'Actividad'],
     ],
+    'Herramientas' => [
+        ['demo', 'demo.manage', '▣', 'Demo Data Manager'],
+    ],
 ];
 ?>
 <aside class="dashboard-sidebar module-sidebar">

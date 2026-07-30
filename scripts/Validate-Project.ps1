@@ -58,7 +58,11 @@ $requiredPaths = @(
     'config/config.example.php',
     'database/schema.sql',
     'database/migrations',
-    'database/seeds'
+    'database/seeds',
+    'database/demo/demo_data.json',
+    'app/Services/DemoDataManager.php',
+    'app/Controllers/DemoDataController.php',
+    'app/Views/demo_data_manager.php'
 )
 
 foreach ($requiredPath in $requiredPaths) {

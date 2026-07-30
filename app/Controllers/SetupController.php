@@ -30,6 +30,7 @@ final class SetupController
             'admin_email' => \CampoSur\Services\InputNormalizer::email((string) ($_POST['admin_email'] ?? '')),
             'admin_phone' => \CampoSur\Services\InputNormalizer::phone((string) ($_POST['admin_phone'] ?? '')),
             'admin_password' => (string) ($_POST['admin_password'] ?? ''),
+            'install_demo' => ($_POST['install_demo'] ?? '') === '1',
         ];
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

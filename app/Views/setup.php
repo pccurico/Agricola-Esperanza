@@ -39,6 +39,7 @@
                     <label>Contraseña<input type="password" name="admin_password" minlength="10" required><small>Mínimo 10 caracteres</small></label>
                 </div>
             </fieldset>
+            <label class="demo-option"><input type="checkbox" name="install_demo" value="1" <?= !empty($data['install_demo']) ? 'checked' : '' ?>><span><b>Instalar datos de demostración</b><small>Agrega información de ejemplo para recorrer todos los módulos. Podrás eliminarla después desde Herramientas.</small></span></label>
             <button class="primary-button" type="submit">Crear instalación y continuar</button>
         </form>
     </main>

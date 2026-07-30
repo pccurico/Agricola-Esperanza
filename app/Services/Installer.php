@@ -63,7 +63,11 @@ final class Installer
                 password_hash($input['admin_password'], PASSWORD_DEFAULT),
                 $input['admin_phone'] ?: null,
             ]);
+            $userId = (int) $this->connection->lastInsertId();
 
+            if (!empty($input['install_demo'])) {
+                (new DemoDataManager($this->connection, $this->rootPath, $companyId))->install((int) $userId);
+            }
             if ($this->connection->inTransaction()) {
                 $this->connection->commit();
             }
@@ -144,6 +148,7 @@ final class Installer
             '020_document_permissions',
             '021_api_token_permissions',
             '022_complete_module_permissions',
+            '023_demo_data_manager',
         ];
         $statement = $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)');
         foreach ($versions as $version) {

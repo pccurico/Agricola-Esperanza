@@ -9,6 +9,7 @@
 <body class="admin-page">
     <main class="admin-shell">
         <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
+        <section class="module-content">
         <header class="admin-header"><div><p class="eyebrow">Gestión de accesos</p><h1>Usuarios y roles</h1><p class="setup-copy">Controla quién puede consultar y operar cada módulo.</p></div><a class="secondary-link" href="/">Volver al dashboard</a></header>
         <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
         <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
@@ -18,6 +19,7 @@
         </section>
         <section class="admin-columns"><article class="admin-panel"><header class="panel-header"><div><h2>Roles configurados</h2><p>Permisos agrupados por función</p></div></header><div class="role-list"><?php foreach ($roles as $role): ?><div class="role-row"><div><b><?= htmlspecialchars($role['name']) ?></b><small><?= htmlspecialchars($role['description'] ?: 'Sin descripción') ?></small></div><span><?= (int) $role['users_count'] ?> usuarios · <?= (int) $role['permissions_count'] ?> permisos</span></div><?php endforeach; ?></div></article>
             <article class="admin-panel"><header class="panel-header"><div><h2>Nuevo rol</h2><p>Define permisos para un área</p></div></header><form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_role"><label>Nombre del rol<input name="name" required placeholder="Encargado de bodega"></label><label>Descripción<input name="description"></label><div class="permission-grid"><?php foreach ($permissions as $permission): ?><label class="permission-option"><input type="checkbox" name="permissions[]" value="<?= (int) $permission['id'] ?>"><span><b><?= htmlspecialchars($permission['name']) ?></b><small><?= htmlspecialchars($permission['module']) ?></small></span></label><?php endforeach; ?></div><button class="primary-button" type="submit">Crear rol</button></form></article></section>
+        </section>
     </main>
 </body>
 </html>

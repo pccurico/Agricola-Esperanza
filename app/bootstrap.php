@@ -56,6 +56,8 @@ require_once __DIR__ . '/Services/ApiTokenManagement.php';
 require_once __DIR__ . '/Controllers/ApiTokenController.php';
 require_once __DIR__ . '/Services/ApiAuthenticator.php';
 require_once __DIR__ . '/Controllers/ApiController.php';
+require_once __DIR__ . '/Services/DemoDataManager.php';
+require_once __DIR__ . '/Controllers/DemoDataController.php';
 
 $configPath = dirname(__DIR__) . '/config/config.php';
 $config = file_exists($configPath)

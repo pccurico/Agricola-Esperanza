@@ -47,4 +47,5 @@ INSERT IGNORE INTO permissions (code, name, module) VALUES
 ('costs.create', 'Registrar costos', 'costs'),
 ('inventory.create', 'Crear insumos y movimientos', 'inventory'),
 ('labor.view', 'Ver mano de obra', 'labor'),
-('labor.create', 'Registrar mano de obra', 'labor');
+('labor.create', 'Registrar mano de obra', 'labor'),
+('demo.manage', 'Administrar datos demo', 'demo');
