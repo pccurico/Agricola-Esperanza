@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class ApiController
+final class ApiController extends BaseController
 {
     public function handle(array $identity): void
     {
-        header('Content-Type: application/json; charset=utf-8');
         $path = trim((string) ($_GET['api'] ?? ''), '/');
         $companyId = (int) $identity['company_id'];
         if ($path === 'v1/me') {
@@ -20,10 +19,9 @@ final class ApiController
         } elseif ($path === 'v1/inventory/movements') {
             $data = ['movements' => (new \CampoSur\Services\InventoryManagement(database()->connection(), $companyId))->movements()];
         } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Recurso API no encontrado'], JSON_UNESCAPED_UNICODE);
+            $this->json(['error' => 'Recurso API no encontrado'], 404);
             return;
         }
-        echo json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
+        $this->json(['data' => $data]);
     }
 }

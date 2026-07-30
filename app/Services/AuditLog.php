@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class AuditLog
+final class AuditLog extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {

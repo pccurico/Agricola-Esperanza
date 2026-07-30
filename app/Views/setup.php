@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Configuración inicial | CampoSur</title>
+    <title>Configuración inicial | Sistema de Gestión Agrícola PCCURICO</title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body class="setup-page">

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+$projectRoot = dirname(__DIR__);
+
 return [
     'environment' => 'development',
     'stack' => [
@@ -17,17 +19,17 @@ return [
         'required_minor' => 2,
         'expected_sapi' => 'apache2handler',
         'executable' => 'C:/wamp64/bin/php/php8.2.29/php.exe',
-        'document_root' => 'D:/desarrollos/Agricola-Esperanza/public',
+        'document_root' => $projectRoot . '/public',
     ],
     'project' => [
-        'root' => 'D:/desarrollos/Agricola-Esperanza',
-        'public' => 'D:/desarrollos/Agricola-Esperanza/public',
-        'storage' => 'D:/desarrollos/Agricola-Esperanza/storage',
-        'config' => 'D:/desarrollos/Agricola-Esperanza/config',
+        'root' => $projectRoot,
+        'public' => $projectRoot . '/public',
+        'storage' => $projectRoot . '/storage',
+        'config' => $projectRoot . '/config',
     ],
     'database' => [
         'host' => 'localhost',
         'port' => 3306,
-        'name' => 'laesperanza',
+        'name' => 'pccurico_agricola',
     ],
 ];

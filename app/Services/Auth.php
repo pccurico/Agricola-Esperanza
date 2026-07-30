@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class Auth
+final class Auth extends BaseService
 {
     public function __construct(private readonly PDO $connection)
     {
@@ -39,6 +39,13 @@ final class Auth
         $query = $this->connection->prepare('SELECT 1 FROM role_permissions rp INNER JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = ? AND p.code = ? LIMIT 1');
         $query->execute([$roleId, $permission]);
         return (bool) $query->fetchColumn();
+    }
+
+    public function company(): array
+    {
+        $query = $this->connection->query('SELECT trade_name, logo_path FROM companies WHERE active = 1 ORDER BY id LIMIT 1');
+
+        return $query->fetch() ?: [];
     }
 
     public function logout(): void

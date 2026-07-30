@@ -21,7 +21,7 @@ foreach ($grouped as $order) {
 ?>
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Recepciones de compras | CampoSur</title><link rel="stylesheet" href="assets/css/app.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Recepciones de compras | Sistema de Gestión Agrícola PCCURICO</title><link rel="stylesheet" href="assets/css/app.css"></head>
 <body class="admin-page"><main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?><section class="module-content">
 	<header class="admin-header"><div><p class="eyebrow">Compras</p><h1>Recepción de compras</h1><p class="setup-copy">Anota lo que recibiste y actualiza las existencias de la bodega.</p></div><a class="secondary-link" href="?module=procurement">Volver a compras</a></header>
 <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class SettingsController
+final class SettingsController extends BaseController
 {
     public function handle(): array
     {
@@ -15,7 +15,7 @@ final class SettingsController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $service->update($_POST, $_FILES['logo'] ?? []);
                 (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'UPDATE', 'company');
-                $success = 'Configuración actualizada correctamente.';
+                $success = 'ConfiguraciÃ³n actualizada correctamente.';
             }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();

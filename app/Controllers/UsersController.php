@@ -6,7 +6,7 @@ namespace CampoSur\Controllers;
 
 use CampoSur\Services\UserManagement;
 
-final class UsersController
+final class UsersController extends BaseController
 {
     public function handle(): array
     {

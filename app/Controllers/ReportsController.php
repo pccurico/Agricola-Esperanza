@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class ReportsController
+final class ReportsController extends BaseController
 {
     public function handle(): array
     {
@@ -28,9 +28,9 @@ final class ReportsController
     private function exportCsv(array $summary): never
     {
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="camposur-informe-costos.csv"');
+        header('Content-Disposition: attachment; filename="pccurico-informe-costos.csv"');
         $output = fopen('php://output', 'wb');
-        fputcsv($output, ['Clasificación', 'Total'], ';');
+        fputcsv($output, ['ClasificaciÃ³n', 'Total'], ';');
         foreach ($summary['categories'] as $row) {
             fputcsv($output, [$row['category'], $row['total']], ';');
         }
@@ -46,8 +46,8 @@ final class ReportsController
     private function exportPdf(array $summary): never
     {
         header('Content-Type: text/html; charset=utf-8');
-        header('Content-Disposition: inline; filename="camposur-informe-costos.html"');
-        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de costos</title><style>body{font-family:Arial,sans-serif;color:#222}table{border-collapse:collapse;width:100%;margin-bottom:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}h1{font-size:22px}</style></head><body><h1>Informe de costos</h1><h2>Resumen por categoría</h2><table><tr><th>Categoría</th><th>Total</th></tr>';
+        header('Content-Disposition: inline; filename="pccurico-informe-costos.html"');
+        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de costos</title><style>body{font-family:Arial,sans-serif;color:#222}table{border-collapse:collapse;width:100%;margin-bottom:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}h1{font-size:22px}</style></head><body><h1>Informe de costos</h1><h2>Resumen por categorÃ­a</h2><table><tr><th>CategorÃ­a</th><th>Total</th></tr>';
         foreach ($summary['categories'] as $row) {
             echo '<tr><td>' . htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string) $row['total'], ENT_QUOTES, 'UTF-8') . '</td></tr>';
         }
@@ -63,9 +63,9 @@ final class ReportsController
     {
         if (!class_exists(\ZipArchive::class)) {
             http_response_code(503);
-            exit('La extensión ZIP de PHP es necesaria para exportar XLSX.');
+            exit('La extensiÃ³n ZIP de PHP es necesaria para exportar XLSX.');
         }
-        $rows = [['Clasificación', 'Total']];
+        $rows = [['ClasificaciÃ³n', 'Total']];
         foreach ($summary['categories'] as $row) {
             $rows[] = [(string) $row['category'], (string) $row['total']];
         }
@@ -83,7 +83,7 @@ final class ReportsController
             }
             $sheetRows .= '<row r="' . ($rowIndex + 1) . '">' . $cells . '</row>';
         }
-        $temporary = tempnam(sys_get_temp_dir(), 'camposur-xlsx-');
+        $temporary = tempnam(sys_get_temp_dir(), 'pccurico-xlsx-');
         $zip = new \ZipArchive();
         $zip->open($temporary, \ZipArchive::OVERWRITE);
         $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
@@ -93,7 +93,7 @@ final class ReportsController
         $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' . $sheetRows . '</sheetData></worksheet>');
         $zip->close();
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="camposur-informe-costos.xlsx"');
+        header('Content-Disposition: attachment; filename="pccurico-informe-costos.xlsx"');
         readfile($temporary);
         unlink($temporary);
         exit;

@@ -8,7 +8,7 @@ use CampoSur\Core\Database;
 use CampoSur\Services\Installer;
 use RuntimeException;
 
-final class SetupController
+final class SetupController extends BaseController
 {
     public function handle(): array
     {
@@ -45,10 +45,10 @@ final class SetupController
 
         try {
             if (!hash_equals($_SESSION['setup_csrf'], (string) ($_POST['csrf'] ?? ''))) {
-                throw new RuntimeException('La sesión de configuración expiró. Recarga la página.');
+                throw new RuntimeException('La sesiÃ³n de configuraciÃ³n expirÃ³. Recarga la pÃ¡gina.');
             }
             if ($data['db_host'] === '' || $data['db_name'] === '' || $data['db_user'] === '' || $data['db_port'] < 1 || $data['db_port'] > 65535) {
-                throw new RuntimeException('Completa correctamente los datos de conexión a la base de datos.');
+                throw new RuntimeException('Completa correctamente los datos de conexiÃ³n a la base de datos.');
             }
             $databaseConfig = [
                 'host' => $data['db_host'],
@@ -60,8 +60,7 @@ final class SetupController
             ];
             (new Installer((new Database($databaseConfig))->connection(), dirname(__DIR__, 2)))->install($data, $_FILES['logo'] ?? [], $databaseConfig);
             session_destroy();
-            header('Location: ./');
-            exit;
+            $this->redirect('./');
         } catch (\Throwable $exception) {
             return ['data' => $data, 'csrf' => $_SESSION['setup_csrf'], 'error' => $exception->getMessage()];
         }

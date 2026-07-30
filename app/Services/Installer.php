@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class Installer
+final class Installer extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly string $rootPath)
     {
@@ -45,7 +45,7 @@ final class Installer
             $role = $this->connection->prepare(
                 'INSERT INTO roles (company_id, name, description, is_system) VALUES (?, ?, ?, 1)'
             );
-            $role->execute([$companyId, 'Administrador', 'Acceso completo a la gestión de la agrícola']);
+            $role->execute([$companyId, 'Administrador', 'Acceso completo a la gestiÃ³n de la agrÃ­cola']);
             $roleId = (int) $this->connection->lastInsertId();
 
             $this->connection->exec(
@@ -89,10 +89,10 @@ final class Installer
             }
         }
         if (!filter_var($input['admin_email'], FILTER_VALIDATE_EMAIL)) {
-            throw new RuntimeException('El correo del administrador no es válido.');
+            throw new RuntimeException('El correo del administrador no es vÃ¡lido.');
         }
         if (strlen($input['admin_password']) < 10) {
-            throw new RuntimeException('La contraseña debe tener al menos 10 caracteres.');
+            throw new RuntimeException('La contraseÃ±a debe tener al menos 10 caracteres.');
         }
         if (($logo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             if ($logo['error'] !== UPLOAD_ERR_OK || $logo['size'] > 2 * 1024 * 1024) {
@@ -175,10 +175,10 @@ final class Installer
     {
         $directory = $this->rootPath . '/config';
         if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
-            throw new RuntimeException('No fue posible preparar el directorio de configuración.');
+            throw new RuntimeException('No fue posible preparar el directorio de configuraciÃ³n.');
         }
         if (!is_writable($directory)) {
-            throw new RuntimeException('El directorio de configuración no tiene permisos de escritura.');
+            throw new RuntimeException('El directorio de configuraciÃ³n no tiene permisos de escritura.');
         }
     }
 
@@ -194,7 +194,7 @@ final class Installer
             if (is_file($temporary)) {
                 unlink($temporary);
             }
-            throw new RuntimeException('No fue posible guardar la configuración de la aplicación.');
+            throw new RuntimeException('No fue posible guardar la configuraciÃ³n de la aplicaciÃ³n.');
         }
     }
 }

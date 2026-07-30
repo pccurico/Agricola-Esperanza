@@ -9,7 +9,7 @@ $error = $error ?? null;
 $success = $success ?? null;
 $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
 ?>
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bodegas | CampoSur</title><link rel="stylesheet" href="assets/css/app.css"></head><body class="admin-page"><main class="admin-shell">
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bodegas | Sistema de Gestión Agrícola PCCURICO</title><link rel="stylesheet" href="assets/css/app.css"></head><body class="admin-page"><main class="admin-shell">
 <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
 <section class="module-content">
 <header class="admin-header"><div><p class="eyebrow">Inventario</p><h1>Bodegas, ubicaciones y lotes</h1><p class="setup-copy">Administra existencias por bodega y controla transferencias internas.</p></div><a class="secondary-link" href="?module=inventory">Volver a inventario</a></header>

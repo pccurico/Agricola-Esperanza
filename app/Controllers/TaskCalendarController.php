@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class TaskCalendarController
+final class TaskCalendarController extends BaseController
 {
     public function handle(): array
     {

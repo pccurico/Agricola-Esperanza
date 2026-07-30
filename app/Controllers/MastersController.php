@@ -6,7 +6,7 @@ namespace CampoSur\Controllers;
 
 use CampoSur\Services\MasterData;
 
-final class MastersController
+final class MastersController extends BaseController
 {
     public function handle(): array
     {

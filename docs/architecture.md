@@ -1,8 +1,8 @@
-# CampoSur — arquitectura inicial
+# Sistema de Gestión Agrícola PCCURICO — arquitectura inicial
 
 ## Objetivo
 
-CampoSur será un sistema web PHP 8.2 + MySQL 8 para administrar una agrícola chilena configurable desde un wizard de instalación. La primera instalación no asume el nombre Agrícola Esperanza: la empresa, logo, RUT, datos de contacto y estructura productiva se registran durante la configuración.
+Sistema de Gestión Agrícola PCCURICO será un sistema web PHP 8.2 + MySQL 8 para administrar una agrícola chilena configurable desde un wizard de instalación. La primera instalación no asume el nombre una empresa agrícola: la empresa, logo, RUT, datos de contacto y estructura productiva se registran durante la configuración.
 
 ## Estructura
 

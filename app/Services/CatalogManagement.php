@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class CatalogManagement
+final class CatalogManagement extends BaseService
 {
     public function __construct(
         private readonly PDO $connection,
@@ -39,10 +39,10 @@ final class CatalogManagement
     {
         $catalog = $this->catalog($catalogCode);
         if (!$catalog || $catalog['scope'] !== 'COMPANY') {
-            throw new RuntimeException('El catálogo no admite valores por empresa.');
+            throw new RuntimeException('El catÃ¡logo no admite valores por empresa.');
         }
         if (trim($code) === '' || trim($label) === '') {
-            throw new RuntimeException('El código y la etiqueta son obligatorios.');
+            throw new RuntimeException('El cÃ³digo y la etiqueta son obligatorios.');
         }
         $query = $this->connection->prepare(
             'INSERT INTO system_catalog_values (catalog_id, company_id, code, label, sort_order, metadata_json) VALUES (?, ?, ?, ?, ?, ?)'
@@ -58,7 +58,7 @@ final class CatalogManagement
         $query = $this->connection->prepare('UPDATE system_catalog_values SET active = 0 WHERE id = ? AND company_id = ?');
         $query->execute([$valueId, $this->companyId]);
         if ($query->rowCount() === 0) {
-            throw new RuntimeException('El valor de catálogo no existe para la empresa.');
+            throw new RuntimeException('El valor de catÃ¡logo no existe para la empresa.');
         }
         $this->audit->record($userId, 'DEACTIVATE', 'system_catalog_values', $valueId);
     }

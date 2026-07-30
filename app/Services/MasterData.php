@@ -7,9 +7,9 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class MasterData
+final class MasterData extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -86,18 +86,6 @@ final class MasterData
         );
         $query->execute([$catalogCode, strtoupper(trim($valueCode)), $this->companyId]);
         return (bool) $query->fetchColumn();
-    }
-
-    private function fetch(string $sql): array
-    {
-        $statement = $this->connection->prepare($sql);
-        $statement->execute([$this->companyId]);
-        return $statement->fetchAll();
-    }
-
-    private function execute(string $sql, array $parameters): void
-    {
-        $this->connection->prepare($sql)->execute($parameters);
     }
 
     private function belongsToCompany(string $table, mixed $id): void

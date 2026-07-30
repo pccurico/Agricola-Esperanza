@@ -7,9 +7,9 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class CostManagement
+final class CostManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -57,13 +57,6 @@ final class CostManagement
         }
         $query = $this->connection->prepare('INSERT INTO expense_entries (company_id, season_id, farm_id, block_id, cost_center_id, entry_date, description, document_number, amount, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $query->execute([$this->companyId, (int) $input['season_id'], $input['farm_id'] ?: null, $input['block_id'] ?: null, (int) $input['cost_center_id'], $input['entry_date'], trim($input['description']), trim($input['document_number']) ?: null, $input['amount'], $userId]);
-    }
-
-    private function fetch(string $sql): array
-    {
-        $query = $this->connection->prepare($sql);
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
     }
 
     private function belongs(string $table, mixed $id): void

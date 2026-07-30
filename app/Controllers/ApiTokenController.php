@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class ApiTokenController
+final class ApiTokenController extends BaseController
 {
     public function handle(): array
     {

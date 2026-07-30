@@ -1,4 +1,4 @@
-# CampoSur — documento maestro de desarrollo
+# Sistema de Gestión Agrícola PCCURICO — documento maestro de desarrollo
 
 > Estados: 🟢 terminado en esta etapa · 🔴 pendiente de desarrollo o validación
 >
@@ -8,7 +8,7 @@
 
 ## 1. Objetivo del sistema
 
-CampoSur será un sistema web para administrar una agrícola chilena que actualmente trabaja con planillas Excel. El sistema permitirá centralizar la operación, controlar costos por temporada, fundo, cuartel y hectárea, registrar producción, administrar bodega y generar informes para la toma de decisiones.
+Sistema de Gestión Agrícola PCCURICO será un sistema web para administrar una agrícola chilena que actualmente trabaja con planillas Excel. El sistema permitirá centralizar la operación, controlar costos por temporada, fundo, cuartel y hectárea, registrar producción, administrar bodega y generar informes para la toma de decisiones.
 
 La instalación será configurable: el nombre de la empresa, razón social, RUT, logo, ubicación y usuario administrador se ingresan durante el wizard inicial. El sistema está preparado para PHP 8.2, MySQL 8/MariaDB compatible, WAMP64 y despliegue en cPanel.
 
@@ -564,7 +564,7 @@ Administrar maquinaria agrícola, horas de uso, mantenciones y costos asociados.
 ### WAMP64
 
 - PHP 8.2.29.
-- Host local `http://laesperanza`.
+- Host local `http://pccurico.local`.
 - VirtualHost apuntando a `public/`.
 - Base MySQL local.
 - Wizard de instalación.

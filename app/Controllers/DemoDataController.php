@@ -6,7 +6,7 @@ namespace CampoSur\Controllers;
 
 use CampoSur\Services\DemoDataManager;
 
-final class DemoDataController
+final class DemoDataController extends BaseController
 {
     public function handle(): array
     {

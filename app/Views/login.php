@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ingresar | <?= htmlspecialchars((string) ($company['trade_name'] ?? 'CampoSur'), ENT_QUOTES, 'UTF-8') ?></title>
+    <title>Ingresar | <?= htmlspecialchars((string) ($company['trade_name'] ?? 'Sistema de Gestión Agrícola PCCURICO'), ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body class="setup-page login-page">
@@ -15,7 +15,7 @@
                 <span class="setup-mark">✦</span>
             <?php endif; ?>
             <p class="eyebrow login-eyebrow">Gestión agrícola</p>
-            <h1 class="login-company-name"><?= htmlspecialchars((string) ($company['trade_name'] ?? 'CampoSur'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <h1 class="login-company-name"><?= htmlspecialchars((string) ($company['trade_name'] ?? 'Sistema de Gestión Agrícola PCCURICO'), ENT_QUOTES, 'UTF-8') ?></h1>
         </section>
         <section class="login-form-panel" aria-label="Acceso al sistema">
             <p class="setup-copy">Ingresa con tus credenciales para continuar.</p>

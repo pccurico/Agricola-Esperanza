@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class CatalogController
+final class CatalogController extends BaseController
 {
     public function handle(): array
     {
@@ -27,12 +27,12 @@ final class CatalogController
                         (int) ($_POST['sort_order'] ?? 0)
                     );
                     $catalogCode = (string) $_POST['catalog_code'];
-                    $success = 'Valor de catálogo creado correctamente.';
+                    $success = 'Valor de catÃ¡logo creado correctamente.';
                 }
                 if (($_POST['action'] ?? '') === 'deactivate') {
                     $service->deactivateValue((int) $_SESSION['user_id'], (int) $_POST['value_id']);
                     $catalogCode = (string) $_POST['catalog_code'];
-                    $success = 'Valor de catálogo desactivado correctamente.';
+                    $success = 'Valor de catÃ¡logo desactivado correctamente.';
                 }
             }
         } catch (\Throwable $exception) {

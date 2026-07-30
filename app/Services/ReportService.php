@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class ReportService
+final class ReportService extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {

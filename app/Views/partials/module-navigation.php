@@ -35,9 +35,9 @@ foreach ($navigationVisibleGroups as $group) {
 }
 ?>
 <aside class="module-sidebar" data-navigation-sidebar>
-    <div class="navigation-header">
+    <header class="sidebar-brand">
         <div class="dashboard-brand"><?php if ($navigationLogo): ?><img class="dashboard-brand-logo" src="?asset=logo" alt="Logo de <?= htmlspecialchars($navigationCompany, ENT_QUOTES, 'UTF-8') ?>"><?php else: ?><span class="dashboard-brand-mark">✦</span><?php endif; ?></div>
-    </div>
+    </header>
     <p class="dashboard-workspace">Empresa activa</p>
     <div class="farm-select"><b><?= htmlspecialchars($navigationCompany, ENT_QUOTES, 'UTF-8') ?></b></div>
     <label class="navigation-search"><span><?= $navigationIcon('search') ?></span><input type="search" placeholder="Buscar módulo" aria-label="Buscar módulo" data-navigation-search autocomplete="off"></label>

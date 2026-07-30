@@ -7,9 +7,9 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class InventoryManagement
+final class InventoryManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -75,8 +75,4 @@ final class InventoryManagement
         }
     }
 
-    private function execute(string $sql, array $params): void
-    {
-        $this->connection->prepare($sql)->execute($params);
-    }
 }

@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class TaskCalendarManagement
+final class TaskCalendarManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -39,11 +39,11 @@ final class TaskCalendarManagement
     public function createTask(array $input, int $userId): int
     {
         if (trim((string) ($input['title'] ?? '')) === '') {
-            throw new RuntimeException('El título de la tarea es obligatorio.');
+            throw new RuntimeException('El tÃ­tulo de la tarea es obligatorio.');
         }
         $priority = strtoupper(trim((string) ($input['priority'] ?? 'NORMAL')));
         if (!(new CatalogLookup($this->connection, $this->companyId))->exists('TASK_PRIORITY', $priority)) {
-            throw new RuntimeException('La prioridad no está habilitada.');
+            throw new RuntimeException('La prioridad no estÃ¡ habilitada.');
         }
         $assignedTo = $input['assigned_to'] ?: null;
         if ($assignedTo) {
@@ -53,7 +53,7 @@ final class TaskCalendarManagement
         $query->execute([$this->companyId, $assignedTo, $userId, trim($input['title']), trim((string) ($input['description'] ?? '')) ?: null, $input['due_date'] ?: null, $priority]);
         $id = (int) $this->connection->lastInsertId();
         if ($assignedTo) {
-            (new NotificationManagement($this->connection, $this->companyId, $userId))->create((int) $assignedTo, 'TASK_ASSIGNED', 'Nueva tarea asignada', 'Se te asignó la tarea: ' . trim($input['title']));
+            (new NotificationManagement($this->connection, $this->companyId, $userId))->create((int) $assignedTo, 'TASK_ASSIGNED', 'Nueva tarea asignada', 'Se te asignÃ³ la tarea: ' . trim($input['title']));
         }
         $this->audit($userId, 'CREATE', 'tasks', $id);
         return $id;
@@ -64,7 +64,7 @@ final class TaskCalendarManagement
         $allowed = ['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
         $status = strtoupper(trim($status));
         if (!in_array($status, $allowed, true)) {
-            throw new RuntimeException('El estado de la tarea no es válido.');
+            throw new RuntimeException('El estado de la tarea no es vÃ¡lido.');
         }
         $query = $this->connection->prepare('UPDATE tasks SET status = ? WHERE id = ? AND company_id = ?');
         $query->execute([$status, $taskId, $this->companyId]);
@@ -77,10 +77,10 @@ final class TaskCalendarManagement
     public function createEvent(array $input, int $userId): int
     {
         if (trim((string) ($input['title'] ?? '')) === '' || trim((string) ($input['starts_at'] ?? '')) === '') {
-            throw new RuntimeException('El título y el inicio del evento son obligatorios.');
+            throw new RuntimeException('El tÃ­tulo y el inicio del evento son obligatorios.');
         }
         if (!empty($input['ends_at']) && $input['ends_at'] < $input['starts_at']) {
-            throw new RuntimeException('El término debe ser posterior al inicio.');
+            throw new RuntimeException('El tÃ©rmino debe ser posterior al inicio.');
         }
         if (!empty($input['farm_id'])) {
             $this->belongsFarm($input['farm_id']);

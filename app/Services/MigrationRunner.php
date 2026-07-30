@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class MigrationRunner
+final class MigrationRunner extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly string $rootPath)
     {

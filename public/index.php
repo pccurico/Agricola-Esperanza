@@ -105,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($createPermissions[$module]))
 if (in_array($module, ['procurement', 'receptions'], true) && $_SERVER['REQUEST_METHOD'] === 'POST' && in_array(($_POST['action'] ?? ''), ['receive_order', 'update_reception', 'delete_reception'], true)) {
     authorize('procurement.receive');
 }
+if ($module === 'procurement' && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_invoice') {
+    authorize('purchase_invoices.create');
+}
 
 if ($module === 'receptions') {
     $receptions = (new CampoSur\Controllers\ProcurementController())->handle();

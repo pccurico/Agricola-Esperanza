@@ -9,13 +9,13 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $distRoot = Join-Path $projectRoot 'dist'
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$distributionName = "camposur-$Version-$timestamp"
+$distributionName = "pccurico-agricola-$Version-$timestamp"
 $distributionRoot = Join-Path $distRoot $distributionName
 
 New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 while (Test-Path $distributionRoot) {
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-    $distributionName = "camposur-$Version-$timestamp"
+    $distributionName = "pccurico-agricola-$Version-$timestamp"
     $distributionRoot = Join-Path $distRoot $distributionName
 }
 
@@ -37,6 +37,8 @@ New-Item -ItemType Directory -Path $distributionRoot -Force | Out-Null
 
 Copy-DistributionItem '.htaccess' $distributionRoot
 Copy-DistributionItem 'index.php' $distributionRoot
+Copy-DistributionItem 'composer.json' $distributionRoot
+Copy-DistributionItem 'vendor' $distributionRoot
 Copy-DistributionItem 'app' $distributionRoot
 Copy-DistributionItem 'public' $distributionRoot
 Copy-DistributionItem 'database' $distributionRoot

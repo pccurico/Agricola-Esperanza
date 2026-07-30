@@ -1,0 +1,17 @@
+{
+    "name": "pccurico/sistema-gestion-agricola",
+    "description": "Sistema de Gesti\u00f3n Agr\u00edcola PCCURICO.",
+    "type": "project",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "CampoSur\\": "app/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

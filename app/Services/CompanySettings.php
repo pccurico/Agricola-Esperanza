@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class CompanySettings
+final class CompanySettings extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly string $rootPath)
     {
@@ -23,7 +23,7 @@ final class CompanySettings
     public function update(array $input, array $logo): void
     {
         if (trim((string) ($input['legal_name'] ?? '')) === '' || trim((string) ($input['trade_name'] ?? '')) === '') {
-            throw new RuntimeException('La razón social y el nombre visible son obligatorios.');
+            throw new RuntimeException('La razÃ³n social y el nombre visible son obligatorios.');
         }
         $logoPath = $this->storeLogo($logo);
         $fields = ['legal_name = ?', 'trade_name = ?', 'tax_id = ?', 'email = ?', 'phone = ?', 'address = ?', 'commune = ?', 'region = ?'];

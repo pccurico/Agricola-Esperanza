@@ -6,7 +6,7 @@ namespace CampoSur\Controllers;
 
 use CampoSur\Services\CostManagement;
 
-final class CostsController
+final class CostsController extends BaseController
 {
     public function handle(): array
     {

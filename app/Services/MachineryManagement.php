@@ -7,9 +7,9 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class MachineryManagement
+final class MachineryManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -91,8 +91,4 @@ final class MachineryManagement
         }
     }
 
-    private function execute(string $sql, array $params): void
-    {
-        $this->connection->prepare($sql)->execute($params);
-    }
 }

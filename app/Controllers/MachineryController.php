@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class MachineryController
+final class MachineryController extends BaseController
 {
     public function handle(): array
     {
@@ -20,7 +20,7 @@ final class MachineryController
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_maintenance') {
                 $service->createMaintenance($_POST, (int) $_SESSION['user_id']);
                 (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'machinery_maintenance');
-                $success = 'Mantención registrada correctamente.';
+                $success = 'MantenciÃ³n registrada correctamente.';
             }
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_fuel') {
                 $service->createFuel($_POST, (int) $_SESSION['user_id']);

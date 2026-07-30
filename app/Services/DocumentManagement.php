@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class DocumentManagement
+final class DocumentManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly string $rootPath)
     {
@@ -50,23 +50,19 @@ final class DocumentManagement
         if ($clientId) {
             $this->belongs('clients', $clientId);
         }
-        $this->connection->beginTransaction();
-        try {
+        $documentId = $this->transaction($this->connection, function () use ($input, $type, $supplierId, $clientId, $file, $userId): int {
             $document = $this->connection->prepare('INSERT INTO documents (company_id, document_type, document_number, issue_date, supplier_id, client_id, status, created_by) VALUES (?, ?, ?, ?, ?, ?, \'DRAFT\', ?)');
             $document->execute([$this->companyId, $type, trim((string) ($input['document_number'] ?? '')) ?: null, $input['issue_date'] ?: null, $supplierId, $clientId, $userId]);
             $documentId = (int) $this->connection->lastInsertId();
             if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
                 $this->attach($documentId, $file, $userId);
             }
-            $this->connection->commit();
-            (new AuditLog($this->connection, $this->companyId))->record($userId, 'CREATE', 'documents', $documentId);
+
             return $documentId;
-        } catch (\Throwable $exception) {
-            if ($this->connection->inTransaction()) {
-                $this->connection->rollBack();
-            }
-            throw $exception;
-        }
+        });
+        (new AuditLog($this->connection, $this->companyId))->record($userId, 'CREATE', 'documents', $documentId);
+
+        return $documentId;
     }
 
     public function attach(int $documentId, array $file, int $userId): int
@@ -77,7 +73,7 @@ final class DocumentManagement
             throw new RuntimeException('El documento no pertenece a esta empresa.');
         }
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'] ?? '')) {
-            throw new RuntimeException('El archivo adjunto no es válido.');
+            throw new RuntimeException('El archivo adjunto no es vÃ¡lido.');
         }
         if ((int) $file['size'] > 10 * 1024 * 1024) {
             throw new RuntimeException('El archivo adjunto supera los 10 MB.');
@@ -85,7 +81,7 @@ final class DocumentManagement
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
         $extensions = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx'];
         if (!isset($extensions[$mime])) {
-            throw new RuntimeException('El tipo de archivo no está permitido.');
+            throw new RuntimeException('El tipo de archivo no estÃ¡ permitido.');
         }
         $directory = $this->rootPath . '/storage/uploads/documents';
         if (!is_dir($directory)) {
@@ -122,7 +118,7 @@ final class DocumentManagement
     private function belongs(string $table, mixed $id): void
     {
         if (!in_array($table, ['suppliers', 'clients'], true)) {
-            throw new RuntimeException('Referencia no válida.');
+            throw new RuntimeException('Referencia no vÃ¡lida.');
         }
         $query = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ? AND active = 1');
         $query->execute([(int) $id, $this->companyId]);

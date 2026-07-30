@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class ApiTokenManagement
+final class ApiTokenManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly int $userId)
     {
@@ -38,7 +38,7 @@ final class ApiTokenManagement
         $query = $this->connection->prepare('UPDATE api_tokens SET revoked_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND user_id = ? AND revoked_at IS NULL');
         $query->execute([$tokenId, $this->companyId, $this->userId]);
         if ($query->rowCount() === 0) {
-            throw new RuntimeException('El token no está disponible.');
+            throw new RuntimeException('El token no estÃ¡ disponible.');
         }
         (new AuditLog($this->connection, $this->companyId))->record($this->userId, 'REVOKE', 'api_tokens', $tokenId);
     }

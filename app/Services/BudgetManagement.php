@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class BudgetManagement
+final class BudgetManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -37,7 +37,7 @@ final class BudgetManagement
             }
         }
         if ($input['period_end'] <= $input['period_start'] || !is_numeric($input['amount']) || (float) $input['amount'] <= 0) {
-            throw new RuntimeException('Revisa el período y el monto del presupuesto.');
+            throw new RuntimeException('Revisa el perÃ­odo y el monto del presupuesto.');
         }
         foreach (['seasons', 'cost_centers'] as $table) {
             $id = $input[$table === 'seasons' ? 'season_id' : 'cost_center_id'];

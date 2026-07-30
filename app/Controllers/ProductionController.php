@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class ProductionController
+final class ProductionController extends BaseController
 {
     public function handle(): array
     {
@@ -15,7 +15,7 @@ final class ProductionController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $service->create($_POST, (int) $_SESSION['user_id']);
                 (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'production_entry');
-                $success = 'Producción registrada correctamente.';
+                $success = 'ProducciÃ³n registrada correctamente.';
             }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();

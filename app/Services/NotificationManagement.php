@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class NotificationManagement
+final class NotificationManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly int $userId)
     {
@@ -30,7 +30,7 @@ final class NotificationManagement
     public function create(int $recipientId, string $type, string $title, string $message): int
     {
         if (trim($type) === '' || trim($title) === '' || trim($message) === '') {
-            throw new RuntimeException('La notificación requiere tipo, título y mensaje.');
+            throw new RuntimeException('La notificaciÃ³n requiere tipo, tÃ­tulo y mensaje.');
         }
         $recipient = $this->connection->prepare('SELECT id FROM users WHERE id = ? AND company_id = ? AND active = 1');
         $recipient->execute([$recipientId, $this->companyId]);

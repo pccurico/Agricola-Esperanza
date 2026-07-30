@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot,
     [switch]$SkipPhpLint
@@ -74,7 +74,17 @@ if ($LASTEXITCODE -ne 0) {
     $failures++
 }
 
+& (Join-Path $scriptDirectory 'Validate-JavaScript.ps1') -ProjectRoot $ProjectRoot
+if ($LASTEXITCODE -ne 0) {
+    $failures++
+}
+
 & (Join-Path $scriptDirectory 'Validate-Sql.ps1') -ProjectRoot $ProjectRoot
+if ($LASTEXITCODE -ne 0) {
+    $failures++
+}
+
+& (Join-Path $scriptDirectory 'Validate-SchemaConsistency.ps1') -ProjectRoot $ProjectRoot
 if ($LASTEXITCODE -ne 0) {
     $failures++
 }

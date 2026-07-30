@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class UserManagement
+final class UserManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -39,12 +39,12 @@ final class UserManagement
     public function createUser(array $input): void
     {
         if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL) || strlen($input['password']) < 10 || trim($input['full_name']) === '') {
-            throw new RuntimeException('Completa el nombre, un correo válido y una contraseña de al menos 10 caracteres.');
+            throw new RuntimeException('Completa el nombre, un correo vÃ¡lido y una contraseÃ±a de al menos 10 caracteres.');
         }
         $roleCheck = $this->connection->prepare('SELECT id FROM roles WHERE id = ? AND company_id = ? LIMIT 1');
         $roleCheck->execute([(int) $input['role_id'], $this->companyId]);
         if (!$roleCheck->fetchColumn()) {
-            throw new RuntimeException('El rol seleccionado no pertenece a esta agrícola.');
+            throw new RuntimeException('El rol seleccionado no pertenece a esta agrÃ­cola.');
         }
         $statement = $this->connection->prepare('INSERT INTO users (company_id, role_id, full_name, email, password_hash, phone) VALUES (?, ?, ?, ?, ?, ?)');
         $statement->execute([$this->companyId, (int) $input['role_id'], trim($input['full_name']), strtolower(trim($input['email'])), password_hash($input['password'], PASSWORD_DEFAULT), trim($input['phone']) ?: null]);
@@ -55,8 +55,7 @@ final class UserManagement
         if (trim($input['name']) === '') {
             throw new RuntimeException('El nombre del rol es obligatorio.');
         }
-        $this->connection->beginTransaction();
-        try {
+        $this->transaction($this->connection, function () use ($input): void {
             $statement = $this->connection->prepare('INSERT INTO roles (company_id, name, description) VALUES (?, ?, ?)');
             $statement->execute([$this->companyId, trim($input['name']), trim($input['description']) ?: null]);
             $roleId = (int) $this->connection->lastInsertId();
@@ -66,17 +65,13 @@ final class UserManagement
                 $permissionCheck = $this->connection->prepare('SELECT COUNT(*) FROM permissions WHERE id IN (' . $placeholders . ')');
                 $permissionCheck->execute($permissionIds);
                 if ((int) $permissionCheck->fetchColumn() !== count($permissionIds)) {
-                    throw new RuntimeException('Uno de los permisos seleccionados no es válido.');
+                    throw new RuntimeException('Uno de los permisos seleccionados no es vÃ¡lido.');
                 }
                 $permission = $this->connection->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)');
                 foreach ($permissionIds as $permissionId) {
                     $permission->execute([$roleId, $permissionId]);
                 }
             }
-            $this->connection->commit();
-        } catch (\Throwable $exception) {
-            $this->connection->rollBack();
-            throw $exception;
-        }
+        });
     }
 }

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot,
     [switch]$SkipLint
@@ -51,16 +51,14 @@ if ($SkipLint) {
 
 $bootstrap = Join-Path $ProjectRoot 'app/bootstrap.php'
 $bootstrapText = if (Test-Path $bootstrap) { Get-Content -Raw -LiteralPath $bootstrap } else { '' }
-$requiredClasses = @(
-    'Core/Database.php',
-    'Services/Installer.php',
-    'Services/InstallationStatus.php',
-    'Controllers/SetupController.php',
-    'Services/MigrationRunner.php'
-)
-foreach ($requiredClass in $requiredClasses) {
-    Write-Result "Bootstrap incluye $requiredClass" ($bootstrapText -match [regex]::Escape($requiredClass)) 'Referencia encontrada.'
+$composerPath = Join-Path $ProjectRoot 'composer.json'
+$composer = if (Test-Path $composerPath) {
+    Get-Content -Raw -LiteralPath $composerPath | ConvertFrom-Json
+} else {
+    $null
 }
+Write-Result 'Bootstrap usa autoload de Composer' ($bootstrapText -match [regex]::Escape('vendor/autoload.php')) 'Referencia encontrada.'
+Write-Result 'Autoload PSR-4 CampoSur configurado' ($null -ne $composer -and $composer.autoload.'psr-4'.'CampoSur\' -eq 'app/') 'Mapeo CampoSur\\ a app/ encontrado.'
 
 $setupController = Join-Path $ProjectRoot 'app/Controllers/SetupController.php'
 $setupView = Join-Path $ProjectRoot 'app/Views/setup.php'

@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class ApiAuthenticator
+final class ApiAuthenticator extends BaseService
 {
     public function __construct(private readonly PDO $connection)
     {

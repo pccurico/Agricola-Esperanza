@@ -6,7 +6,7 @@ namespace CampoSur\Services;
 
 use PDO;
 
-final class InstallationStatus
+final class InstallationStatus extends BaseService
 {
     public function __construct(private readonly PDO $connection)
     {

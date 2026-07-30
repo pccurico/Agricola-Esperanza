@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class ProcurementManagement
+final class ProcurementManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -27,10 +27,48 @@ final class ProcurementManagement
         return $query->fetchAll();
     }
 
+    public function invoices(): array
+    {
+        $query = $this->connection->prepare('SELECT i.id, i.invoice_number, i.issue_date, i.due_date, i.total_amount, i.status, s.business_name, o.order_number FROM purchase_invoices i INNER JOIN suppliers s ON s.id = i.supplier_id LEFT JOIN purchase_orders o ON o.id = i.purchase_order_id WHERE i.company_id = ? ORDER BY i.issue_date DESC, i.id DESC');
+        $query->execute([$this->companyId]);
+        return $query->fetchAll();
+    }
+
+    public function createInvoice(array $input, int $userId): int
+    {
+        foreach (['supplier_id', 'invoice_number', 'issue_date', 'total_amount'] as $field) {
+            if (trim((string) ($input[$field] ?? '')) === '') {
+                throw new RuntimeException('Proveedor, numero, fecha y total son obligatorios para la factura.');
+            }
+        }
+        $total = (float) $input['total_amount'];
+        $net = (float) ($input['net_amount'] ?? 0);
+        $tax = (float) ($input['tax_amount'] ?? 0);
+        if ($total <= 0 || $net < 0 || $tax < 0 || round($net + $tax, 2) !== round($total, 2)) {
+            throw new RuntimeException('Los montos de la factura no son consistentes.');
+        }
+        $supplier = $this->connection->prepare('SELECT id FROM suppliers WHERE id = ? AND company_id = ? AND active = 1');
+        $supplier->execute([(int) $input['supplier_id'], $this->companyId]);
+        if (!$supplier->fetchColumn()) {
+            throw new RuntimeException('El proveedor no pertenece a esta empresa.');
+        }
+        $orderId = !empty($input['purchase_order_id']) ? (int) $input['purchase_order_id'] : null;
+        if ($orderId !== null) {
+            $order = $this->connection->prepare('SELECT id FROM purchase_orders WHERE id = ? AND company_id = ? AND supplier_id = ?');
+            $order->execute([$orderId, $this->companyId, (int) $input['supplier_id']]);
+            if (!$order->fetchColumn()) {
+                throw new RuntimeException('La orden no corresponde al proveedor seleccionado.');
+            }
+        }
+        $query = $this->connection->prepare('INSERT INTO purchase_invoices (company_id, supplier_id, purchase_order_id, invoice_number, issue_date, due_date, net_amount, tax_amount, total_amount, status, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, \'DRAFT\', ?, ?)');
+        $query->execute([$this->companyId, (int) $input['supplier_id'], $orderId, strtoupper(trim((string) $input['invoice_number'])), $input['issue_date'], $input['due_date'] ?: null, $net, $tax, $total, trim((string) ($input['notes'] ?? '')) ?: null, $userId]);
+        return (int) $this->connection->lastInsertId();
+    }
+
     public function createSupplier(array $input): void
     {
         if (trim((string) ($input['business_name'] ?? '')) === '') {
-            throw new RuntimeException('La razón social del proveedor es obligatoria.');
+            throw new RuntimeException('La razÃ³n social del proveedor es obligatoria.');
         }
         $query = $this->connection->prepare('INSERT INTO suppliers (company_id, tax_id, business_name, contact_name, email, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $query->execute([$this->companyId, trim($input['tax_id']) ?: null, trim($input['business_name']), trim($input['contact_name']) ?: null, trim($input['email']) ?: null, trim($input['phone']) ?: null, trim($input['address']) ?: null]);
@@ -40,7 +78,7 @@ final class ProcurementManagement
     {
         foreach (['supplier_id', 'order_number', 'order_date', 'description', 'quantity', 'unit_price'] as $field) {
             if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Por favor, completa los datos de la orden y su primera línea.');
+                throw new RuntimeException('Por favor, completa los datos de la orden y su primera lÃ­nea.');
             }
         }
         if ((float) $input['quantity'] <= 0 || (float) $input['unit_price'] < 0) {
@@ -49,14 +87,14 @@ final class ProcurementManagement
         $supplier = $this->connection->prepare('SELECT id FROM suppliers WHERE id = ? AND company_id = ? AND active = 1');
         $supplier->execute([(int) $input['supplier_id'], $this->companyId]);
         if (!$supplier->fetchColumn()) {
-            throw new RuntimeException('El proveedor no pertenece a esta agrícola.');
+            throw new RuntimeException('El proveedor no pertenece a esta agrÃ­cola.');
         }
         foreach ([['seasons', $input['season_id'] ?? null], ['farms', $input['farm_id'] ?? null]] as [$table, $id]) {
             if ($id) {
                 $reference = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ?');
                 $reference->execute([(int) $id, $this->companyId]);
                 if (!$reference->fetchColumn()) {
-                    throw new RuntimeException('Una referencia seleccionada no pertenece a esta agrícola.');
+                    throw new RuntimeException('Una referencia seleccionada no pertenece a esta agrÃ­cola.');
                 }
             }
         }
@@ -65,7 +103,7 @@ final class ProcurementManagement
             $item = $this->connection->prepare('SELECT id FROM inventory_items WHERE id = ? AND company_id = ? AND active = 1');
             $item->execute([$itemId, $this->companyId]);
             if (!$item->fetchColumn()) {
-                throw new RuntimeException('El insumo seleccionado no pertenece a esta agrícola.');
+                throw new RuntimeException('El insumo seleccionado no pertenece a esta agrÃ­cola.');
             }
         }
         $this->connection->beginTransaction();
@@ -90,7 +128,7 @@ final class ProcurementManagement
         $receivedOn = trim((string) ($input['received_on'] ?? ''));
         $lines = is_array($input['items'] ?? null) ? $input['items'] : [];
         if ($orderId <= 0 || $receivedOn === '' || $lines === []) {
-            throw new RuntimeException('La recepción requiere una orden, fecha y líneas.');
+            throw new RuntimeException('La recepciÃ³n requiere una orden, fecha y lÃ­neas.');
         }
 
         $this->connection->beginTransaction();
@@ -99,7 +137,7 @@ final class ProcurementManagement
             $orderQuery->execute([$orderId, $this->companyId]);
             $order = $orderQuery->fetch();
             if (!$order || in_array($order['status'], ['CANCELLED', 'RECEIVED'], true)) {
-                throw new RuntimeException('La orden no está disponible para recepción.');
+                throw new RuntimeException('La orden no estÃ¡ disponible para recepciÃ³n.');
             }
 
             $reception = $this->connection->prepare('INSERT INTO purchase_receptions (company_id, purchase_order_id, received_on, notes, created_by) VALUES (?, ?, ?, ?, ?)');
@@ -128,7 +166,7 @@ final class ProcurementManagement
                 $receivedAny = true;
             }
             if (!$receivedAny) {
-                throw new RuntimeException('La recepción no contiene cantidades válidas.');
+                throw new RuntimeException('La recepciÃ³n no contiene cantidades vÃ¡lidas.');
             }
             $remaining = $this->connection->prepare('SELECT COUNT(*) FROM purchase_order_items WHERE purchase_order_id = ? AND received_quantity < quantity');
             $remaining->execute([$orderId]);
@@ -195,7 +233,7 @@ final class ProcurementManagement
         $receivedOn = trim((string) ($input['received_on'] ?? ''));
         $newLines = is_array($input['items'] ?? null) ? $input['items'] : [];
         if ($receptionId <= 0 || $receivedOn === '' || $newLines === []) {
-            throw new RuntimeException('La edición requiere una recepción, fecha y líneas.');
+            throw new RuntimeException('La ediciÃ³n requiere una recepciÃ³n, fecha y lÃ­neas.');
         }
 
         $this->connection->beginTransaction();
@@ -204,7 +242,7 @@ final class ProcurementManagement
             $receptionQuery->execute([$receptionId, $this->companyId]);
             $reception = $receptionQuery->fetch();
             if (!$reception) {
-                throw new RuntimeException('La recepción no existe o no pertenece a esta agrícola.');
+                throw new RuntimeException('La recepciÃ³n no existe o no pertenece a esta agrÃ­cola.');
             }
             $oldQuery = $this->connection->prepare('SELECT purchase_order_item_id, quantity FROM purchase_reception_items WHERE reception_id = ? FOR UPDATE');
             $oldQuery->execute([$receptionId]);
@@ -222,7 +260,7 @@ final class ProcurementManagement
                 $itemQuery->execute([(int) $lineId, (int) $reception['purchase_order_id']]);
                 $line = $itemQuery->fetch();
                 if (!$line) {
-                    throw new RuntimeException('Una línea no pertenece a la orden de compra.');
+                    throw new RuntimeException('Una lÃ­nea no pertenece a la orden de compra.');
                 }
                 $available = (float) $line['quantity'] - (float) $line['received_quantity'] + ($oldLines[(int) $lineId] ?? 0);
                 if ($quantity > $available) {
@@ -260,7 +298,7 @@ final class ProcurementManagement
                 $receivedAny = true;
             }
             if (!$receivedAny) {
-                throw new RuntimeException('La recepción debe conservar al menos una cantidad positiva.');
+                throw new RuntimeException('La recepciÃ³n debe conservar al menos una cantidad positiva.');
             }
             $this->connection->prepare('UPDATE purchase_receptions SET received_on = ?, notes = ? WHERE id = ? AND company_id = ?')->execute([$receivedOn, trim((string) ($input['notes'] ?? '')) ?: null, $receptionId, $this->companyId]);
             $this->refreshOrderStatus((int) $reception['purchase_order_id']);
@@ -277,7 +315,7 @@ final class ProcurementManagement
     public function deleteReception(int $receptionId, int $userId): void
     {
         if ($receptionId <= 0) {
-            throw new RuntimeException('La recepción seleccionada no es válida.');
+            throw new RuntimeException('La recepciÃ³n seleccionada no es vÃ¡lida.');
         }
         $this->connection->beginTransaction();
         try {
@@ -285,7 +323,7 @@ final class ProcurementManagement
             $query->execute([$receptionId, $this->companyId]);
             $reception = $query->fetch();
             if (!$reception) {
-                throw new RuntimeException('La recepción no existe o no pertenece a esta agrícola.');
+                throw new RuntimeException('La recepciÃ³n no existe o no pertenece a esta agrÃ­cola.');
             }
             $lines = $this->connection->prepare('SELECT purchase_order_item_id, quantity FROM purchase_reception_items WHERE reception_id = ? FOR UPDATE');
             $lines->execute([$receptionId]);

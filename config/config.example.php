@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 return [
     'app' => [
-        'name' => 'CampoSur',
-        'url' => 'http://laesperanza',
+        'name' => 'Sistema de Gestión Agrícola PCCURICO',
+        'url' => 'http://localhost',
         'timezone' => 'America/Santiago',
         'environment' => 'local',
     ],
     'database' => [
         'host' => 'localhost',
         'port' => 3306,
-        'name' => 'laesperanza',
+        'name' => 'pccurico_agricola',
         'user' => 'root',
         'password' => '',
         'charset' => 'utf8mb4',
     ],
     'security' => [
-        'session_name' => 'camposur_session',
+        'session_name' => 'pccurico_session',
         'csrf_key' => 'CAMBIAR_POR_UN_VALOR_ALEATORIO',
     ],
 ];

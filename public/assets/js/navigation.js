@@ -5,8 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const shell = sidebar.closest('.dashboard-shell, .admin-shell');
-    const storageKey = 'camposur-navigation';
-    const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const storageKey = 'pccurico-navigation';
+    let stored = {};
+    try {
+        stored = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+    } catch {
+        localStorage.removeItem(storageKey);
+    }
     const groups = [...sidebar.querySelectorAll('[data-navigation-group]')];
 
     if (stored.collapsed && shell) {

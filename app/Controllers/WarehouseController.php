@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class WarehouseController
+final class WarehouseController extends BaseController
 {
     public function handle(): array
     {
@@ -19,7 +19,7 @@ final class WarehouseController
                     $success = 'Bodega creada correctamente.';
                 } elseif ($action === 'create_location') {
                     $service->createLocation($_POST, (int) $_SESSION['user_id']);
-                    $success = 'Ubicación creada correctamente.';
+                    $success = 'UbicaciÃ³n creada correctamente.';
                 } elseif ($action === 'create_lot') {
                     $service->createLot($_POST, (int) $_SESSION['user_id']);
                     $success = 'Lote creado correctamente.';

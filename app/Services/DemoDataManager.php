@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class DemoDataManager
+final class DemoDataManager extends BaseService
 {
     private const PROTECTED_TABLES = [
         'companies', 'roles', 'permissions', 'role_permissions', 'users', 'company_settings',
@@ -44,7 +44,7 @@ final class DemoDataManager
     public function install(int $userId): array
     {
         if ($this->status()['active']) {
-            throw new RuntimeException('Ya hay un conjunto de datos demo instalado. Elimínalo antes de instalarlo nuevamente.');
+            throw new RuntimeException('Ya hay un conjunto de datos demo instalado. ElimÃ­nalo antes de instalarlo nuevamente.');
         }
         $data = $this->loadData();
         $this->references = [];
@@ -103,7 +103,7 @@ final class DemoDataManager
                 $query = $this->connection->prepare('DELETE FROM `' . $table . '` WHERE id = ?');
                 $query->execute([(int) $record['record_id']]);
                 if ($query->rowCount() === 0) {
-                    throw new RuntimeException('No se pudo eliminar el registro demo de ' . $table . ' #' . $record['record_id'] . '. Puede estar relacionado con información creada posteriormente.');
+                    throw new RuntimeException('No se pudo eliminar el registro demo de ' . $table . ' #' . $record['record_id'] . '. Puede estar relacionado con informaciÃ³n creada posteriormente.');
                 }
             }
             $this->connection->prepare('UPDATE demo_batches SET status = \'REMOVED\', removed_at = NOW() WHERE id = ? AND company_id = ?')->execute([$batchId, $this->companyId]);
@@ -127,11 +127,11 @@ final class DemoDataManager
     {
         $path = $this->rootPath . '/database/demo/demo_data.json';
         if (!is_file($path)) {
-            throw new RuntimeException('No se encontró el archivo oficial de datos demo.');
+            throw new RuntimeException('No se encontrÃ³ el archivo oficial de datos demo.');
         }
         $data = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data) || !is_array($data['tables'] ?? null)) {
-            throw new RuntimeException('El archivo de datos demo no tiene un formato válido.');
+            throw new RuntimeException('El archivo de datos demo no tiene un formato vÃ¡lido.');
         }
         return $data;
     }
@@ -139,11 +139,11 @@ final class DemoDataManager
     private function insertTable(string $table, mixed $rows, int $batchId): void
     {
         if (!$this->isSafeTable($table) || !is_array($rows)) {
-            throw new RuntimeException('La entidad demo no está permitida: ' . $table);
+            throw new RuntimeException('La entidad demo no estÃ¡ permitida: ' . $table);
         }
         foreach ($rows as $row) {
             if (!is_array($row) || empty($row['key'])) {
-                throw new RuntimeException('Cada registro demo debe tener una clave única en ' . $table . '.');
+                throw new RuntimeException('Cada registro demo debe tener una clave Ãºnica en ' . $table . '.');
             }
             $key = (string) $row['key'];
             unset($row['key']);
@@ -153,7 +153,7 @@ final class DemoDataManager
             $columns = array_keys($row);
             foreach ($columns as $column) {
                 if (!preg_match('/^[a-z][a-z0-9_]*$/', $column)) {
-                    throw new RuntimeException('Columna demo no válida: ' . $column);
+                    throw new RuntimeException('Columna demo no vÃ¡lida: ' . $column);
                 }
             }
             $quotedColumns = implode(', ', array_map(static fn (string $column): string => '`' . $column . '`', $columns));
@@ -214,7 +214,7 @@ final class DemoDataManager
             $query->execute([$this->companyId]);
             $userId = (int) $query->fetchColumn();
             if ($userId <= 0) {
-                throw new RuntimeException('No se encontró el administrador de la empresa.');
+                throw new RuntimeException('No se encontrÃ³ el administrador de la empresa.');
             }
             return $userId;
         }

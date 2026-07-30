@@ -1,8 +1,26 @@
+# Configuración local
 config/config.php
+.env
+
+# Dependencias instaladas localmente
+vendor/
+node_modules/
+
+# Logs
 storage/logs/*
+!storage/logs/.gitkeep
+
+# Uploads
 storage/uploads/*
-config/config.php
-!.gitkeep
+!storage/uploads/.gitkeep
+
+# macOS
 .DS_Store
-scripts/*
+
+# Documentación generada automáticamente
 docs/*
+!docs/.gitkeep
+
+# Scripts temporales o de trabajo
+scripts/tmp/*
+scripts/cache/*

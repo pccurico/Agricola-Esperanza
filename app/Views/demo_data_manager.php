@@ -12,7 +12,7 @@ $success = $success ?? null;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Demo Data Manager | CampoSur</title>
+    <title>Demo Data Manager | Sistema de Gestión Agrícola PCCURICO</title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body class="admin-page">

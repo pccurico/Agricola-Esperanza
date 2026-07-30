@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class InternalRequestManagement
+final class InternalRequestManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -59,10 +59,9 @@ final class InternalRequestManagement
         $requestedOn = trim((string) ($input['requested_on'] ?? ''));
         $lines = is_array($input['items'] ?? null) ? $input['items'] : [];
         if ($requestedOn === '' || $lines === []) {
-            throw new RuntimeException('La solicitud requiere fecha y artículos.');
+            throw new RuntimeException('La solicitud requiere fecha y artÃ­culos.');
         }
-        $this->connection->beginTransaction();
-        try {
+        $requestId = $this->transaction($this->connection, function () use ($input, $userId, $requestedOn, $lines): int {
             $request = $this->connection->prepare('INSERT INTO internal_requests (company_id, requested_by, farm_id, status, requested_on, notes) VALUES (?, ?, ?, \'REQUESTED\', ?, ?)');
             $request->execute([$this->companyId, $userId, $input['farm_id'] ?: null, $requestedOn, trim((string) ($input['notes'] ?? '')) ?: null]);
             $requestId = (int) $this->connection->lastInsertId();
@@ -75,17 +74,13 @@ final class InternalRequestManagement
                 $line->execute([$requestId, (int) $itemId, $quantity, null]);
             }
             if ($line->rowCount() === 0) {
-                throw new RuntimeException('La solicitud no contiene cantidades válidas.');
+                throw new RuntimeException('La solicitud no contiene cantidades vÃ¡lidas.');
             }
-            $this->connection->commit();
-            $this->audit($userId, 'CREATE', 'internal_requests', $requestId);
             return $requestId;
-        } catch (\Throwable $exception) {
-            if ($this->connection->inTransaction()) {
-                $this->connection->rollBack();
-            }
-            throw $exception;
-        }
+        });
+        $this->audit($userId, 'CREATE', 'internal_requests', $requestId);
+
+        return $requestId;
     }
 
     public function approve(int $requestId, int $userId): void
@@ -94,12 +89,12 @@ final class InternalRequestManagement
         $request->execute([$requestId, $this->companyId]);
         $requestedBy = (int) $request->fetchColumn();
         if ($requestedBy <= 0) {
-            throw new RuntimeException('La solicitud no está disponible para aprobación.');
+            throw new RuntimeException('La solicitud no estÃ¡ disponible para aprobaciÃ³n.');
         }
         $query = $this->connection->prepare('UPDATE internal_requests SET status = \'APPROVED\' WHERE id = ? AND company_id = ? AND status = \'REQUESTED\'');
         $query->execute([$requestId, $this->companyId]);
         if ($query->rowCount() === 0) {
-            throw new RuntimeException('La solicitud no está disponible para aprobación.');
+            throw new RuntimeException('La solicitud no estÃ¡ disponible para aprobaciÃ³n.');
         }
         (new NotificationManagement($this->connection, $this->companyId, $userId))->create($requestedBy, 'REQUEST_APPROVED', 'Solicitud aprobada', 'La solicitud interna #' . $requestId . ' fue aprobada.');
         $this->audit($userId, 'APPROVE', 'internal_requests', $requestId);
@@ -111,16 +106,15 @@ final class InternalRequestManagement
         $warehouseId = (int) ($input['warehouse_id'] ?? 0);
         $lines = is_array($input['items'] ?? null) ? $input['items'] : [];
         if ($requestId <= 0 || $warehouseId <= 0 || $lines === []) {
-            throw new RuntimeException('La atención requiere solicitud, bodega y cantidades.');
+            throw new RuntimeException('La atenciÃ³n requiere solicitud, bodega y cantidades.');
         }
         $this->belongs('warehouses', $warehouseId);
-        $this->connection->beginTransaction();
-        try {
+        $this->transaction($this->connection, function () use ($requestId, $warehouseId, $lines, $userId): void {
             $request = $this->connection->prepare('SELECT id, status FROM internal_requests WHERE id = ? AND company_id = ? FOR UPDATE');
             $request->execute([$requestId, $this->companyId]);
             $header = $request->fetch();
             if (!$header || $header['status'] !== 'APPROVED') {
-                throw new RuntimeException('La solicitud no está aprobada.');
+                throw new RuntimeException('La solicitud no estÃ¡ aprobada.');
             }
             $lineQuery = $this->connection->prepare('SELECT id, item_id, quantity, fulfilled_quantity FROM internal_request_items WHERE id = ? AND request_id = ? FOR UPDATE');
             $movement = $this->connection->prepare('INSERT INTO inventory_movements (company_id, item_id, warehouse_id, movement_type, quantity, movement_date, reference, created_by) VALUES (?, ?, ?, \'OUT\', ?, ?, ?, ?)');
@@ -153,25 +147,19 @@ final class InternalRequestManagement
             if ((int) $remaining->fetchColumn() === 0) {
                 $this->connection->prepare('UPDATE internal_requests SET status = \'FULFILLED\' WHERE id = ? AND company_id = ?')->execute([$requestId, $this->companyId]);
             }
-            $this->connection->commit();
-            $this->audit($userId, 'FULFILL', 'internal_requests', $requestId);
-        } catch (\Throwable $exception) {
-            if ($this->connection->inTransaction()) {
-                $this->connection->rollBack();
-            }
-            throw $exception;
-        }
+        });
+        $this->audit($userId, 'FULFILL', 'internal_requests', $requestId);
     }
 
     private function belongs(string $table, mixed $id): void
     {
         if (!in_array($table, ['inventory_items', 'warehouses'], true)) {
-            throw new RuntimeException('Referencia no válida.');
+            throw new RuntimeException('Referencia no vÃ¡lida.');
         }
         $query = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ? AND active = 1');
         $query->execute([(int) $id, $this->companyId]);
         if (!$query->fetchColumn()) {
-            throw new RuntimeException('La referencia seleccionada no pertenece a esta agrícola.');
+            throw new RuntimeException('La referencia seleccionada no pertenece a esta agrÃ­cola.');
         }
     }
 

@@ -9,14 +9,14 @@
 
 ## Instalación local con WAMP64
 
-La configuración de desarrollo usa PHP 8.2.29 en `C:\wamp64\bin\php\php8.2.29\php.exe` y el host local `http://laesperanza`.
+La configuración de desarrollo usa PHP 8.2.29 en `C:\wamp64\bin\php\php8.2.29\php.exe` y el host local `http://pccurico.local`.
 
 1. Crear la carpeta del proyecto dentro del document root de Apache de WAMP64.
-2. Registrar `laesperanza` en el archivo `C:\Windows\System32\drivers\etc\hosts` apuntando a `127.0.0.1`.
-3. Configurar un VirtualHost de Apache para que `http://laesperanza` apunte a la carpeta `public/` del proyecto.
+2. Registrar `pccurico.local` en el archivo `C:\Windows\System32\drivers\etc\hosts` apuntando a `127.0.0.1`.
+3. Configurar un VirtualHost de Apache para que `http://pccurico.local` apunte a la carpeta `public/` del proyecto.
 4. Crear una base de datos MySQL local, copiar `config/config.example.php` como `config/config.php` y completar las credenciales.
 5. Importar las migraciones en orden desde phpMyAdmin.
-6. Abrir `http://laesperanza` para iniciar el wizard.
+6. Abrir `http://pccurico.local` para iniciar el wizard.
 
 ## Instalación inicial
 

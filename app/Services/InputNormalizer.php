@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Services;
 
-final class InputNormalizer
+final class InputNormalizer extends BaseService
 {
     public static function text(string $value): string
     {

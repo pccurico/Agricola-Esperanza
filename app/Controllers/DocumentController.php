@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-final class DocumentController
+final class DocumentController extends BaseController
 {
     public function handle(): array
     {

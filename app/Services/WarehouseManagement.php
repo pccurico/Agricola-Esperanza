@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class WarehouseManagement
+final class WarehouseManagement extends BaseService
 {
     public function __construct(private readonly PDO $connection, private readonly int $companyId)
     {
@@ -97,13 +97,12 @@ final class WarehouseManagement
 
     public function approveTransfer(int $transferId, int $userId): void
     {
-        $this->connection->beginTransaction();
-        try {
+        $this->transaction($this->connection, function () use ($transferId, $userId): void {
             $query = $this->connection->prepare('SELECT * FROM inventory_transfers WHERE id = ? AND company_id = ? AND status = \'DRAFT\' FOR UPDATE');
             $query->execute([$transferId, $this->companyId]);
             $transfer = $query->fetch();
             if (!$transfer) {
-                throw new RuntimeException('La transferencia no está disponible.');
+                throw new RuntimeException('La transferencia no estÃ¡ disponible.');
             }
             $stock = $this->connection->prepare('SELECT COALESCE(SUM(CASE WHEN movement_type = \'IN\' THEN quantity WHEN movement_type = \'OUT\' THEN -quantity ELSE quantity END), 0) FROM inventory_movements WHERE company_id = ? AND item_id = ? AND warehouse_id = ?');
             $stock->execute([$this->companyId, $transfer['item_id'], $transfer['from_warehouse_id']]);
@@ -114,14 +113,8 @@ final class WarehouseManagement
             $movement->execute([$this->companyId, $transfer['item_id'], $transfer['from_warehouse_id'], 'OUT', $transfer['quantity'], $transfer['transfer_date'], 'TRANSFERENCIA-' . $transferId, $userId]);
             $movement->execute([$this->companyId, $transfer['item_id'], $transfer['to_warehouse_id'], 'IN', $transfer['quantity'], $transfer['transfer_date'], 'TRANSFERENCIA-' . $transferId, $userId]);
             $this->connection->prepare('UPDATE inventory_transfers SET status = \'RECEIVED\' WHERE id = ? AND company_id = ?')->execute([$transferId, $this->companyId]);
-            $this->connection->commit();
-            $this->audit($userId, 'APPROVE', 'inventory_transfers', $transferId);
-        } catch (\Throwable $exception) {
-            if ($this->connection->inTransaction()) {
-                $this->connection->rollBack();
-            }
-            throw $exception;
-        }
+        });
+        $this->audit($userId, 'APPROVE', 'inventory_transfers', $transferId);
     }
 
     public function options(): array
@@ -136,12 +129,12 @@ final class WarehouseManagement
     private function belongs(string $table, mixed $id): void
     {
         if (!in_array($table, ['warehouses', 'inventory_items'], true)) {
-            throw new RuntimeException('Referencia no válida.');
+            throw new RuntimeException('Referencia no vÃ¡lida.');
         }
         $query = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ? AND active = 1');
         $query->execute([(int) $id, $this->companyId]);
         if (!$query->fetchColumn()) {
-            throw new RuntimeException('La referencia seleccionada no pertenece a esta agrícola.');
+            throw new RuntimeException('La referencia seleccionada no pertenece a esta agrÃ­cola.');
         }
     }
 

@@ -7,9 +7,9 @@ namespace CampoSur\Services;
 use PDO;
 use RuntimeException;
 
-final class LaborManagement
+final class LaborManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -67,13 +67,6 @@ final class LaborManagement
         $this->execute('INSERT INTO labor_entries (company_id, worker_id, season_id, farm_id, block_id, labor_date, labor_type, quantity, unit_rate, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [$this->companyId, (int) $input['worker_id'], (int) $input['season_id'], $input['farm_id'] ?: null, $input['block_id'] ?: null, $input['labor_date'], trim($input['labor_type']), $input['quantity'], $input['unit_rate'], $userId]);
     }
 
-    private function fetch(string $sql): array
-    {
-        $query = $this->connection->prepare($sql);
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
-    }
-
     private function belongs(string $table, mixed $id): void
     {
         if (!in_array($table, ['workers', 'seasons', 'farms', 'blocks'], true)) {
@@ -86,8 +79,4 @@ final class LaborManagement
         }
     }
 
-    private function execute(string $sql, array $params): void
-    {
-        $this->connection->prepare($sql)->execute($params);
-    }
 }
