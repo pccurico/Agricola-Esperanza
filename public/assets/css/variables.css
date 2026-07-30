@@ -1,0 +1,22 @@
+:root {
+    --ink: #18362e;
+    --muted: #73837c;
+    --forest: #1f5a45;
+    --lime: #cbe572;
+    --canvas: #f5f7f4;
+    --panel: #fff;
+    --line: #e6ebe7;
+    --primary: var(--forest);
+    --secondary: var(--muted);
+    --success: #347348;
+    --warning: #a87509;
+    --danger: #a33f3f;
+    --info: #3d6f8e;
+    --background: var(--canvas);
+    --surface: var(--panel);
+    --text: var(--ink);
+    --border: var(--line);
+    --radius: 12px;
+    --shadow: 0 10px 28px rgb(24 54 46 / 7%);
+    --transition: 180ms ease;
+}

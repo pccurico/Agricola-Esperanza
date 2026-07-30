@@ -26,9 +26,18 @@ final class ProcurementController
                 $service->receiveOrder($_POST, (int) $_SESSION['user_id']);
                 $success = 'Recepción registrada y existencias actualizadas.';
             }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_reception') {
+                $service->updateReception($_POST, (int) $_SESSION['user_id']);
+                $success = 'Recepción actualizada correctamente.';
+            }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_reception') {
+                $service->deleteReception((int) ($_POST['reception_id'] ?? 0), (int) $_SESSION['user_id']);
+                $success = 'Recepción eliminada y existencias revertidas.';
+            }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();
         }
-        return [...$service->options(), 'suppliers' => $service->suppliers(), 'orders' => $service->orders(), 'reception_lines' => $service->receptionOptions(), 'error' => $error, 'success' => $success];
+        $selectedReception = isset($_GET['reception_id']) ? $service->reception((int) $_GET['reception_id']) : null;
+        return [...$service->options(), 'suppliers' => $service->suppliers(), 'orders' => $service->orders(), 'reception_lines' => $service->receptionOptions(), 'reception_history' => $service->receptionHistory(), 'selected_reception' => $selectedReception, 'error' => $error, 'success' => $success];
     }
 }

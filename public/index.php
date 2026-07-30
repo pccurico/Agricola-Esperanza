@@ -42,6 +42,27 @@ if ($setupRequired) {
 
 (new CampoSur\Services\MigrationRunner(database()->connection(), dirname(__DIR__)))->run();
 
+if (($_GET['asset'] ?? '') === 'logo') {
+    $companyId = (int) ($_SESSION['company_id'] ?? 0);
+    if ($companyId > 0) {
+        $query = database()->connection()->prepare('SELECT logo_path FROM companies WHERE id = ? LIMIT 1');
+        $query->execute([$companyId]);
+    } else {
+        $query = database()->connection()->query('SELECT logo_path FROM companies WHERE active = 1 ORDER BY id LIMIT 1');
+    }
+    $relativePath = (string) $query->fetchColumn();
+    $file = realpath(dirname(__DIR__) . '/' . $relativePath);
+    $uploads = realpath(dirname(__DIR__) . '/storage/uploads');
+    if (!$file || !$uploads || !str_starts_with($file, $uploads) || !is_file($file)) {
+        http_response_code(404);
+        exit;
+    }
+    header('Content-Type: ' . mime_content_type($file));
+    header('Cache-Control: private, max-age=3600');
+    readfile($file);
+    exit;
+}
+
 $auth = (new CampoSur\Controllers\AuthController())->handle();
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -69,23 +90,6 @@ if (($_GET['asset'] ?? '') === 'attachment') {
     exit;
 }
 
-if (($_GET['asset'] ?? '') === 'logo') {
-    $query = database()->connection()->prepare('SELECT logo_path FROM companies WHERE id = ? LIMIT 1');
-    $query->execute([(int) $_SESSION['company_id']]);
-    $relativePath = (string) $query->fetchColumn();
-    $file = realpath(dirname(__DIR__) . '/' . $relativePath);
-    $uploads = realpath(dirname(__DIR__) . '/storage/uploads');
-    if (!$file || !$uploads || !str_starts_with($file, $uploads) || !is_file($file)) {
-        http_response_code(404);
-        exit;
-    }
-    $mime = mime_content_type($file);
-    header('Content-Type: ' . $mime);
-    header('Cache-Control: private, max-age=3600');
-    readfile($file);
-    exit;
-}
-
 $modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage'];
 $module = (string) ($_GET['module'] ?? '');
 if (isset($modulePermissions[$module])) {
@@ -98,7 +102,7 @@ $createPermissions = ['masters' => 'masters.create', 'production' => 'production
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($createPermissions[$module])) {
     authorize($createPermissions[$module]);
 }
-if (in_array($module, ['procurement', 'receptions'], true) && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'receive_order') {
+if (in_array($module, ['procurement', 'receptions'], true) && $_SERVER['REQUEST_METHOD'] === 'POST' && in_array(($_POST['action'] ?? ''), ['receive_order', 'update_reception', 'delete_reception'], true)) {
     authorize('procurement.receive');
 }
 

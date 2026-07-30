@@ -15,7 +15,7 @@ final class BudgetManagement
 
     public function budgets(): array
     {
-        $query = $this->connection->prepare('SELECT b.id, b.period_start, b.period_end, b.amount, b.status, s.name AS season_name, c.name AS center_name, c.category, COALESCE((SELECT SUM(e.amount) FROM expense_entries e WHERE e.company_id = b.company_id AND e.season_id = b.season_id AND e.cost_center_id = b.cost_center_id AND e.entry_date BETWEEN b.period_start AND b.period_end AND e.status = "POSTED"), 0) AS actual_amount FROM budgets b INNER JOIN seasons s ON s.id = b.season_id INNER JOIN cost_centers c ON c.id = b.cost_center_id WHERE b.company_id = ? ORDER BY b.period_start DESC, b.id DESC');
+        $query = $this->connection->prepare('SELECT b.id, b.period_start, b.period_end, b.amount, b.status, s.name AS season_name, c.name AS center_name, c.category, COALESCE((SELECT SUM(e.amount) FROM expense_entries e WHERE e.company_id = b.company_id AND e.season_id = b.season_id AND e.cost_center_id = b.cost_center_id AND e.entry_date BETWEEN b.period_start AND b.period_end AND e.status = \'POSTED\'), 0) AS actual_amount FROM budgets b INNER JOIN seasons s ON s.id = b.season_id INNER JOIN cost_centers c ON c.id = b.cost_center_id WHERE b.company_id = ? ORDER BY b.period_start DESC, b.id DESC');
         $query->execute([$this->companyId]);
         return $query->fetchAll();
     }

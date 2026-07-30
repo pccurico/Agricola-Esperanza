@@ -145,10 +145,181 @@ final class ProcurementManagement
         }
     }
 
+    public function receptionHistory(): array
+    {
+        $query = $this->connection->prepare(
+            'SELECT r.id, r.purchase_order_id, r.received_on, r.status, r.notes, r.created_at,
+                    p.order_number, s.business_name, COALESCE(SUM(ri.quantity), 0) AS total_quantity,
+                    COUNT(ri.id) AS lines_count
+             FROM purchase_receptions r
+             INNER JOIN purchase_orders p ON p.id = r.purchase_order_id
+             INNER JOIN suppliers s ON s.id = p.supplier_id
+             LEFT JOIN purchase_reception_items ri ON ri.reception_id = r.id
+             WHERE r.company_id = ?
+             GROUP BY r.id, r.purchase_order_id, r.received_on, r.status, r.notes, r.created_at, p.order_number, s.business_name
+             ORDER BY r.received_on DESC, r.id DESC'
+        );
+        $query->execute([$this->companyId]);
+        return $query->fetchAll();
+    }
+
+    public function reception(int $receptionId): ?array
+    {
+        $headerQuery = $this->connection->prepare(
+            'SELECT r.id, r.purchase_order_id, r.received_on, r.status, r.notes, p.order_number, s.business_name
+             FROM purchase_receptions r
+             INNER JOIN purchase_orders p ON p.id = r.purchase_order_id
+             INNER JOIN suppliers s ON s.id = p.supplier_id
+             WHERE r.id = ? AND r.company_id = ? LIMIT 1'
+        );
+        $headerQuery->execute([$receptionId, $this->companyId]);
+        $header = $headerQuery->fetch();
+        if (!$header) {
+            return null;
+        }
+        $items = $this->connection->prepare(
+            'SELECT ri.purchase_order_item_id, ri.quantity, poi.description, poi.quantity AS ordered_quantity,
+                    poi.received_quantity, ri.unit_cost
+             FROM purchase_reception_items ri
+             INNER JOIN purchase_order_items poi ON poi.id = ri.purchase_order_item_id
+             WHERE ri.reception_id = ? ORDER BY ri.id'
+        );
+        $items->execute([$receptionId]);
+        $header['items'] = $items->fetchAll();
+        return $header;
+    }
+
+    public function updateReception(array $input, int $userId): void
+    {
+        $receptionId = (int) ($input['reception_id'] ?? 0);
+        $receivedOn = trim((string) ($input['received_on'] ?? ''));
+        $newLines = is_array($input['items'] ?? null) ? $input['items'] : [];
+        if ($receptionId <= 0 || $receivedOn === '' || $newLines === []) {
+            throw new RuntimeException('La edición requiere una recepción, fecha y líneas.');
+        }
+
+        $this->connection->beginTransaction();
+        try {
+            $receptionQuery = $this->connection->prepare('SELECT id, purchase_order_id FROM purchase_receptions WHERE id = ? AND company_id = ? FOR UPDATE');
+            $receptionQuery->execute([$receptionId, $this->companyId]);
+            $reception = $receptionQuery->fetch();
+            if (!$reception) {
+                throw new RuntimeException('La recepción no existe o no pertenece a esta agrícola.');
+            }
+            $oldQuery = $this->connection->prepare('SELECT purchase_order_item_id, quantity FROM purchase_reception_items WHERE reception_id = ? FOR UPDATE');
+            $oldQuery->execute([$receptionId]);
+            $oldLines = [];
+            foreach ($oldQuery->fetchAll() as $line) {
+                $oldLines[(int) $line['purchase_order_item_id']] = (float) $line['quantity'];
+            }
+            $itemQuery = $this->connection->prepare('SELECT id, item_id, quantity, received_quantity, unit_price FROM purchase_order_items WHERE id = ? AND purchase_order_id = ? FOR UPDATE');
+            $changes = [];
+            foreach ($newLines as $lineId => $quantity) {
+                $quantity = (float) $quantity;
+                if ($quantity < 0) {
+                    throw new RuntimeException('Las cantidades no pueden ser negativas.');
+                }
+                $itemQuery->execute([(int) $lineId, (int) $reception['purchase_order_id']]);
+                $line = $itemQuery->fetch();
+                if (!$line) {
+                    throw new RuntimeException('Una línea no pertenece a la orden de compra.');
+                }
+                $available = (float) $line['quantity'] - (float) $line['received_quantity'] + ($oldLines[(int) $lineId] ?? 0);
+                if ($quantity > $available) {
+                    throw new RuntimeException('Una cantidad editada supera el saldo disponible.');
+                }
+                $changes[(int) $lineId] = ['quantity' => $quantity, 'item' => $line];
+            }
+            foreach ($oldLines as $lineId => $oldQuantity) {
+                if (!isset($changes[$lineId])) {
+                    $changes[$lineId] = ['quantity' => 0.0, 'item' => null];
+                    $itemQuery->execute([$lineId, (int) $reception['purchase_order_id']]);
+                    $changes[$lineId]['item'] = $itemQuery->fetch();
+                }
+            }
+            $this->connection->prepare('DELETE FROM inventory_movements WHERE company_id = ? AND reference = ?')->execute([$this->companyId, 'RECEPCION-' . $receptionId]);
+            $this->connection->prepare('DELETE FROM purchase_reception_items WHERE reception_id = ?')->execute([$receptionId]);
+            $updateOrderItem = $this->connection->prepare('UPDATE purchase_order_items SET received_quantity = received_quantity - ? + ? WHERE id = ?');
+            $insertReceptionItem = $this->connection->prepare('INSERT INTO purchase_reception_items (reception_id, purchase_order_item_id, item_id, quantity, unit_cost) VALUES (?, ?, ?, ?, ?)');
+            $insertMovement = $this->connection->prepare('INSERT INTO inventory_movements (company_id, item_id, season_id, movement_type, quantity, unit_cost, movement_date, reference, created_by) VALUES (?, ?, ?, \'IN\', ?, ?, ?, ?, ?)');
+            $order = $this->connection->prepare('SELECT season_id FROM purchase_orders WHERE id = ? AND company_id = ?');
+            $order->execute([(int) $reception['purchase_order_id'], $this->companyId]);
+            $seasonId = $order->fetchColumn();
+            $receivedAny = false;
+            foreach ($changes as $lineId => $change) {
+                $item = $change['item'];
+                $quantity = $change['quantity'];
+                $updateOrderItem->execute([$oldLines[$lineId] ?? 0, $quantity, $lineId]);
+                if ($quantity <= 0) {
+                    continue;
+                }
+                $insertReceptionItem->execute([$receptionId, $lineId, $item['item_id'] ?: null, $quantity, $item['unit_price']]);
+                if ($item['item_id']) {
+                    $insertMovement->execute([$this->companyId, (int) $item['item_id'], $seasonId ?: null, $quantity, $item['unit_price'], $receivedOn, 'RECEPCION-' . $receptionId, $userId]);
+                }
+                $receivedAny = true;
+            }
+            if (!$receivedAny) {
+                throw new RuntimeException('La recepción debe conservar al menos una cantidad positiva.');
+            }
+            $this->connection->prepare('UPDATE purchase_receptions SET received_on = ?, notes = ? WHERE id = ? AND company_id = ?')->execute([$receivedOn, trim((string) ($input['notes'] ?? '')) ?: null, $receptionId, $this->companyId]);
+            $this->refreshOrderStatus((int) $reception['purchase_order_id']);
+            $this->connection->commit();
+            (new AuditLog($this->connection, $this->companyId))->record($userId, 'UPDATE', 'purchase_receptions', $receptionId);
+        } catch (\Throwable $exception) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function deleteReception(int $receptionId, int $userId): void
+    {
+        if ($receptionId <= 0) {
+            throw new RuntimeException('La recepción seleccionada no es válida.');
+        }
+        $this->connection->beginTransaction();
+        try {
+            $query = $this->connection->prepare('SELECT id, purchase_order_id FROM purchase_receptions WHERE id = ? AND company_id = ? FOR UPDATE');
+            $query->execute([$receptionId, $this->companyId]);
+            $reception = $query->fetch();
+            if (!$reception) {
+                throw new RuntimeException('La recepción no existe o no pertenece a esta agrícola.');
+            }
+            $lines = $this->connection->prepare('SELECT purchase_order_item_id, quantity FROM purchase_reception_items WHERE reception_id = ? FOR UPDATE');
+            $lines->execute([$receptionId]);
+            $update = $this->connection->prepare('UPDATE purchase_order_items SET received_quantity = received_quantity - ? WHERE id = ? AND purchase_order_id = ?');
+            foreach ($lines->fetchAll() as $line) {
+                $update->execute([(float) $line['quantity'], (int) $line['purchase_order_item_id'], (int) $reception['purchase_order_id']]);
+            }
+            $this->connection->prepare('DELETE FROM inventory_movements WHERE company_id = ? AND reference = ?')->execute([$this->companyId, 'RECEPCION-' . $receptionId]);
+            $this->connection->prepare('DELETE FROM purchase_receptions WHERE id = ? AND company_id = ?')->execute([$receptionId, $this->companyId]);
+            $this->refreshOrderStatus((int) $reception['purchase_order_id']);
+            $this->connection->commit();
+            (new AuditLog($this->connection, $this->companyId))->record($userId, 'DELETE', 'purchase_receptions', $receptionId);
+        } catch (\Throwable $exception) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function refreshOrderStatus(int $orderId): void
+    {
+        $remaining = $this->connection->prepare('SELECT COUNT(*) FROM purchase_order_items WHERE purchase_order_id = ? AND received_quantity < quantity');
+        $remaining->execute([$orderId]);
+        $received = $this->connection->prepare('SELECT COALESCE(SUM(received_quantity), 0) FROM purchase_order_items WHERE purchase_order_id = ?');
+        $received->execute([$orderId]);
+        $status = (int) $remaining->fetchColumn() === 0 ? 'RECEIVED' : ((float) $received->fetchColumn() > 0 ? 'PARTIAL' : 'SENT');
+        $this->connection->prepare('UPDATE purchase_orders SET status = ? WHERE id = ? AND company_id = ?')->execute([$status, $orderId, $this->companyId]);
+    }
+
     public function receptionOptions(): array
     {
         $query = $this->connection->prepare(
-            'SELECT p.id AS purchase_order_id, p.order_number, p.order_date, s.business_name,
+            'SELECT p.id AS purchase_order_id, p.order_number, p.order_date, p.status, s.business_name,
                     i.id AS purchase_order_item_id, i.description, i.quantity, i.received_quantity,
                     i.unit_price, i.item_id
              FROM purchase_orders p

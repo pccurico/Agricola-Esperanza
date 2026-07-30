@@ -1,0 +1,168 @@
+{
+  "version": "1.0",
+  "description": "Datos de demostración de una agrícola durante las temporadas 2024-2025 y 2025-2026.",
+  "tables": {
+    "farms": [
+      {"key":"campo-norte","company_id":"@company:current","name":"Campo Norte","code":"NORTE","location":"San Clemente","hectares":118.50},
+      {"key":"fundo-rio","company_id":"@company:current","name":"Fundo Río Claro","code":"RIO","location":"Molina","hectares":86.20}
+    ],
+    "species": [
+      {"key":"cerezo","company_id":"@company:current","name":"Cerezo","variety":"Santina"},
+      {"key":"uva","company_id":"@company:current","name":"Uva de mesa","variety":"Red Globe"},
+      {"key":"manzano","company_id":"@company:current","name":"Manzano","variety":"Gala"}
+    ],
+    "seasons": [
+      {"key":"temporada-2024-2025","company_id":"@company:current","name":"2024-2025","starts_on":"2024-07-01","ends_on":"2025-06-30"},
+      {"key":"temporada-2025-2026","company_id":"@company:current","name":"2025-2026","starts_on":"2025-07-01","ends_on":"2026-06-30"}
+    ],
+    "blocks": [
+      {"key":"norte-cerezo-01","company_id":"@company:current","farm_id":"@farms:campo-norte","species_id":"@species:cerezo","code":"CN-01","name":"Cerezo Norte 1","hectares":22.40,"planting_year":2018},
+      {"key":"norte-cerezo-02","company_id":"@company:current","farm_id":"@farms:campo-norte","species_id":"@species:cerezo","code":"CN-02","name":"Cerezo Norte 2","hectares":25.10,"planting_year":2019},
+      {"key":"norte-uva-01","company_id":"@company:current","farm_id":"@farms:campo-norte","species_id":"@species:uva","code":"UN-01","name":"Parronal Norte","hectares":31.00,"planting_year":2017},
+      {"key":"rio-manzano-01","company_id":"@company:current","farm_id":"@farms:fundo-rio","species_id":"@species:manzano","code":"MR-01","name":"Manzanos Río 1","hectares":28.60,"planting_year":2016},
+      {"key":"rio-manzano-02","company_id":"@company:current","farm_id":"@farms:fundo-rio","species_id":"@species:manzano","code":"MR-02","name":"Manzanos Río 2","hectares":30.20,"planting_year":2020},
+      {"key":"rio-cerezo-01","company_id":"@company:current","farm_id":"@farms:fundo-rio","species_id":"@species:cerezo","code":"CR-01","name":"Cerezos Río","hectares":18.40,"planting_year":2019}
+    ],
+    "cost_centers": [
+      {"key":"produccion","company_id":"@company:current","code":"DEMO-PROD-001","name":"Producción agrícola","category":"INVERSION"},
+      {"key":"riego","company_id":"@company:current","code":"DEMO-RIE-001","name":"Riego y energía","category":"SERVICIOS_GASTOS"},
+      {"key":"administracion","company_id":"@company:current","code":"DEMO-ADM-001","name":"Administración","category":"ADMINISTRACION"},
+      {"key":"bodega","company_id":"@company:current","code":"DEMO-BOD-001","name":"Bodega e insumos","category":"BODEGA"}
+    ],
+    "workers": [
+      {"key":"ana","company_id":"@company:current","full_name":"Ana Muñoz","tax_id":"12.345.678-5","worker_type":"PERMANENTE","default_rate":42000},
+      {"key":"carlos","company_id":"@company:current","full_name":"Carlos González","tax_id":"13.456.789-2","worker_type":"PERMANENTE","default_rate":40000},
+      {"key":"maria","company_id":"@company:current","full_name":"María Soto","tax_id":"14.567.890-1","worker_type":"TEMPORAL","default_rate":32000},
+      {"key":"jorge","company_id":"@company:current","full_name":"Jorge Pérez","tax_id":"15.678.901-8","worker_type":"TEMPORAL","default_rate":33000},
+      {"key":"patricia","company_id":"@company:current","full_name":"Patricia Rojas","tax_id":"16.789.012-6","worker_type":"TEMPORAL","default_rate":31000},
+      {"key":"rodrigo","company_id":"@company:current","full_name":"Rodrigo Silva","tax_id":"17.890.123-4","worker_type":"PERMANENTE","default_rate":45000}
+    ],
+    "inventory_items": [
+      {"key":"fertilizante","company_id":"@company:current","sku":"INS-001","name":"Fertilizante NPK 20-20-20","category":"INSUMO","unit":"KG","minimum_stock":200},
+      {"key":"azufre","company_id":"@company:current","sku":"INS-002","name":"Azufre mojable","category":"INSUMO","unit":"KG","minimum_stock":80},
+      {"key":"cinta-riego","company_id":"@company:current","sku":"RIE-001","name":"Cinta de riego 16 mm","category":"FERRETERIA","unit":"M","minimum_stock":500},
+      {"key":"caja-cosecha","company_id":"@company:current","sku":"EMB-001","name":"Caja plástica de cosecha","category":"HERRAMIENTA","unit":"UN","minimum_stock":100},
+      {"key":"guante","company_id":"@company:current","sku":"EPP-001","name":"Guantes de trabajo","category":"HERRAMIENTA","unit":"PAR","minimum_stock":40},
+      {"key":"aceite","company_id":"@company:current","sku":"COM-001","name":"Aceite motor diésel","category":"INSUMO","unit":"L","minimum_stock":60}
+    ],
+    "warehouses": [
+      {"key":"bodega-norte","company_id":"@company:current","farm_id":"@farms:campo-norte","code":"BOD-NORTE","name":"Bodega Campo Norte"},
+      {"key":"bodega-rio","company_id":"@company:current","farm_id":"@farms:fundo-rio","code":"BOD-RIO","name":"Bodega Fundo Río"}
+    ],
+    "warehouse_locations": [
+      {"key":"norte-insumos","company_id":"@company:current","warehouse_id":"@warehouses:bodega-norte","code":"INS","name":"Insumos agrícolas"},
+      {"key":"norte-epp","company_id":"@company:current","warehouse_id":"@warehouses:bodega-norte","code":"EPP","name":"Elementos de protección"},
+      {"key":"rio-insumos","company_id":"@company:current","warehouse_id":"@warehouses:bodega-rio","code":"INS","name":"Insumos agrícolas"}
+    ],
+    "suppliers": [
+      {"key":"agro-sur","company_id":"@company:current","tax_id":"76.111.222-3","business_name":"Agroinsumos del Sur SpA","contact_name":"Felipe Contreras","email":"ventas@agroinsumosur.cl","phone":"+56991234567","address":"Av. Central 450, Talca"},
+      {"key":"riego-tec","company_id":"@company:current","tax_id":"77.222.333-4","business_name":"RiegoTec Limitada","contact_name":"Laura Pérez","email":"contacto@riegotec.cl","phone":"+56992345678","address":"Ruta 5 Sur Km 250"},
+      {"key":"maquinaria-maule","company_id":"@company:current","tax_id":"78.333.444-5","business_name":"Maquinaria Maule SpA","contact_name":"Andrés Vera","email":"servicio@maqmaule.cl","phone":"+56993456789","address":"Camino Las Rastras 120"}
+    ],
+    "clients": [
+      {"key":"frutas-andinas","company_id":"@company:current","tax_id":"96.111.222-1","business_name":"Frutas Andinas S.A.","contact_name":"Claudia Araya","email":"compras@frutasandinas.cl","phone":"+56223456789"},
+      {"key":"exportadora-central","company_id":"@company:current","tax_id":"96.222.333-2","business_name":"Exportadora Central Ltda.","contact_name":"Mauricio León","email":"abastecimiento@exportadoracentral.cl","phone":"+56224567890"}
+    ],
+    "contractors": [
+      {"key":"servicios-rurales","company_id":"@company:current","business_name":"Servicios Rurales Maule SpA","tax_id":"77.444.555-6","contact_name":"Sergio Molina","phone":"+56994567890"},
+      {"key":"transporte-cosecha","company_id":"@company:current","business_name":"Transportes Cosecha Ltda.","tax_id":"76.555.666-7","contact_name":"Daniela Fuentes","phone":"+56995678901"}
+    ],
+    "machinery": [
+      {"key":"tractor-01","company_id":"@company:current","farm_id":"@farms:campo-norte","code":"TR-001","name":"Tractor John Deere 5075E","machinery_type":"TRACTOR","brand":"John Deere","model":"5075E","plate":"XX-AB-11","meter":1840,"status":"ACTIVE"},
+      {"key":"tractor-02","company_id":"@company:current","farm_id":"@farms:fundo-rio","code":"TR-002","name":"Tractor New Holland T6050","machinery_type":"TRACTOR","brand":"New Holland","model":"T6050","plate":"XX-CD-22","meter":2310,"status":"ACTIVE"},
+      {"key":"pulverizador","company_id":"@company:current","farm_id":"@farms:campo-norte","code":"PUL-001","name":"Pulverizador arrastrado 2000 L","machinery_type":"PULVERIZADOR","brand":"Jacto","model":"Advance 2000","plate":"XX-EF-33","meter":920,"status":"ACTIVE"}
+    ],
+    "crews": [
+      {"key":"cuadrilla-norte","company_id":"@company:current","name":"Cuadrilla Campo Norte","supervisor_id":"@workers:carlos"},
+      {"key":"cuadrilla-rio","company_id":"@company:current","name":"Cuadrilla Fundo Río","supervisor_id":"@workers:rodrigo"}
+    ],
+    "purchase_orders": [
+      {"key":"oc-2025-001","company_id":"@company:current","supplier_id":"@suppliers:agro-sur","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","order_number":"OC-2025-001","order_date":"2025-08-05","status":"RECEIVED","notes":"Fertilizantes para inicio de temporada","created_by":"@user:admin"},
+      {"key":"oc-2025-002","company_id":"@company:current","supplier_id":"@suppliers:riego-tec","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:fundo-rio","order_number":"OC-2025-002","order_date":"2025-09-12","status":"PARTIAL","notes":"Reposición de materiales de riego","created_by":"@user:admin"},
+      {"key":"oc-2025-003","company_id":"@company:current","supplier_id":"@suppliers:agro-sur","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","order_number":"OC-2025-003","order_date":"2025-10-18","status":"SENT","notes":"Elementos para cosecha","created_by":"@user:admin"}
+    ],
+    "purchase_order_items": [
+      {"key":"oci-fertilizante","purchase_order_id":"@purchase_orders:oc-2025-001","item_id":"@inventory_items:fertilizante","description":"Fertilizante NPK 20-20-20","quantity":1800,"unit_price":920,"received_quantity":1800},
+      {"key":"oci-cinta","purchase_order_id":"@purchase_orders:oc-2025-002","item_id":"@inventory_items:cinta-riego","description":"Cinta de riego 16 mm","quantity":2400,"unit_price":185,"received_quantity":1200},
+      {"key":"oci-caja","purchase_order_id":"@purchase_orders:oc-2025-003","item_id":"@inventory_items:caja-cosecha","description":"Caja plástica de cosecha","quantity":600,"unit_price":6500,"received_quantity":0}
+    ],
+    "inventory_lots": [
+      {"key":"lote-npk","company_id":"@company:current","item_id":"@inventory_items:fertilizante","warehouse_id":"@warehouses:bodega-norte","lot_number":"NPK-2508","expires_on":"2027-08-31","quantity":1800},
+      {"key":"lote-cinta","company_id":"@company:current","item_id":"@inventory_items:cinta-riego","warehouse_id":"@warehouses:bodega-rio","lot_number":"RIE-2509","expires_on":null,"quantity":1200},
+      {"key":"lote-guantes","company_id":"@company:current","item_id":"@inventory_items:guante","warehouse_id":"@warehouses:bodega-norte","lot_number":"EPP-2507","expires_on":null,"quantity":120}
+    ],
+    "inventory_movements": [
+      {"key":"mov-npk","company_id":"@company:current","item_id":"@inventory_items:fertilizante","warehouse_id":"@warehouses:bodega-norte","season_id":"@seasons:temporada-2025-2026","movement_type":"IN","quantity":1800,"unit_cost":920,"movement_date":"2025-08-20","reference":"RECEPCION-DEMO-001","created_by":"@user:admin"},
+      {"key":"mov-cinta","company_id":"@company:current","item_id":"@inventory_items:cinta-riego","warehouse_id":"@warehouses:bodega-rio","season_id":"@seasons:temporada-2025-2026","movement_type":"IN","quantity":1200,"unit_cost":185,"movement_date":"2025-09-25","reference":"RECEPCION-DEMO-002","created_by":"@user:admin"},
+      {"key":"mov-guantes","company_id":"@company:current","item_id":"@inventory_items:guante","warehouse_id":"@warehouses:bodega-norte","season_id":"@seasons:temporada-2025-2026","movement_type":"IN","quantity":120,"unit_cost":2800,"movement_date":"2025-08-12","reference":"COMPRA-DEMO-001","created_by":"@user:admin"},
+      {"key":"mov-npk-salida","company_id":"@company:current","item_id":"@inventory_items:fertilizante","warehouse_id":"@warehouses:bodega-norte","season_id":"@seasons:temporada-2025-2026","block_id":"@blocks:norte-cerezo-01","movement_type":"OUT","quantity":260,"unit_cost":920,"movement_date":"2025-09-15","reference":"APLICACION-CN-01","created_by":"@user:admin"}
+    ],
+    "purchase_receptions": [
+      {"key":"recepcion-001","company_id":"@company:current","purchase_order_id":"@purchase_orders:oc-2025-001","received_on":"2025-08-20","status":"POSTED","notes":"Recepción completa","created_by":"@user:admin"},
+      {"key":"recepcion-002","company_id":"@company:current","purchase_order_id":"@purchase_orders:oc-2025-002","received_on":"2025-09-25","status":"POSTED","notes":"Recepción parcial","created_by":"@user:admin"}
+    ],
+    "purchase_reception_items": [
+      {"key":"recepcion-item-001","reception_id":"@purchase_receptions:recepcion-001","purchase_order_item_id":"@purchase_order_items:oci-fertilizante","item_id":"@inventory_items:fertilizante","quantity":1800,"unit_cost":920},
+      {"key":"recepcion-item-002","reception_id":"@purchase_receptions:recepcion-002","purchase_order_item_id":"@purchase_order_items:oci-cinta","item_id":"@inventory_items:cinta-riego","quantity":1200,"unit_cost":185}
+    ],
+    "labor_entries": [
+      {"key":"labor-001","company_id":"@company:current","worker_id":"@workers:ana","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","block_id":"@blocks:norte-cerezo-01","labor_date":"2025-09-08","labor_type":"Poda y conducción","quantity":1,"unit_rate":42000,"status":"POSTED","created_by":"@user:admin"},
+      {"key":"labor-002","company_id":"@company:current","worker_id":"@workers:maria","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","block_id":"@blocks:norte-cerezo-02","labor_date":"2025-09-10","labor_type":"Raleo de frutos","quantity":1,"unit_rate":32000,"status":"POSTED","created_by":"@user:admin"},
+      {"key":"labor-003","company_id":"@company:current","worker_id":"@workers:rodrigo","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:fundo-rio","block_id":"@blocks:rio-manzano-01","labor_date":"2025-09-12","labor_type":"Manejo de suelo","quantity":1,"unit_rate":45000,"status":"POSTED","created_by":"@user:admin"},
+      {"key":"labor-004","company_id":"@company:current","worker_id":"@workers:patricia","season_id":"@seasons:temporada-2024-2025","farm_id":"@farms:fundo-rio","block_id":"@blocks:rio-cerezo-01","labor_date":"2025-02-18","labor_type":"Cosecha","quantity":3,"unit_rate":31000,"status":"POSTED","created_by":"@user:admin"}
+    ],
+    "production_entries": [
+      {"key":"prod-001","company_id":"@company:current","season_id":"@seasons:temporada-2024-2025","farm_id":"@farms:campo-norte","block_id":"@blocks:norte-cerezo-01","species_id":"@species:cerezo","production_date":"2025-01-20","activity":"Cosecha de cereza","quantity":18400,"unit":"KG","quality":"EXPORTABLE","notes":"Calibre principal de exportación","created_by":"@user:admin"},
+      {"key":"prod-002","company_id":"@company:current","season_id":"@seasons:temporada-2024-2025","farm_id":"@farms:fundo-rio","block_id":"@blocks:rio-manzano-01","species_id":"@species:manzano","production_date":"2025-03-14","activity":"Cosecha de manzana","quantity":32600,"unit":"KG","quality":"PRIMERA","created_by":"@user:admin"},
+      {"key":"prod-003","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","block_id":"@blocks:norte-uva-01","species_id":"@species:uva","production_date":"2026-02-05","activity":"Proyección de cosecha","quantity":24500,"unit":"KG","quality":"ESTIMADA","created_by":"@user:admin"}
+    ],
+    "expense_entries": [
+      {"key":"expense-001","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:campo-norte","block_id":"@blocks:norte-cerezo-01","cost_center_id":"@cost_centers:produccion","entry_date":"2025-09-15","description":"Aplicación de fertilizante","document_number":"FAC-DEMO-001","amount":239200,"status":"POSTED","created_by":"@user:admin"},
+      {"key":"expense-002","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","farm_id":"@farms:fundo-rio","cost_center_id":"@cost_centers:riego","entry_date":"2025-09-28","description":"Reparación de bomba de riego","document_number":"FAC-DEMO-002","amount":485000,"status":"POSTED","created_by":"@user:admin"},
+      {"key":"expense-003","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","cost_center_id":"@cost_centers:administracion","entry_date":"2025-10-01","description":"Servicios contables mensuales","document_number":"FAC-DEMO-003","amount":320000,"status":"POSTED","created_by":"@user:admin"}
+    ],
+    "budgets": [
+      {"key":"budget-001","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","cost_center_id":"@cost_centers:produccion","period_start":"2025-07-01","period_end":"2026-06-30","amount":18500000,"status":"APPROVED","notes":"Presupuesto anual de producción","created_by":"@user:admin"},
+      {"key":"budget-002","company_id":"@company:current","season_id":"@seasons:temporada-2025-2026","cost_center_id":"@cost_centers:riego","period_start":"2025-07-01","period_end":"2026-06-30","amount":7200000,"status":"APPROVED","notes":"Energía y mantención de riego","created_by":"@user:admin"}
+    ],
+    "machinery_maintenance": [
+      {"key":"maint-001","company_id":"@company:current","machinery_id":"@machinery:tractor-01","maintenance_date":"2025-08-14","maintenance_type":"PREVENTIVA","description":"Cambio de aceite y filtros","cost":185000,"next_date":"2025-11-14","created_by":"@user:admin"},
+      {"key":"maint-002","company_id":"@company:current","machinery_id":"@machinery:pulverizador","maintenance_date":"2025-09-03","maintenance_type":"CORRECTIVA","description":"Cambio de boquillas","cost":264000,"next_date":"2026-03-03","created_by":"@user:admin"}
+    ],
+    "fuel_movements": [
+      {"key":"fuel-001","company_id":"@company:current","machinery_id":"@machinery:tractor-01","farm_id":"@farms:campo-norte","fuel_date":"2025-08-30","liters":180,"unit_cost":1040,"meter":1852,"reference":"Carga semanal","created_by":"@user:admin"},
+      {"key":"fuel-002","company_id":"@company:current","machinery_id":"@machinery:tractor-02","farm_id":"@farms:fundo-rio","fuel_date":"2025-09-06","liters":220,"unit_cost":1060,"meter":2324,"reference":"Carga semanal","created_by":"@user:admin"},
+      {"key":"fuel-003","company_id":"@company:current","machinery_id":"@machinery:pulverizador","farm_id":"@farms:campo-norte","fuel_date":"2025-09-18","liters":95,"unit_cost":1060,"meter":945,"reference":"Aplicación sanitaria","created_by":"@user:admin"}
+    ],
+    "inventory_transfers": [
+      {"key":"transfer-001","company_id":"@company:current","item_id":"@inventory_items:guante","from_warehouse_id":"@warehouses:bodega-norte","to_warehouse_id":"@warehouses:bodega-rio","quantity":30,"transfer_date":"2025-09-20","status":"RECEIVED","created_by":"@user:admin"}
+    ],
+    "internal_requests": [
+      {"key":"request-001","company_id":"@company:current","requested_by":"@user:admin","farm_id":"@farms:campo-norte","status":"FULFILLED","requested_on":"2025-09-22","notes":"Materiales para cuadrilla de cosecha"},
+      {"key":"request-002","company_id":"@company:current","requested_by":"@user:admin","farm_id":"@farms:fundo-rio","status":"APPROVED","requested_on":"2025-10-03","notes":"Insumos para labores de otoño"}
+    ],
+    "internal_request_items": [
+      {"key":"request-item-001","request_id":"@internal_requests:request-001","item_id":"@inventory_items:guante","quantity":20,"fulfilled_quantity":20,"notes":"Guantes talla mixta"},
+      {"key":"request-item-002","request_id":"@internal_requests:request-002","item_id":"@inventory_items:azufre","quantity":60,"fulfilled_quantity":0,"notes":"Tratamiento preventivo"}
+    ],
+    "documents": [
+      {"key":"document-001","company_id":"@company:current","document_type":"FACTURA_COMPRA","document_number":"FAC-DEMO-001","issue_date":"2025-08-20","supplier_id":"@suppliers:agro-sur","status":"POSTED","created_by":"@user:admin"},
+      {"key":"document-002","company_id":"@company:current","document_type":"GUIA_DESPACHO","document_number":"GD-DEMO-018","issue_date":"2025-09-25","supplier_id":"@suppliers:riego-tec","status":"POSTED","created_by":"@user:admin"},
+      {"key":"document-003","company_id":"@company:current","document_type":"ORDEN_VENTA","document_number":"OV-DEMO-004","issue_date":"2025-03-20","client_id":"@clients:frutas-andinas","status":"CONFIRMED","created_by":"@user:admin"}
+    ],
+    "notifications": [
+      {"key":"notification-001","company_id":"@company:current","user_id":"@user:admin","notification_type":"STOCK_LOW","title":"Revisar stock de azufre","message":"El stock de azufre está próximo al mínimo configurado."},
+      {"key":"notification-002","company_id":"@company:current","user_id":"@user:admin","notification_type":"TASK_DUE","title":"Mantención próxima","message":"El tractor John Deere tiene una mantención programada."},
+      {"key":"notification-003","company_id":"@company:current","user_id":"@user:admin","notification_type":"REQUEST_APPROVED","title":"Solicitud aprobada","message":"La solicitud de insumos del Fundo Río está lista para atención."}
+    ],
+    "calendar_events": [
+      {"key":"event-001","company_id":"@company:current","created_by":"@user:admin","title":"Revisión de riego Campo Norte","description":"Revisar presión y funcionamiento de sectores.","starts_at":"2025-10-10 09:00:00","ends_at":"2025-10-10 11:00:00","event_type":"RIEGO","farm_id":"@farms:campo-norte"},
+      {"key":"event-002","company_id":"@company:current","created_by":"@user:admin","title":"Planificación de cosecha","description":"Reunión de coordinación con cuadrillas.","starts_at":"2025-12-02 15:00:00","ends_at":"2025-12-02 16:30:00","event_type":"REUNION","farm_id":"@farms:fundo-rio"}
+    ],
+    "tasks": [
+      {"key":"task-001","company_id":"@company:current","assigned_to":"@user:admin","created_by":"@user:admin","title":"Confirmar programa de fertilización","description":"Validar cantidades y fechas con el encargado de producción.","due_date":"2025-10-15","priority":"HIGH","status":"OPEN"},
+      {"key":"task-002","company_id":"@company:current","assigned_to":"@user:admin","created_by":"@user:admin","title":"Coordinar mantención del tractor","description":"Agendar servicio preventivo con el proveedor.","due_date":"2025-11-10","priority":"NORMAL","status":"IN_PROGRESS"},
+      {"key":"task-003","company_id":"@company:current","assigned_to":"@user:admin","created_by":"@user:admin","title":"Preparar informe de temporada","description":"Revisar costos y producción acumulada.","due_date":"2025-12-20","priority":"NORMAL","status":"DONE"}
+    ]
+  }
+}
