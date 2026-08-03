@@ -52,5 +52,8 @@ return [
             ['id' => 'settings-system', 'module' => 'settings', 'label' => 'Configuración', 'route' => '?module=settings', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'api-system', 'module' => 'api', 'label' => 'API e Integraciones', 'route' => '?module=api', 'permission' => 'api_tokens.manage', 'icon' => 'chart', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
+        ['id' => 'tools', 'label' => 'Herramientas', 'description' => 'Utilidades de soporte y demostración.', 'icon' => 'wrench', 'order' => 70, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+            ['id' => 'demo-tools', 'module' => 'demo', 'label' => 'Demo Data Manager', 'route' => '?module=demo', 'permission' => 'demo.manage', 'icon' => 'wrench', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+        ]],
     ],
 ];

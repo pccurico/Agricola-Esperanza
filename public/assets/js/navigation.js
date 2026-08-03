@@ -20,8 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     groups.forEach((group) => {
         const toggle = group.querySelector('[data-navigation-toggle]');
-        group.classList.remove('is-open');
-        toggle?.setAttribute('aria-expanded', 'false');
+        const hasActiveModule = group.querySelector('.dashboard-nav-item.active') !== null;
+        group.classList.toggle('is-open', hasActiveModule);
+        toggle?.setAttribute('aria-expanded', hasActiveModule ? 'true' : 'false');
         toggle?.addEventListener('click', () => {
             const open = !group.classList.contains('is-open');
             groups.forEach((otherGroup) => {

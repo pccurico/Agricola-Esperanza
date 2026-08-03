@@ -34,7 +34,14 @@ final class MigrationRunner extends BaseService
             try {
                 foreach (preg_split('/;\s*(?:\r?\n|$)/', file_get_contents($path)) as $statement) {
                     if (trim($statement) !== '') {
-                        $this->connection->exec($statement);
+                        try {
+                            $this->connection->exec($statement);
+                        } catch (\PDOException $exception) {
+                            $errorInfo = $exception->errorInfo;
+                            if ((int) ($errorInfo[1] ?? 0) !== 1061) {
+                                throw $exception;
+                            }
+                        }
                     }
                 }
                 $this->connection->prepare('INSERT INTO schema_migrations (version) VALUES (?)')->execute([$version]);
