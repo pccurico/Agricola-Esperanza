@@ -18,7 +18,18 @@ foreach ($navigationConfig['groups'] as $group) {
     if (($group['visible'] ?? true) !== true) {
         continue;
     }
-    $visibleItems = array_values(array_filter($group['items'], fn (array $item): bool => ($item['visible'] ?? true) === true && $navigationAuth->can($navigationRole, $item['permission'])));
+    $visibleItems = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole): bool {
+        if (($item['visible'] ?? true) !== true) {
+            return false;
+        }
+        $permissions = $item['permissions'] ?? [(string) ($item['permission'] ?? '')];
+        foreach ($permissions as $permission) {
+            if ($permission !== '' && $navigationAuth->can($navigationRole, (string) $permission)) {
+                return true;
+            }
+        }
+        return false;
+    }));
     usort($visibleItems, static fn (array $left, array $right): int => (int) ($left['order'] ?? 0) <=> (int) ($right['order'] ?? 0));
     if ($visibleItems !== []) {
         $group['items'] = $visibleItems;

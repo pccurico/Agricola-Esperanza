@@ -14,6 +14,10 @@ final class ReportsController extends BaseController
             'date_to' => (string) ($_GET['date_to'] ?? ''),
             'farm_id' => (int) ($_GET['farm_id'] ?? 0),
             'block_id' => (int) ($_GET['block_id'] ?? 0),
+            'season_id' => (int) ($_GET['season_id'] ?? 0),
+            'cost_center_id' => (int) ($_GET['cost_center_id'] ?? 0),
+            'worker_id' => (int) ($_GET['worker_id'] ?? 0),
+            'supervisor_id' => (int) ($_GET['supervisor_id'] ?? 0),
             'process' => (string) ($_GET['process'] ?? ''),
         ]);
         if (($_GET['export'] ?? '') === 'csv') {
@@ -34,16 +38,15 @@ final class ReportsController extends BaseController
     private function exportCsv(array $summary): never
     {
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="pccurico-informe-costos.csv"');
+        header('Content-Disposition: attachment; filename="pccurico-informe-ejecutivo.csv"');
         $output = fopen('php://output', 'wb');
-        fputcsv($output, ['ClasificaciÃ³n', 'Total'], ';');
-        foreach ($summary['categories'] as $row) {
-            fputcsv($output, [$row['category'], $row['total']], ';');
-        }
-        fputcsv($output, []);
-        fputcsv($output, ['Temporada', 'Total'], ';');
-        foreach ($summary['seasons'] as $row) {
-            fputcsv($output, [$row['name'], $row['total']], ';');
+        foreach ($this->exportRows($summary) as $section) {
+            fputcsv($output, [$section['title']], ';');
+            fputcsv($output, $section['headers'], ';');
+            foreach ($section['rows'] as $row) {
+                fputcsv($output, $row, ';');
+            }
+            fputcsv($output, []);
         }
         fclose($output);
         exit;
@@ -52,16 +55,24 @@ final class ReportsController extends BaseController
     private function exportPdf(array $summary): never
     {
         header('Content-Type: text/html; charset=utf-8');
-        header('Content-Disposition: inline; filename="pccurico-informe-costos.html"');
-        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de costos</title><style>body{font-family:Arial,sans-serif;color:#222}table{border-collapse:collapse;width:100%;margin-bottom:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}h1{font-size:22px}</style></head><body><h1>Informe de costos</h1><h2>Resumen por categorÃ­a</h2><table><tr><th>CategorÃ­a</th><th>Total</th></tr>';
-        foreach ($summary['categories'] as $row) {
-            echo '<tr><td>' . htmlspecialchars((string) $row['category'], ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string) $row['total'], ENT_QUOTES, 'UTF-8') . '</td></tr>';
+        header('Content-Disposition: inline; filename="pccurico-informe-ejecutivo.html"');
+        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Dashboard ejecutivo agrícola</title><style>body{font-family:Arial,sans-serif;color:#222}table{border-collapse:collapse;width:100%;margin-bottom:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}h1{font-size:22px}h2{font-size:16px}</style></head><body><h1>Dashboard ejecutivo agrícola</h1>';
+        foreach ($this->exportRows($summary) as $section) {
+            echo '<h2>' . htmlspecialchars((string) $section['title'], ENT_QUOTES, 'UTF-8') . '</h2><table><tr>';
+            foreach ($section['headers'] as $header) {
+                echo '<th>' . htmlspecialchars((string) $header, ENT_QUOTES, 'UTF-8') . '</th>';
+            }
+            echo '</tr>';
+            foreach ($section['rows'] as $row) {
+                echo '<tr>';
+                foreach ($row as $value) {
+                    echo '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
+                }
+                echo '</tr>';
+            }
+            echo '</table>';
         }
-        echo '</table><h2>Resumen por temporada</h2><table><tr><th>Temporada</th><th>Total</th></tr>';
-        foreach ($summary['seasons'] as $row) {
-            echo '<tr><td>' . htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string) $row['total'], ENT_QUOTES, 'UTF-8') . '</td></tr>';
-        }
-        echo '</table><script>window.print()</script></body></html>';
+        echo '<script>window.print()</script></body></html>';
         exit;
     }
 
@@ -71,14 +82,14 @@ final class ReportsController extends BaseController
             http_response_code(503);
             exit('La extensiÃ³n ZIP de PHP es necesaria para exportar XLSX.');
         }
-        $rows = [['ClasificaciÃ³n', 'Total']];
-        foreach ($summary['categories'] as $row) {
-            $rows[] = [(string) $row['category'], (string) $row['total']];
-        }
-        $rows[] = [];
-        $rows[] = ['Temporada', 'Total'];
-        foreach ($summary['seasons'] as $row) {
-            $rows[] = [(string) $row['name'], (string) $row['total']];
+        $rows = [];
+        foreach ($this->exportRows($summary) as $section) {
+            $rows[] = [$section['title']];
+            $rows[] = $section['headers'];
+            foreach ($section['rows'] as $row) {
+                $rows[] = $row;
+            }
+            $rows[] = [];
         }
         $sheetRows = '';
         foreach ($rows as $rowIndex => $row) {
@@ -103,5 +114,24 @@ final class ReportsController extends BaseController
         readfile($temporary);
         unlink($temporary);
         exit;
+    }
+
+    private function exportRows(array $summary): array
+    {
+        return [
+            ['title' => 'Resumen ejecutivo', 'headers' => ['Indicador', 'Valor'], 'rows' => [
+                ['Costo total', (string) ($summary['summary']['total'] ?? 0)],
+                ['Costo por hectárea', (string) ($summary['summary']['cost_per_hectare'] ?? 0)],
+                ['Producción', (string) ($summary['summary']['production'] ?? 0)],
+                ['Costo por unidad', (string) ($summary['summary']['cost_per_unit'] ?? 0)],
+                ['Presupuesto planificado', (string) ($summary['budget']['planned'] ?? 0)],
+                ['Presupuesto ejecutado', (string) ($summary['budget']['actual'] ?? 0)],
+            ]],
+            ['title' => 'Costos por fundo', 'headers' => ['Fundo', 'Total'], 'rows' => array_map(static fn (array $row): array => [(string) ($row['name'] ?? ''), (string) ($row['total'] ?? 0)], $summary['farms'] ?? [])],
+            ['title' => 'Costos por proceso', 'headers' => ['Proceso', 'Total'], 'rows' => array_map(static fn (array $row): array => [(string) ($row['process'] ?? ''), (string) ($row['total'] ?? 0)], $summary['processes'] ?? [])],
+            ['title' => 'Producción por cuartel', 'headers' => ['Fundo', 'Cuartel', 'Cantidad', 'Unidad'], 'rows' => array_map(static fn (array $row): array => [(string) ($row['farm_name'] ?? ''), (string) ($row['block_name'] ?? ''), (string) ($row['quantity'] ?? 0), (string) ($row['unit'] ?? '')], $summary['blocks'] ?? [])],
+            ['title' => 'Productividad de trabajadores', 'headers' => ['Trabajador', 'Jornadas', 'Total'], 'rows' => array_map(static fn (array $row): array => [(string) ($row['full_name'] ?? ''), (string) ($row['quantity'] ?? 0), (string) ($row['total'] ?? 0)], $summary['workers'] ?? [])],
+            ['title' => 'Centros de costo', 'headers' => ['Centro', 'Categoría', 'Total'], 'rows' => array_map(static fn (array $row): array => [(string) ($row['name'] ?? ''), (string) ($row['category'] ?? ''), (string) ($row['total'] ?? 0)], $summary['centers'] ?? [])],
+        ];
     }
 }

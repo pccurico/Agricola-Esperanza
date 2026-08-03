@@ -101,6 +101,8 @@ if ($module === 'users') {
             default => null,
         };
     }
+} elseif ($module === 'planning') {
+    authorize_any(['tasks.view', 'calendar.view']);
 } elseif (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
 }

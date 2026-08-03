@@ -18,11 +18,16 @@ final class ReportService extends BaseService
         [$dateFrom, $dateTo] = $this->dateRange($filters);
         $farmId = max(0, (int) ($filters['farm_id'] ?? 0));
         $blockId = max(0, (int) ($filters['block_id'] ?? 0));
+        $seasonId = max(0, (int) ($filters['season_id'] ?? 0));
+        $centerId = max(0, (int) ($filters['cost_center_id'] ?? 0));
+        $workerId = max(0, (int) ($filters['worker_id'] ?? 0));
+        $supervisorId = max(0, (int) ($filters['supervisor_id'] ?? 0));
         $process = trim((string) ($filters['process'] ?? ''));
 
-        $expense = $this->scope('e', 'e.entry_date', 'e.description', $dateFrom, $dateTo, $farmId, $blockId, $process);
-        $labor = $this->scope('l', 'l.labor_date', 'l.labor_type', $dateFrom, $dateTo, $farmId, $blockId, $process);
-        $production = $this->scope('p', 'p.production_date', 'p.activity', $dateFrom, $dateTo, $farmId, $blockId, $process);
+        $scopeFilters = compact('farmId', 'blockId', 'seasonId', 'centerId', 'workerId', 'supervisorId');
+        $expense = $this->scope('e', 'e.entry_date', 'e.description', $dateFrom, $dateTo, $process, $scopeFilters);
+        $labor = $this->scope('l', 'l.labor_date', 'l.labor_type', $dateFrom, $dateTo, $process, $scopeFilters);
+        $production = $this->scope('p', 'p.production_date', 'p.activity', $dateFrom, $dateTo, $process, $scopeFilters);
 
         $base = $this->connection->prepare('SELECT COALESCE((SELECT SUM(e.amount) FROM expense_entries e WHERE ' . $expense['where'] . '), 0) + COALESCE((SELECT SUM(l.total_amount) FROM labor_entries l WHERE ' . $labor['where'] . '), 0) AS total, COALESCE((SELECT COUNT(*) FROM expense_entries e WHERE ' . $expense['where'] . '), 0) + COALESCE((SELECT COUNT(*) FROM labor_entries l WHERE ' . $labor['where'] . '), 0) AS entries');
         $base->execute(array_merge($expense['params'], $labor['params'], $expense['params'], $labor['params']));
@@ -47,7 +52,9 @@ final class ReportService extends BaseService
         $laborSummary->execute($labor['params']);
         $laborData = $laborSummary->fetch() ?: ['quantity' => 0, 'total' => 0, 'workers' => 0];
 
-        $budget = $this->budgetSummary($dateFrom, $dateTo, $farmId, $process);
+        $budget = $this->budgetSummary($dateFrom, $dateTo, $farmId, $process, $seasonId, $centerId);
+        $comparisons = $this->comparisons($dateFrom, $dateTo, $process, $scopeFilters);
+        $trends = $this->trends($dateFrom, $dateTo, $process, $scopeFilters);
 
         return [
             'summary' => $summary,
@@ -59,7 +66,10 @@ final class ReportService extends BaseService
             'processes' => $this->costByProcess($expense, $labor),
             'workers' => $this->fetchRows('SELECT w.full_name, COALESCE(SUM(l.quantity), 0) AS quantity, COALESCE(SUM(l.total_amount), 0) AS total FROM labor_entries l INNER JOIN workers w ON w.id = l.worker_id WHERE ' . $labor['where'] . ' GROUP BY w.id, w.full_name ORDER BY total DESC LIMIT 10', $labor['params']),
             'blocks' => $this->fetchRows('SELECT COALESCE(f.name, "Sin fundo") AS farm_name, COALESCE(b.name, "Sin cuartel") AS block_name, COALESCE(SUM(p.quantity), 0) AS quantity, MIN(p.unit) AS unit FROM production_entries p LEFT JOIN farms f ON f.id = p.farm_id LEFT JOIN blocks b ON b.id = p.block_id WHERE ' . $production['where'] . ' GROUP BY p.farm_id, p.block_id, f.name, b.name ORDER BY quantity DESC LIMIT 12', $production['params']),
-            'filters' => ['date_from' => $dateFrom, 'date_to' => $dateTo, 'farm_id' => $farmId, 'block_id' => $blockId, 'process' => $process],
+            'centers' => $this->fetchRows('SELECT c.name, c.category, COALESCE(SUM(e.amount), 0) AS total FROM expense_entries e INNER JOIN cost_centers c ON c.id = e.cost_center_id WHERE ' . $expense['where'] . ' GROUP BY c.id, c.name, c.category ORDER BY total DESC LIMIT 12', $expense['params']),
+            'comparisons' => $comparisons,
+            'trends' => $trends,
+            'filters' => ['date_from' => $dateFrom, 'date_to' => $dateTo, 'farm_id' => $farmId, 'block_id' => $blockId, 'season_id' => $seasonId, 'cost_center_id' => $centerId, 'worker_id' => $workerId, 'supervisor_id' => $supervisorId, 'process' => $process],
             'filter_options' => $this->filterOptions(),
         ];
     }
@@ -75,10 +85,16 @@ final class ReportService extends BaseService
         return [$from->format('Y-m-d'), $to->format('Y-m-d')];
     }
 
-    private function scope(string $alias, string $dateColumn, string $processColumn, string $dateFrom, string $dateTo, int $farmId, int $blockId, string $process): array
+    private function scope(string $alias, string $dateColumn, string $processColumn, string $dateFrom, string $dateTo, string $process, array $filters): array
     {
         $where = $alias . '.company_id = ? AND ' . $dateColumn . ' BETWEEN ? AND ?';
         $params = [$this->companyId, $dateFrom, $dateTo];
+        $farmId = (int) ($filters['farmId'] ?? 0);
+        $blockId = (int) ($filters['blockId'] ?? 0);
+        $seasonId = (int) ($filters['seasonId'] ?? 0);
+        $centerId = (int) ($filters['centerId'] ?? 0);
+        $workerId = (int) ($filters['workerId'] ?? 0);
+        $supervisorId = (int) ($filters['supervisorId'] ?? 0);
         if ($alias !== 'p') {
             $where .= " AND {$alias}.status = 'POSTED'";
         }
@@ -89,6 +105,22 @@ final class ReportService extends BaseService
         if ($blockId > 0) {
             $where .= ' AND ' . $alias . '.block_id = ?';
             $params[] = $blockId;
+        }
+        if ($seasonId > 0) {
+            $where .= ' AND ' . $alias . '.season_id = ?';
+            $params[] = $seasonId;
+        }
+        if ($alias === 'e' && $centerId > 0) {
+            $where .= ' AND ' . $alias . '.cost_center_id = ?';
+            $params[] = $centerId;
+        }
+        if ($alias === 'l' && $workerId > 0) {
+            $where .= ' AND ' . $alias . '.worker_id = ?';
+            $params[] = $workerId;
+        }
+        if ($alias === 'l' && $supervisorId > 0) {
+            $where .= ' AND EXISTS (SELECT 1 FROM crew_workers cw INNER JOIN crews cr ON cr.id = cw.crew_id WHERE cw.worker_id = l.worker_id AND cr.company_id = l.company_id AND cr.supervisor_id = ?)';
+            $params[] = $supervisorId;
         }
         if ($process !== '') {
             $where .= ' AND ' . $processColumn . ' = ?';
@@ -114,10 +146,18 @@ final class ReportService extends BaseService
         return (float) $query->fetchColumn();
     }
 
-    private function budgetSummary(string $dateFrom, string $dateTo, int $farmId, string $process): array
+    private function budgetSummary(string $dateFrom, string $dateTo, int $farmId, string $process, int $seasonId, int $centerId): array
     {
         $params = [$this->companyId, $dateTo, $dateFrom];
         $where = 'b.company_id = ? AND b.period_start <= ? AND b.period_end >= ?';
+        if ($seasonId > 0) {
+            $where .= ' AND b.season_id = ?';
+            $params[] = $seasonId;
+        }
+        if ($centerId > 0) {
+            $where .= ' AND b.cost_center_id = ?';
+            $params[] = $centerId;
+        }
         if ($farmId > 0) {
             $where .= ' AND EXISTS (SELECT 1 FROM expense_entries ef WHERE ef.company_id = b.company_id AND ef.farm_id = ? AND ef.season_id = b.season_id AND ef.cost_center_id = b.cost_center_id AND ef.status = "POSTED")';
             $params[] = $farmId;
@@ -164,7 +204,63 @@ final class ReportService extends BaseService
         $blocks->execute([$this->companyId]);
         $processes = $this->connection->prepare("SELECT DISTINCT process FROM (SELECT description AS process FROM expense_entries WHERE company_id = ? UNION SELECT labor_type AS process FROM labor_entries WHERE company_id = ? UNION SELECT activity AS process FROM production_entries WHERE company_id = ?) process_options WHERE process <> '' ORDER BY process");
         $processes->execute([$this->companyId, $this->companyId, $this->companyId]);
-        return ['processes' => $processes->fetchAll(), 'farms' => $farms->fetchAll(), 'blocks' => $blocks->fetchAll()];
+        $seasons = $this->connection->prepare('SELECT id, name FROM seasons WHERE company_id = ? ORDER BY starts_on DESC');
+        $seasons->execute([$this->companyId]);
+        $centers = $this->connection->prepare('SELECT id, name, category FROM cost_centers WHERE company_id = ? AND active = 1 ORDER BY category, name');
+        $centers->execute([$this->companyId]);
+        $workers = $this->connection->prepare('SELECT id, full_name FROM workers WHERE company_id = ? AND active = 1 ORDER BY full_name');
+        $workers->execute([$this->companyId]);
+        $supervisors = $this->connection->prepare('SELECT DISTINCT w.id, w.full_name FROM crews cr INNER JOIN workers w ON w.id = cr.supervisor_id WHERE cr.company_id = ? AND cr.active = 1 AND cr.supervisor_id IS NOT NULL ORDER BY w.full_name');
+        $supervisors->execute([$this->companyId]);
+        return ['processes' => $processes->fetchAll(), 'farms' => $farms->fetchAll(), 'blocks' => $blocks->fetchAll(), 'seasons' => $seasons->fetchAll(), 'centers' => $centers->fetchAll(), 'workers' => $workers->fetchAll(), 'supervisors' => $supervisors->fetchAll()];
+    }
+
+    private function comparisons(string $dateFrom, string $dateTo, string $process, array $filters): array
+    {
+        $currentStart = new DateTimeImmutable($dateFrom);
+        $currentEnd = new DateTimeImmutable($dateTo);
+        $previousEnd = $currentStart->modify('-1 day');
+        $previousStart = $previousEnd->modify('-' . max(0, $currentStart->diff($currentEnd)->days) . ' days');
+        return ['periods' => [
+            ['label' => 'Periodo seleccionado', 'metrics' => $this->periodMetrics($dateFrom, $dateTo, $process, $filters)],
+            ['label' => 'Periodo anterior', 'metrics' => $this->periodMetrics($previousStart->format('Y-m-d'), $previousEnd->format('Y-m-d'), $process, $filters)],
+        ], 'seasons' => $this->seasonComparison($process, $filters)];
+    }
+
+    private function periodMetrics(string $dateFrom, string $dateTo, string $process, array $filters): array
+    {
+        $expense = $this->scope('e', 'e.entry_date', 'e.description', $dateFrom, $dateTo, $process, $filters);
+        $labor = $this->scope('l', 'l.labor_date', 'l.labor_type', $dateFrom, $dateTo, $process, $filters);
+        $production = $this->scope('p', 'p.production_date', 'p.activity', $dateFrom, $dateTo, $process, $filters);
+        $query = $this->connection->prepare('SELECT COALESCE((SELECT SUM(e.amount) FROM expense_entries e WHERE ' . $expense['where'] . '), 0) + COALESCE((SELECT SUM(l.total_amount) FROM labor_entries l WHERE ' . $labor['where'] . '), 0) AS cost, COALESCE((SELECT SUM(p.quantity) FROM production_entries p WHERE ' . $production['where'] . '), 0) AS production, COALESCE((SELECT SUM(l.quantity) FROM labor_entries l WHERE ' . $labor['where'] . '), 0) AS labor');
+        $query->execute(array_merge($expense['params'], $labor['params'], $production['params'], $labor['params']));
+        return $query->fetch() ?: ['cost' => 0, 'production' => 0, 'labor' => 0];
+    }
+
+    private function seasonComparison(string $process, array $filters): array
+    {
+        $seasonQuery = $this->connection->prepare('SELECT id, name, starts_on, ends_on FROM seasons WHERE company_id = ? ORDER BY starts_on DESC LIMIT 2');
+        $seasonQuery->execute([$this->companyId]);
+        $rows = [];
+        foreach ($seasonQuery->fetchAll() as $season) {
+            $seasonFilters = $filters;
+            $seasonFilters['seasonId'] = (int) $season['id'];
+            $rows[] = ['label' => (string) $season['name'], 'metrics' => $this->periodMetrics((string) $season['starts_on'], (string) $season['ends_on'], $process, $seasonFilters)];
+        }
+        return $rows;
+    }
+
+    private function trends(string $dateFrom, string $dateTo, string $process, array $filters): array
+    {
+        $expense = $this->scope('e', 'e.entry_date', 'e.description', $dateFrom, $dateTo, $process, $filters);
+        $labor = $this->scope('l', 'l.labor_date', 'l.labor_type', $dateFrom, $dateTo, $process, $filters);
+        $production = $this->scope('p', 'p.production_date', 'p.activity', $dateFrom, $dateTo, $process, $filters);
+        return [
+            'costs' => $this->fetchRows('SELECT DATE_FORMAT(e.entry_date, "%Y-%m") AS period, SUM(e.amount) AS value FROM expense_entries e WHERE ' . $expense['where'] . ' GROUP BY period ORDER BY period', $expense['params']),
+            'labor' => $this->fetchRows('SELECT DATE_FORMAT(l.labor_date, "%Y-%m") AS period, SUM(l.total_amount) AS value FROM labor_entries l WHERE ' . $labor['where'] . ' GROUP BY period ORDER BY period', $labor['params']),
+            'production' => $this->fetchRows('SELECT DATE_FORMAT(p.production_date, "%Y-%m") AS period, SUM(p.quantity) AS value, MIN(p.unit) AS unit FROM production_entries p WHERE ' . $production['where'] . ' GROUP BY period ORDER BY period', $production['params']),
+            'budget' => $this->fetchRows('SELECT DATE_FORMAT(e.entry_date, "%Y-%m") AS period, SUM(e.amount) AS value FROM expense_entries e WHERE ' . $expense['where'] . ' AND EXISTS (SELECT 1 FROM budgets b WHERE b.company_id = e.company_id AND b.season_id = e.season_id AND b.cost_center_id = e.cost_center_id AND e.entry_date BETWEEN b.period_start AND b.period_end) GROUP BY period ORDER BY period', $expense['params']),
+        ];
     }
 
     private function fetchRows(string $sql, array $params): array
