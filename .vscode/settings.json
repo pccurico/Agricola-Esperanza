@@ -18,5 +18,21 @@
         "**/storage/uploads/**": true,
         "**/storage/logs/**": true,
         "**/config/config.php": true
-    }
+    },
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "laesperanza",
+            "database": "laesperanza",
+            "username": "laesperanza"
+        }
+    ]
 }

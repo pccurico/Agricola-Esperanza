@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquinaria | Sistema de Gestión Agrícola PCCURICO</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#14213d;}
+.admin-shell{display:flex;min-height:100vh;}
+.module-content{flex:1;padding:24px;background:#f5f7fb;}
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.admin-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;}
+.admin-panel{background:#fff;border:1px solid #e6ebf2;border-radius:12px;padding:20px;box-shadow:0 4px 14px rgba(20,33,61,.05);}
+.admin-form{display:grid;gap:12px;}
+.admin-form label{display:grid;gap:6px;font-weight:600;}
+.admin-form input,.admin-form select,.admin-form textarea{padding:10px 12px;border:1px solid #cfd8e3;border-radius:8px;font:inherit;}
+.primary-button,.secondary-link{display:inline-block;padding:10px 14px;border-radius:8px;text-decoration:none;border:0;cursor:pointer;font-weight:700;}
+.primary-button{background:#1e88e5;color:#fff;}
+.secondary-link{background:#eef2f7;color:#14213d;}
+.setup-error{background:#fdecea;color:#a61b1b;padding:12px 14px;border-radius:8px;margin-bottom:16px;}
+.setup-success{background:#e8f5e9;color:#2e7d32;padding:12px 14px;border-radius:8px;margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;}
+th,td{border-bottom:1px solid #e6ebf2;padding:10px 8px;text-align:left;}
+th{background:#f8fafc;color:#415a77;}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#eef2f7;color:#415a77;}
+</style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
+<section class="module-content">
+<header class="admin-header">
+<div>
+<p class="eyebrow">Equipos</p>
+<h1>Maquinaria y mantenciones</h1>
+<p class="setup-copy">Lleva el registro de tus equipos, mantenciones y combustible.</p>
+</div>
+<a class="secondary-link" href="./">Volver al dashboard</a>
+</header>
+<?php if (!empty($error)): ?><div class="setup-error"><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<?php if (!empty($success)): ?><div class="setup-success"><?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<section class="admin-columns">
+<article class="admin-panel">
+<header class="panel-header"><h2>Nueva maquinaria</h2><p>Registra equipos y activos agrícolas</p></header>
+<form method="post" class="admin-form">
+<input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+<input type="hidden" name="action" value="create_machinery">
+<label>Código<input name="code" required placeholder="TR-001"></label>
+<label>Nombre<input name="name" required placeholder="Tractor principal"></label>
+<label>Tipo<input name="machinery_type" required placeholder="Tractor"></label>
+<label>Marca<input name="brand"></label>
+<label>Modelo<input name="model"></label>
+<label>Patente<input name="plate"></label>
+<label>Horómetro<input type="number" name="meter" min="0" step="0.01"></label>
+<label>Fundo<select name="farm_id"><option value="">Sin asignar</option><?php foreach ((array) ($farms ?? []) as $farm): ?><option value="<?= (int) (is_array($farm) && array_key_exists('id', $farm) ? $farm['id'] : 0) ?>"><?= htmlspecialchars((string) (is_array($farm) && array_key_exists('name', $farm) ? $farm['name'] : 'Sin nombre'), ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+<button class="primary-button" type="submit">Crear maquinaria</button>
+</form>
+</article>
+<article class="admin-panel">
+<header class="panel-header"><h2>Nueva mantención</h2><p>Registra intervenciones de mantenimiento</p></header>
+<form method="post" class="admin-form">
+<input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+<input type="hidden" name="action" value="create_maintenance">
+<label>Maquinaria<select name="machinery_id" required><option value="">Sin asignar</option><?php foreach ((array) ($machinery ?? []) as $item): $label = ((is_array($item) && array_key_exists('code', $item) ? (string) $item['code'] : '') . (is_array($item) && array_key_exists('name', $item) ? ' · ' . (string) $item['name'] : '')); if (trim($label) === '') { $label = 'Sin maquinaria'; } ?><option value="<?= (int) (is_array($item) && array_key_exists('id', $item) ? $item['id'] : 0) ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+<label>Fecha<input type="date" name="maintenance_date" required></label>
+<label>Tipo<select name="maintenance_type"><option value="PREVENTIVE">Preventiva</option><option value="CORRECTIVE">Correctiva</option></select></label>
+<label>Descripción<textarea name="description" rows="3"></textarea></label>
+<label>Costo<input type="number" name="cost" min="0" step="0.01"></label>
+<label>Próxima fecha<input type="date" name="next_date"></label>
+<button class="primary-button" type="submit">Registrar mantención</button>
+</form>
+</article>
+<article class="admin-panel">
+<header class="panel-header"><h2>Registrar combustible</h2><p>Controla consumo y referencias de combustible</p></header>
+<form method="post" class="admin-form">
+<input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+<input type="hidden" name="action" value="create_fuel">
+<label>Maquinaria<select name="machinery_id" required><option value="">Sin asignar</option><?php foreach ((array) ($machinery ?? []) as $item): $label = ((is_array($item) && array_key_exists('code', $item) ? (string) $item['code'] : '') . (is_array($item) && array_key_exists('name', $item) ? ' · ' . (string) $item['name'] : '')); if (trim($label) === '') { $label = 'Sin maquinaria'; } ?><option value="<?= (int) (is_array($item) && array_key_exists('id', $item) ? $item['id'] : 0) ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+<label>Fecha<input type="date" name="fuel_date" required></label>
+<label>Litros<input type="number" name="liters" min="0" step="0.01" required></label>
+<label>Costo unitario<input type="number" name="unit_cost" min="0" step="0.01" required></label>
+<label>Medidor<input type="number" name="meter" min="0" step="0.01"></label>
+<label>Referencia<input name="reference"></label>
+<button class="primary-button" type="submit">Registrar combustible</button>
+</form>
+</article>
+</section>
+<section class="admin-columns">
+<article class="admin-panel">
+<header class="panel-header"><h2>Equipos registrados</h2><p>Listado de maquinaria activa</p></header>
+<table>
+<thead><tr><th>Código</th><th>Equipo</th><th>Tipo</th><th>Ubicación</th><th>Horómetro</th><th>Estado</th></tr></thead>
+<tbody>
+<?php foreach ((array) ($machinery ?? []) as $item): ?>
+<tr>
+<td><?= htmlspecialchars((string) (is_array($item) && array_key_exists('code', $item) ? $item['code'] : 'Sin código'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($item) && array_key_exists('name', $item) ? $item['name'] : 'Sin nombre'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($item) && array_key_exists('machinery_type', $item) ? $item['machinery_type'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($item) && array_key_exists('farm_name', $item) ? $item['farm_name'] : 'Sin fundo'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($item) && array_key_exists('meter', $item) ? $item['meter'] : '0'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><span class="badge"><?= htmlspecialchars((string) (is_array($item) && array_key_exists('status', $item) ? $item['status'] : 'ACTIVO'), ENT_QUOTES, 'UTF-8') ?></span></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</article>
+<article class="admin-panel">
+<header class="panel-header"><h2>Historial de mantenciones</h2><p>Últimas acciones registradas</p></header>
+<table>
+<thead><tr><th>Fecha</th><th>Equipo</th><th>Tipo</th><th>Descripción</th><th>Costo</th><th>Próxima</th></tr></thead>
+<tbody>
+<?php foreach ((array) ($maintenance ?? []) as $row): ?>
+<tr>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('maintenance_date', $row) ? $row['maintenance_date'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('machinery_name', $row) ? $row['machinery_name'] : 'Sin equipo'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('maintenance_type', $row) ? $row['maintenance_type'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('description', $row) ? $row['description'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('cost', $row) ? $row['cost'] : '0'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('next_date', $row) ? $row['next_date'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</article>
+<article class="admin-panel">
+<header class="panel-header"><h2>Historial de combustible</h2><p>Últimos registros de consumo</p></header>
+<table>
+<thead><tr><th>Fecha</th><th>Equipo</th><th>Litros</th><th>Costo</th><th>Referencia</th></tr></thead>
+<tbody>
+<?php foreach ((array) ($fuel ?? []) as $row): ?>
+<tr>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('fuel_date', $row) ? $row['fuel_date'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('machinery_name', $row) ? $row['machinery_name'] : 'Sin equipo'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('liters', $row) ? $row['liters'] : '0'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('unit_cost', $row) ? $row['unit_cost'] : '0'), ENT_QUOTES, 'UTF-8') ?></td>
+<td><?= htmlspecialchars((string) (is_array($row) && array_key_exists('reference', $row) ? $row['reference'] : '-'), ENT_QUOTES, 'UTF-8') ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</article>
+</section>
+</section>
+</main>
+</body>
+</html>

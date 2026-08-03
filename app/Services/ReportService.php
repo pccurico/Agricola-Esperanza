@@ -55,6 +55,11 @@ final class ReportService extends BaseService
         $budget = $this->budgetSummary($dateFrom, $dateTo, $farmId, $process, $seasonId, $centerId);
         $comparisons = $this->comparisons($dateFrom, $dateTo, $process, $scopeFilters);
         $trends = $this->trends($dateFrom, $dateTo, $process, $scopeFilters);
+        $alerts = $this->inventoryAlerts($farmId, $blockId, $dateFrom, $dateTo);
+        $summary['production_per_hectare'] = $hectares > 0 ? $productionQuantity / $hectares : 0;
+        $summary['labor_productivity'] = $laborData['quantity'] > 0 ? $productionQuantity / $laborData['quantity'] : 0;
+        $summary['alert_count'] = count($alerts);
+        $summary['profitability'] = $totalCost > 0 ? $productionQuantity / $totalCost : 0;
 
         return [
             'summary' => $summary,
@@ -67,6 +72,7 @@ final class ReportService extends BaseService
             'workers' => $this->fetchRows('SELECT w.full_name, COALESCE(SUM(l.quantity), 0) AS quantity, COALESCE(SUM(l.total_amount), 0) AS total FROM labor_entries l INNER JOIN workers w ON w.id = l.worker_id WHERE ' . $labor['where'] . ' GROUP BY w.id, w.full_name ORDER BY total DESC LIMIT 10', $labor['params']),
             'blocks' => $this->fetchRows('SELECT COALESCE(f.name, "Sin fundo") AS farm_name, COALESCE(b.name, "Sin cuartel") AS block_name, COALESCE(SUM(p.quantity), 0) AS quantity, MIN(p.unit) AS unit FROM production_entries p LEFT JOIN farms f ON f.id = p.farm_id LEFT JOIN blocks b ON b.id = p.block_id WHERE ' . $production['where'] . ' GROUP BY p.farm_id, p.block_id, f.name, b.name ORDER BY quantity DESC LIMIT 12', $production['params']),
             'centers' => $this->fetchRows('SELECT c.name, c.category, COALESCE(SUM(e.amount), 0) AS total FROM expense_entries e INNER JOIN cost_centers c ON c.id = e.cost_center_id WHERE ' . $expense['where'] . ' GROUP BY c.id, c.name, c.category ORDER BY total DESC LIMIT 12', $expense['params']),
+            'alerts' => $alerts,
             'comparisons' => $comparisons,
             'trends' => $trends,
             'filters' => ['date_from' => $dateFrom, 'date_to' => $dateTo, 'farm_id' => $farmId, 'block_id' => $blockId, 'season_id' => $seasonId, 'cost_center_id' => $centerId, 'worker_id' => $workerId, 'supervisor_id' => $supervisorId, 'process' => $process],
@@ -261,6 +267,24 @@ final class ReportService extends BaseService
             'production' => $this->fetchRows('SELECT DATE_FORMAT(p.production_date, "%Y-%m") AS period, SUM(p.quantity) AS value, MIN(p.unit) AS unit FROM production_entries p WHERE ' . $production['where'] . ' GROUP BY period ORDER BY period', $production['params']),
             'budget' => $this->fetchRows('SELECT DATE_FORMAT(e.entry_date, "%Y-%m") AS period, SUM(e.amount) AS value FROM expense_entries e WHERE ' . $expense['where'] . ' AND EXISTS (SELECT 1 FROM budgets b WHERE b.company_id = e.company_id AND b.season_id = e.season_id AND b.cost_center_id = e.cost_center_id AND e.entry_date BETWEEN b.period_start AND b.period_end) GROUP BY period ORDER BY period', $expense['params']),
         ];
+    }
+
+    private function inventoryAlerts(int $farmId, int $blockId, string $dateFrom, string $dateTo): array
+    {
+        $params = [$this->companyId, $dateFrom, $dateTo];
+        $where = 'i.company_id = ? AND i.active = 1';
+        if ($farmId > 0) {
+            $where .= ' AND EXISTS (SELECT 1 FROM inventory_movements m WHERE m.company_id = i.company_id AND m.item_id = i.id AND m.farm_id = ?)';
+            $params[] = $farmId;
+        }
+        if ($blockId > 0) {
+            $where .= ' AND EXISTS (SELECT 1 FROM inventory_movements m WHERE m.company_id = i.company_id AND m.item_id = i.id AND m.block_id = ?)';
+            $params[] = $blockId;
+        }
+
+        $query = $this->connection->prepare('SELECT i.id, i.name, i.unit, i.minimum_stock, COALESCE(SUM(CASE WHEN m.movement_type = "IN" THEN m.quantity WHEN m.movement_type = "OUT" THEN -m.quantity ELSE m.quantity END), 0) AS stock FROM inventory_items i LEFT JOIN inventory_movements m ON m.item_id = i.id AND m.company_id = i.company_id AND m.movement_date BETWEEN ? AND ? WHERE ' . $where . ' GROUP BY i.id, i.name, i.unit, i.minimum_stock HAVING stock <= i.minimum_stock ORDER BY stock ASC, i.name LIMIT 5');
+        $query->execute(array_merge($params, [$dateFrom, $dateTo]));
+        return $query->fetchAll();
     }
 
     private function fetchRows(string $sql, array $params): array

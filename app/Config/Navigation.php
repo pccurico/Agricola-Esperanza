@@ -19,10 +19,10 @@ return [
         'menu' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
     ],
     'groups' => [
-        ['id' => 'home', 'label' => 'Inicio', 'description' => 'Accesos personales y resumen ejecutivo.', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'home', 'label' => 'Inicio', 'description' => 'Accesos personales y resumen ejecutivo.', 'icon' => 'home', 'order' => 10, 'visible' => true, 'department' => 'general', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'dashboard-home', 'module' => '', 'label' => 'Dashboard', 'route' => '/', 'permission' => 'dashboard.view', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'warehouse-department', 'label' => 'Bodega', 'description' => 'Inventario, bodegas, lotes, solicitudes y abastecimiento.', 'icon' => 'boxes', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'warehouse-department', 'label' => 'Bodega', 'description' => 'Inventario, bodegas, lotes, solicitudes y abastecimiento.', 'icon' => 'boxes', 'order' => 20, 'visible' => true, 'department' => 'bodega', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'inventory-module', 'module' => 'inventory', 'label' => 'Inventario', 'route' => '?module=inventory', 'permission' => 'inventory.view', 'icon' => 'boxes', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'warehouses-module', 'module' => 'warehouses', 'label' => 'Bodegas y Lotes', 'route' => '?module=warehouses', 'permission' => 'warehouse.view', 'icon' => 'boxes', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'requests-module', 'module' => 'requests', 'label' => 'Solicitudes Internas', 'route' => '?module=requests', 'permission' => 'requests.view', 'icon' => 'cart', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
@@ -30,30 +30,32 @@ return [
             ['id' => 'receptions-module', 'module' => 'receptions', 'label' => 'Recepciones', 'route' => '?module=receptions', 'permission' => 'procurement.receive', 'icon' => 'boxes', 'order' => 50, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'notifications-module', 'module' => 'notifications', 'label' => 'Notificaciones', 'route' => '?module=notifications', 'permission' => 'notifications.view', 'icon' => 'chart', 'order' => 60, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'hr-accounting', 'label' => 'RRHH / Contabilidad', 'description' => 'Personas, mano de obra, costos y control presupuestario.', 'icon' => 'users', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'hr-accounting', 'label' => 'RRHH / Contabilidad', 'description' => 'Personas, mano de obra, costos y control presupuestario.', 'icon' => 'users', 'order' => 30, 'visible' => true, 'department' => 'rrhh', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'labor-module', 'module' => 'labor', 'label' => 'Mano de Obra y Trabajadores', 'route' => '?module=labor', 'permission' => 'labor.view', 'icon' => 'users', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'costs-module', 'module' => 'costs', 'label' => 'Costos', 'route' => '?module=costs', 'permission' => 'costs.view', 'icon' => 'dollar', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'budgets-module', 'module' => 'budgets', 'label' => 'Presupuestos', 'route' => '?module=budgets', 'permission' => 'budgets.view', 'icon' => 'chart', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'administration', 'label' => 'Administración', 'description' => 'Operación agrícola, planificación, activos y documentos.', 'icon' => 'plant', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'administration', 'label' => 'Administración', 'description' => 'Operación agrícola, planificación, activos y documentos.', 'icon' => 'plant', 'order' => 40, 'visible' => true, 'department' => 'administracion', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'production-module', 'module' => 'production', 'label' => 'Producción', 'route' => '?module=production', 'permission' => 'production.view', 'icon' => 'plant', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'planning-module', 'module' => 'planning', 'label' => 'Tareas y Calendario', 'route' => '?module=planning', 'permissions' => ['tasks.view', 'calendar.view'], 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'machinery-module', 'module' => 'machinery', 'label' => 'Maquinaria', 'route' => '?module=machinery', 'permission' => 'machinery.view', 'icon' => 'wrench', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'documents-module', 'module' => 'documents', 'label' => 'Documentos', 'route' => '?module=documents', 'permission' => 'documents.view', 'icon' => 'boxes', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'masters-module', 'module' => 'masters', 'label' => 'Maestros Agrícolas', 'route' => '?module=masters', 'permission' => 'masters.view', 'icon' => 'wrench', 'order' => 50, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'management', 'label' => 'Gerencia', 'description' => 'Indicadores ejecutivos, informes y trazabilidad de actividad.', 'icon' => 'chart', 'order' => 50, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'management', 'label' => 'Gerencia', 'description' => 'Indicadores ejecutivos, informes y trazabilidad de actividad.', 'icon' => 'chart', 'order' => 50, 'visible' => true, 'department' => 'gerencia', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'reports-module', 'module' => 'reports', 'label' => 'Dashboard Ejecutivo e Informes', 'route' => '?module=reports', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'audit-module', 'module' => 'audit', 'label' => 'Actividad del Sistema', 'route' => '?module=audit', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'system-administration', 'label' => 'Administración del Sistema', 'description' => 'Usuarios, roles, catálogos, configuración e integraciones.', 'icon' => 'shield', 'order' => 60, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
+        ['id' => 'system-administration', 'label' => 'Administración del Sistema', 'description' => 'Usuarios, roles, catálogos, configuración e integraciones.', 'icon' => 'shield', 'order' => 60, 'visible' => true, 'department' => 'sistema', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'users-system', 'module' => 'users', 'label' => 'Usuarios y Roles', 'route' => '?module=users', 'permissions' => ['users.view', 'users.manage', 'roles.manage'], 'icon' => 'users', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'catalogs-system', 'module' => 'catalogs', 'label' => 'Catálogos', 'route' => '?module=catalogs', 'permission' => 'setup.manage', 'icon' => 'boxes', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'settings-system', 'module' => 'settings', 'label' => 'Configuración', 'route' => '?module=settings', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
-            ['id' => 'api-system', 'module' => 'api', 'label' => 'API e Integraciones', 'route' => '?module=api', 'permission' => 'api_tokens.manage', 'icon' => 'chart', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'tools-system', 'module' => 'tools', 'label' => 'Herramientas', 'route' => '?module=tools', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'api-system', 'module' => 'api', 'label' => 'API e Integraciones', 'route' => '?module=api', 'permission' => 'api_tokens.manage', 'icon' => 'chart', 'order' => 50, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'tools', 'label' => 'Herramientas', 'description' => 'Utilidades de soporte y demostración.', 'icon' => 'wrench', 'order' => 70, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
-            ['id' => 'demo-tools', 'module' => 'demo', 'label' => 'Demo Data Manager', 'route' => '?module=demo', 'permission' => 'demo.manage', 'icon' => 'wrench', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+        ['id' => 'tools', 'label' => 'Herramientas', 'description' => 'Centro de mantenimiento, sincronización y soporte del ERP.', 'icon' => 'wrench', 'order' => 70, 'visible' => true, 'department' => 'sistema', 'badge' => null, 'count' => null, 'items' => [
+            ['id' => 'tools-center', 'module' => 'tools', 'label' => 'Centro de Herramientas', 'route' => '?module=tools', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'demo-tools', 'module' => 'demo', 'label' => 'Demo Data Manager', 'route' => '?module=demo', 'permission' => 'demo.manage', 'icon' => 'wrench', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
     ],
 ];

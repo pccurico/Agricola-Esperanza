@@ -5,6 +5,8 @@ declare(strict_types=1);
 $currentModule = (string) ($_GET['module'] ?? '');
 $navigationAuth = new \CampoSur\Services\Auth(database()->connection());
 $navigationRole = (int) ($_SESSION['role_id'] ?? 0);
+$navigationRoleDepartment = (string) ($_SESSION['role_department'] ?? 'general');
+$navigationRoleIsSystem = (bool) ((int) ($_SESSION['role_is_system'] ?? 0) === 1);
 $navigationCompanyQuery = database()->connection()->prepare('SELECT trade_name, logo_path FROM companies WHERE id = ? LIMIT 1');
 $navigationCompanyQuery->execute([(int) ($_SESSION['company_id'] ?? 0)]);
 $navigationCompanyData = $navigationCompanyQuery->fetch() ?: [];
@@ -16,6 +18,12 @@ $navigationIcon = static fn (string $icon): string => $navigationConfig['icons']
 $navigationVisibleGroups = [];
 foreach ($navigationConfig['groups'] as $group) {
     if (($group['visible'] ?? true) !== true) {
+        continue;
+    }
+    $groupDepartment = (string) ($group['department'] ?? 'general');
+    $isSystemGroup = $groupDepartment === 'sistema';
+    $isDepartmentAllowed = $navigationRoleIsSystem || $navigationRoleDepartment === 'general' || $groupDepartment === 'general' || $groupDepartment === $navigationRoleDepartment || ($navigationRoleDepartment === 'bodega' && $groupDepartment === 'administracion') || ($navigationRoleDepartment === 'rrhh' && $groupDepartment === 'administracion') || ($navigationRoleDepartment === 'administracion' && $groupDepartment === 'produccion') || ($navigationRoleDepartment === 'gerencia' && $groupDepartment === 'administracion');
+    if (!$isDepartmentAllowed && !$isSystemGroup) {
         continue;
     }
     $visibleItems = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole): bool {

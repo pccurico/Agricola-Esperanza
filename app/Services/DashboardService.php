@@ -55,7 +55,13 @@ final class DashboardService extends BaseService
         $productionSeries = $this->series("SELECT DATE_FORMAT(production_date, '{$productionFormat}') AS period, SUM(quantity) AS value FROM production_entries WHERE company_id = ? AND production_date BETWEEN '{$periodStart}' AND '{$periodEnd}'{$productionFilters} GROUP BY period ORDER BY period DESC LIMIT {$costLimit}");
         $inventoryAlerts = $this->connection->prepare('SELECT i.name, i.unit, i.minimum_stock, COALESCE(SUM(CASE WHEN m.movement_type = "IN" THEN m.quantity WHEN m.movement_type = "OUT" THEN -m.quantity ELSE m.quantity END), 0) AS stock FROM inventory_items i LEFT JOIN inventory_movements m ON m.item_id = i.id AND m.company_id = i.company_id WHERE i.company_id = ? AND i.active = 1 GROUP BY i.id, i.name, i.unit, i.minimum_stock HAVING stock <= i.minimum_stock ORDER BY stock ASC, i.name LIMIT 6');
         $inventoryAlerts->execute([$this->companyId]);
+        $totalsData = $totals->fetch() ?: ['total_cost' => 0, 'hectares' => 0, 'movements' => 0];
         $metricsData = $metrics->fetch() ?: [];
+        $inventoryAlertRows = $inventoryAlerts->fetchAll();
+        $costPerUnit = (float) ($metricsData['production'] ?? 0) > 0 ? (float) ($totalsData['total_cost'] ?? 0) / (float) ($metricsData['production'] ?? 0) : 0;
+        $productionPerHectare = (float) ($totalsData['hectares'] ?? 0) > 0 ? (float) ($metricsData['production'] ?? 0) / (float) ($totalsData['hectares'] ?? 0) : 0;
+        $profitability = (float) ($totalsData['total_cost'] ?? 0) > 0 ? (float) ($metricsData['production'] ?? 0) / (float) ($totalsData['total_cost'] ?? 0) : 0;
+        $inventoryAlertCount = count($inventoryAlertRows);
         if ($process !== '' || $farmId > 0 || $blockId > 0) {
             $scope = $this->connection->prepare("SELECT farm_id, block_id, NULL AS worker_id FROM expense_entries WHERE company_id = ? AND entry_date BETWEEN '{$periodStart}' AND '{$periodEnd}'{$expenseFilters} UNION ALL SELECT farm_id, block_id, worker_id FROM labor_entries WHERE company_id = ? AND labor_date BETWEEN '{$periodStart}' AND '{$periodEnd}'{$laborFilters} UNION ALL SELECT farm_id, block_id, NULL AS worker_id FROM production_entries WHERE company_id = ? AND production_date BETWEEN '{$periodStart}' AND '{$periodEnd}'{$productionFilters}");
             $scope->execute([$this->companyId, $this->companyId, $this->companyId]);
@@ -76,13 +82,18 @@ final class DashboardService extends BaseService
         }
         return [
             'company' => $company->fetch() ?: [],
-            'totals' => $totals->fetch() ?: ['total_cost' => 0, 'hectares' => 0, 'movements' => 0],
+            'totals' => $totalsData,
             'recent' => $recent->fetchAll(),
-            'metrics' => $metricsData,
+            'metrics' => array_merge($metricsData, [
+                'cost_per_unit' => $costPerUnit,
+                'production_per_hectare' => $productionPerHectare,
+                'profitability' => $profitability,
+                'inventory_alert_count' => $inventoryAlertCount,
+            ]),
             'operational' => $operational->fetch() ?: [],
             'cost_series' => array_reverse($costSeries),
             'production_series' => array_reverse($productionSeries),
-            'inventory_alerts' => $inventoryAlerts->fetchAll(),
+            'inventory_alerts' => $inventoryAlertRows,
             'period' => $period,
             'reference_date' => $fromDate->format('Y-m-d'),
             'period_start' => $periodStart,
