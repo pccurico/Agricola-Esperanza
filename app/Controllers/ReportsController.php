@@ -9,7 +9,13 @@ final class ReportsController extends BaseController
     public function handle(): array
     {
         $report = new \CampoSur\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
-        $summary = $report->summary();
+        $summary = $report->summary([
+            'date_from' => (string) ($_GET['date_from'] ?? ''),
+            'date_to' => (string) ($_GET['date_to'] ?? ''),
+            'farm_id' => (int) ($_GET['farm_id'] ?? 0),
+            'block_id' => (int) ($_GET['block_id'] ?? 0),
+            'process' => (string) ($_GET['process'] ?? ''),
+        ]);
         if (($_GET['export'] ?? '') === 'csv') {
             (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'csv']);
             $this->exportCsv($summary);

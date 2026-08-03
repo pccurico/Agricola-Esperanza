@@ -21,7 +21,6 @@ return [
     'groups' => [
         ['id' => 'home', 'label' => 'Inicio', 'description' => 'Accesos personales y resumen ejecutivo.', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'dashboard-home', 'module' => '', 'label' => 'Dashboard', 'route' => '/', 'permission' => 'dashboard.view', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
-            ['id' => 'profile-home', 'module' => 'profile', 'label' => 'Mi Perfil', 'route' => '?module=profile', 'permission' => 'dashboard.view', 'icon' => 'users', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
         ['id' => 'production', 'label' => 'Producción Agrícola', 'description' => 'Planificación y operación agrícola.', 'icon' => 'plant', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'production-module', 'module' => 'production', 'label' => 'Producción', 'route' => '?module=production', 'permission' => 'production.view', 'icon' => 'plant', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
@@ -50,7 +49,6 @@ return [
             ['id' => 'labor-human-resources', 'module' => 'labor', 'label' => 'Mano de Obra', 'route' => '?module=labor', 'permission' => 'labor.view', 'icon' => 'users', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
         ['id' => 'management', 'label' => 'Gerencia', 'description' => 'Visión ejecutiva, resultados y actividad del sistema.', 'icon' => 'chart', 'order' => 70, 'visible' => true, 'badge' => null, 'count' => null, 'items' => [
-            ['id' => 'dashboard-management', 'module' => '', 'label' => 'Dashboard', 'route' => '/', 'permission' => 'dashboard.view', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'reports-management', 'module' => 'reports', 'label' => 'Informes', 'route' => '?module=reports', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'audit-management', 'module' => 'audit', 'label' => 'Actividad', 'route' => '?module=audit', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],

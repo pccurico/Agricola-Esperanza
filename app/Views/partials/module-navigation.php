@@ -25,14 +25,6 @@ foreach ($navigationConfig['groups'] as $group) {
         $navigationVisibleGroups[] = $group;
     }
 }
-$currentGroups = [];
-foreach ($navigationVisibleGroups as $group) {
-    foreach ($group['items'] as $item) {
-        if (($item['module'] ?? '') === $currentModule) {
-            $currentGroups[$group['id']] = true;
-        }
-    }
-}
 ?>
 <aside class="module-sidebar" data-navigation-sidebar>
     <header class="sidebar-brand">
@@ -43,7 +35,11 @@ foreach ($navigationVisibleGroups as $group) {
     <label class="navigation-search"><span><?= $navigationIcon('search') ?></span><input type="search" placeholder="Buscar módulo" aria-label="Buscar módulo" data-navigation-search autocomplete="off"></label>
     <nav class="dashboard-nav" aria-label="Navegación principal">
         <?php usort($navigationVisibleGroups, static fn (array $left, array $right): int => (int) ($left['order'] ?? 0) <=> (int) ($right['order'] ?? 0)); ?>
-        <?php foreach ($navigationVisibleGroups as $group): $groupOpen = isset($currentGroups[$group['id']]); ?>
+        <?php foreach ($navigationVisibleGroups as $group): $groupOpen = false; ?>
+            <?php if ($group['id'] === 'home'): ?>
+                <a class="navigation-group-toggle navigation-group-link <?= $currentModule === '' ? 'active' : '' ?>" href="./" title="<?= htmlspecialchars((string) ($group['description'] ?? $group['label']), ENT_QUOTES, 'UTF-8') ?>"><span class="navigation-group-heading"><span class="navigation-group-icon"><?= $navigationIcon($group['icon']) ?></span><span class="navigation-group-label"><?= htmlspecialchars($group['label'], ENT_QUOTES, 'UTF-8') ?></span></span></a>
+                <?php continue; ?>
+            <?php endif; ?>
             <section class="navigation-group <?= $groupOpen ? 'is-open' : '' ?>" data-navigation-group data-group-id="<?= htmlspecialchars($group['id'], ENT_QUOTES, 'UTF-8') ?>" data-search-label="<?= htmlspecialchars(strtolower($group['label'] . ' ' . ($group['description'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
                 <button class="navigation-group-toggle" type="button" aria-expanded="<?= $groupOpen ? 'true' : 'false' ?>" aria-controls="navigation-items-<?= htmlspecialchars($group['id'], ENT_QUOTES, 'UTF-8') ?>" data-navigation-toggle title="<?= htmlspecialchars((string) ($group['description'] ?? $group['label']), ENT_QUOTES, 'UTF-8') ?>">
                     <span class="navigation-group-heading"><span class="navigation-group-icon"><?= $navigationIcon($group['icon']) ?></span><span class="navigation-group-label"><?= htmlspecialchars($group['label'], ENT_QUOTES, 'UTF-8') ?></span><?php if (!empty($group['badge'])): ?><span class="navigation-badge"><?= htmlspecialchars((string) $group['badge'], ENT_QUOTES, 'UTF-8') ?></span><?php endif; ?></span><span class="navigation-chevron"><?= $navigationIcon('chevron') ?></span>

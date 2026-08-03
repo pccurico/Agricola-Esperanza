@@ -90,9 +90,18 @@ if (($_GET['asset'] ?? '') === 'attachment') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage'];
+$modulePermissions = ['users' => 'users.view', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage'];
 $module = (string) ($_GET['module'] ?? '');
-if (isset($modulePermissions[$module])) {
+if ($module === 'users') {
+    authorize_any(['users.view', 'users.manage', 'roles.manage']);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        match ($_POST['action'] ?? '') {
+            'create_user', 'toggle_user' => authorize('users.manage'),
+            'create_role' => authorize('roles.manage'),
+            default => null,
+        };
+    }
+} elseif (isset($modulePermissions[$module])) {
     authorize($modulePermissions[$module]);
 }
 if ($module === 'reports' && isset($_GET['export'])) {
@@ -120,8 +129,8 @@ if ($module === 'notifications') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('notifications.update');
     }
-    $notifications = (new CampoSur\Controllers\NotificationController())->handle();
-    extract($notifications, EXTR_SKIP);
+    $notificationsData = (new CampoSur\Controllers\NotificationController())->handle();
+    extract($notificationsData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/notifications.php';
     exit;
 }
@@ -200,8 +209,8 @@ if ($module === 'warehouses') {
 }
 
 if ($module === 'catalogs') {
-    $catalogs = (new CampoSur\Controllers\CatalogController())->handle();
-    extract($catalogs, EXTR_SKIP);
+    $catalogsData = (new CampoSur\Controllers\CatalogController())->handle();
+    extract($catalogsData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/catalogs.php';
     exit;
 }
@@ -242,8 +251,8 @@ if ($module === 'procurement') {
 }
 
 if ($module === 'users') {
-    $users = (new CampoSur\Controllers\UsersController())->handle();
-    extract($users, EXTR_SKIP);
+    $usersData = (new CampoSur\Controllers\UsersController())->handle();
+    extract($usersData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/users.php';
     exit;
 }

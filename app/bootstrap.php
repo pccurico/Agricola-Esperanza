@@ -70,3 +70,15 @@ function authorize(string $permission): void
         exit('No tienes permisos para acceder a este módulo.');
     }
 }
+
+function authorize_any(array $permissions): void
+{
+    $auth = new \CampoSur\Services\Auth(database()->connection());
+    foreach ($permissions as $permission) {
+        if ($auth->can((int) $_SESSION['role_id'], $permission)) {
+            return;
+        }
+    }
+    http_response_code(403);
+    exit('No tienes permisos para acceder a este módulo.');
+}
