@@ -24,3 +24,6 @@ docs/*
 # Scripts temporales o de trabajo
 scripts/tmp/*
 scripts/cache/*
+
+# Versiones de archivos generadas automáticamente
+dist/*

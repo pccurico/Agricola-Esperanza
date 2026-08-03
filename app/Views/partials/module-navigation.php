@@ -58,7 +58,6 @@ foreach ($navigationVisibleGroups as $group) {
             </section>
         <?php endforeach; ?>
     </nav>
-    <div class="dashboard-user"><span class="dashboard-avatar"><?= htmlspecialchars(strtoupper(substr($navigationUser, 0, 2)), ENT_QUOTES, 'UTF-8') ?></span><div><strong><?= htmlspecialchars($navigationUser, ENT_QUOTES, 'UTF-8') ?></strong><a href="?logout=1">Salir</a></div></div>
 </aside>
 <header class="erp-topbar" data-navigation-topbar>
     <div class="erp-topbar-start"><button class="erp-topbar-toggle" type="button" data-navigation-collapse aria-label="Colapsar menú" title="Mostrar u ocultar menú"><?= $navigationIcon('menu') ?></button><div class="erp-topbar-context"><span>Gestión agrícola</span><strong><?= htmlspecialchars($navigationCompany, ENT_QUOTES, 'UTF-8') ?></strong></div></div>
@@ -66,3 +65,4 @@ foreach ($navigationVisibleGroups as $group) {
     <div class="erp-topbar-actions"><a class="erp-topbar-action" href="?module=requests" title="Solicitudes internas">+</a><a class="erp-topbar-action" href="?module=notifications" title="Notificaciones" aria-label="Notificaciones">●</a><details class="erp-user-menu"><summary><span class="dashboard-avatar"><?= htmlspecialchars(strtoupper(substr($navigationUser, 0, 2)), ENT_QUOTES, 'UTF-8') ?></span><strong><?= htmlspecialchars($navigationUser, ENT_QUOTES, 'UTF-8') ?></strong></summary><div class="erp-user-dropdown"><a href="?module=profile">Mi Perfil</a><a href="?logout=1">Salir</a></div></details></div>
 </header>
 <script src="assets/js/navigation.js" defer></script>
+<script src="assets/js/table-layout.js" defer></script>

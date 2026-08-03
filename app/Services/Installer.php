@@ -25,6 +25,8 @@ final class Installer extends BaseService
             $this->runSeed('001_permissions', $this->rootPath . '/database/seeds/001_permissions.sql');
             $this->runSeed('002_system_catalogs', $this->rootPath . '/database/seeds/002_system_catalogs.sql');
             $this->runSeed('003_catalog_values', $this->rootPath . '/database/seeds/003_catalog_values.sql');
+            // The canonical schema is the baseline; migrations add their data fixes and latest permissions.
+            (new MigrationRunner($this->connection, $this->rootPath))->run();
 
             $this->connection->beginTransaction();
             $company = $this->connection->prepare(

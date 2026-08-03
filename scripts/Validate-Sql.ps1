@@ -82,6 +82,12 @@ foreach ($migration in $migrations) {
     Write-Result "Migración no vacía: $($migration.Name)" ($statements.Count -gt 0) 'Contiene SQL ejecutable.'
 }
 
+$installerPath = Join-Path $ProjectRoot 'app/Services/Installer.php'
+if (Test-Path -LiteralPath $installerPath) {
+    $installerSource = Get-Content -Raw -LiteralPath $installerPath
+    Write-Result 'Instalador ejecuta migraciones posteriores al esquema' ($installerSource -match 'new\s+MigrationRunner\s*\(') 'Las migraciones de datos y permisos se aplican en una instalación nueva.'
+}
+
 $seeds = @()
 if (Test-Path -LiteralPath $seedsPath) {
     $seeds = @(Get-ChildItem -LiteralPath $seedsPath -Filter '*.sql' -File | Sort-Object Name)

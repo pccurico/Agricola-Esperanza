@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$Version = 'v1.7.01'
+    [string]$Version = 'v1.7.02',
+    [switch]$SkipValidation,
+    [switch]$SkipComposer
 )
 
 Set-StrictMode -Version Latest
@@ -11,6 +13,33 @@ $distRoot = Join-Path $projectRoot 'dist'
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $distributionName = "pccurico-agricola-$Version-$timestamp"
 $distributionRoot = Join-Path $distRoot $distributionName
+
+if ($Version -notmatch '^v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') {
+    throw 'Version inválida. Usa el formato vMAJOR.MINOR.PATCH, por ejemplo v1.7.02.'
+}
+
+if (-not $SkipValidation) {
+    & (Join-Path $projectRoot 'scripts/Validate-Project.ps1')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'El build de producción se canceló: las validaciones del proyecto fallaron.'
+    }
+}
+
+if (-not $SkipComposer) {
+    $composerCommand = Get-Command composer -ErrorAction SilentlyContinue
+    if ($null -eq $composerCommand) {
+        throw 'Composer es requerido para generar una distribución de producción. Usa -SkipComposer solo si vendor fue generado previamente con --no-dev.'
+    }
+    Push-Location $projectRoot
+    try {
+        & $composerCommand.Source install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Composer no pudo preparar las dependencias de producción.'
+        }
+    } finally {
+        Pop-Location
+    }
+}
 
 New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 while (Test-Path $distributionRoot) {
@@ -43,6 +72,13 @@ Copy-DistributionItem 'app' $distributionRoot
 Copy-DistributionItem 'public' $distributionRoot
 Copy-DistributionItem 'database' $distributionRoot
 
+$requiredDatabaseFiles = @('database/schema.sql', 'database/seeds/001_permissions.sql', 'database/seeds/002_system_catalogs.sql', 'database/seeds/003_catalog_values.sql', 'database/migrations/024_purchase_invoices.sql')
+foreach ($relativePath in $requiredDatabaseFiles) {
+    if (-not (Test-Path -LiteralPath (Join-Path $distributionRoot $relativePath))) {
+        throw "El paquete no contiene el recurso de base de datos requerido: $relativePath"
+    }
+}
+
 $configDestination = Join-Path $distributionRoot 'config'
 New-Item -ItemType Directory -Path $configDestination -Force | Out-Null
 Copy-DistributionItem 'config/.htaccess' $configDestination
@@ -64,6 +100,20 @@ $denyRules = @'
 Set-Content -Path (Join-Path $storageDestination '.htaccess') -Value $denyRules -Encoding ASCII
 Set-Content -Path (Join-Path $logsDestination '.htaccess') -Value $denyRules -Encoding ASCII
 Set-Content -Path (Join-Path $uploadsDestination '.htaccess') -Value $denyRules -Encoding ASCII
+
+$forbiddenReleaseFiles = @('config/config.php', 'config/development.php', '.git', '.env', 'docs', 'scripts')
+foreach ($relativePath in $forbiddenReleaseFiles) {
+    if (Test-Path -LiteralPath (Join-Path $distributionRoot $relativePath)) {
+        throw "El paquete de producción contiene un recurso no distribuible: $relativePath"
+    }
+}
+
+$manifestPath = Join-Path $distributionRoot 'MANIFEST.sha256'
+$manifest = Get-ChildItem -LiteralPath $distributionRoot -Recurse -File | Where-Object { $_.FullName -ne $manifestPath } | Sort-Object FullName | ForEach-Object {
+    $relativePath = $_.FullName.Substring($distributionRoot.Length + 1).Replace('\', '/')
+    "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash)  $relativePath"
+}
+Set-Content -LiteralPath $manifestPath -Value $manifest -Encoding ASCII
 
 $tarCommand = Get-Command tar -ErrorAction SilentlyContinue
 if ($null -eq $tarCommand) {
