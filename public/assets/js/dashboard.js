@@ -185,16 +185,20 @@
 
     function createChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
+        console.log('DOM CHECK', canvasId, canvas);
         if (!(canvas instanceof HTMLCanvasElement)) {
             console.warn(`Canvas not found: ${canvasId}`);
             return null;
         }
 
         console.log(`Creating chart on ${canvasId}`, config);
-        return new Chart(canvas, config);
+        const chart = new Chart(canvas, config);
+        console.log('Chart instance', canvasId, chart);
+        return chart;
     }
 
     function renderProductionBudgetChart(data) {
+        console.log('PRODUCTION DATA', data);
         destroyChart(state.charts.productionBudget);
         const series = normalizeSeries(data.production_series);
         const budget = Number(data.budget?.planned || 0);
@@ -264,18 +268,6 @@
                         },
                     },
                 },
-                plugins: {
-                    ...chartDefaults.plugins,
-                    tooltip: {
-                        ...chartDefaults.plugins.tooltip,
-                        callbacks: {
-                            title: items => items.map(item => item.label).join(' / '),
-                            label: context => `${context.dataset.label}: ${currencyFormatter.format(context.parsed.y ?? 0)}`,
-                        },
-                    },
-                    legend: chartDefaults.plugins.legend,
-                    datalabels: false,
-                },
             },
             plugins: [
                 {
@@ -306,6 +298,7 @@
     }
 
     function renderTrendChart(data) {
+        console.log('TREND DATA', data);
         destroyChart(state.charts.trend);
         const seriesProduction = normalizeSeries(data.production_series);
         const seriesCost = normalizeSeries(data.cost_series);
@@ -382,6 +375,7 @@
     }
 
     function renderCostProcessChart(data) {
+        console.log('COST DATA', data);
         destroyChart(state.charts.costProcess);
         const rows = normalizeCostProcess(data.cost_by_process);
         const labels = rows.map(row => row.process);
@@ -557,6 +551,12 @@
 
     function init() {
         const initialData = window.dashboardData || {};
+        console.info('dashboard.js initialized', {
+            hasData: Object.keys(initialData).length > 0,
+            productionSeries: Array.isArray(initialData.production_series) ? initialData.production_series.length : 0,
+            costSeries: Array.isArray(initialData.cost_series) ? initialData.cost_series.length : 0,
+            costByProcess: Array.isArray(initialData.cost_by_process) ? initialData.cost_by_process.length : 0,
+        });
         renderProductionBudgetChart(initialData);
         renderTrendChart(initialData);
         renderCostProcessChart(initialData);

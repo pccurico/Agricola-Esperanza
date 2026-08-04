@@ -134,220 +134,180 @@ $dashboardJson = json_encode([
             </form>
         </section>
 
-        <section class="dashboard-context-row">
-            <div class="dashboard-context-pill">
-                <span>Período seleccionado</span>
-                <strong id="selected-period"><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-            <div class="dashboard-context-pill">
-                <span>Fundo</span>
-                <strong id="selected-farm"><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-            <div class="dashboard-context-pill">
-                <span>Cuartel</span>
-                <strong id="selected-block"><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-            <div class="dashboard-context-pill">
-                <span>Proceso</span>
-                <strong id="selected-process"><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-        </section>
-
-        <?php if ($kpis !== []): ?>
-            <section class="dashboard-kpi-row">
-                <?php foreach ($kpis as $widget): ?>
-                    <?php $trend = strtolower((string) ($widget['metadata']['trend'] ?? $widget['trend'] ?? '')); ?>
-                    <?php $direction = $trend === 'up' ? '▲' : ($trend === 'down' || $trend === 'warning' ? '▼' : '→'); ?>
-                    <?php $statusClass = $trend === 'up' ? 'positive' : ($trend === 'down' ? 'negative' : 'neutral'); ?>
-                    <?php $iconLabel = strtoupper(substr((string) ($widget['module'] ?? $widget['label'] ?? 'BI'), 0, 2)); ?>
-                    <article class="dashboard-kpi-card">
-                        <div class="dashboard-kpi-card-head">
-                            <div class="dashboard-kpi-card-icon"><?= htmlspecialchars($iconLabel, ENT_QUOTES, 'UTF-8') ?></div>
-                            <span class="dashboard-kpi-chip"><?= htmlspecialchars(strtoupper((string) ($widget['module'] ?? 'GENERAL')), ENT_QUOTES, 'UTF-8') ?></span>
-                        </div>
-                        <div class="dashboard-kpi-card-body">
-                            <p><?= htmlspecialchars($widget['title'] ?? $widget['label'] ?? 'Indicador', ENT_QUOTES, 'UTF-8') ?></p>
-                            <strong class="dashboard-kpi-card-value">
-                                <?= htmlspecialchars(is_numeric($widget['value']) ? number_format((float) $widget['value'], ($widget['unit'] ?? '') === '%' ? 1 : (((float) abs($widget['value']) >= 1000 || floor((float) abs($widget['value'])) === (float) abs($widget['value'])) ? 0 : 2), ',', '.') : (string) $widget['value'], ENT_QUOTES, 'UTF-8') ?>
-                                <?= !empty($widget['unit']) ? htmlspecialchars($widget['unit'], ENT_QUOTES, 'UTF-8') : '' ?>
-                            </strong>
-                        </div>
-                        <div class="dashboard-kpi-card-meta">
-                            <span class="dashboard-kpi-trend <?= $statusClass ?>"><?= $direction ?> <?= htmlspecialchars((string) ($widget['metadata']['note'] ?? $widget['metadata']['detail'] ?? '')) ?></span>
-                            <?php if (!empty($widget['module'])): ?>
-                                <a class="dashboard-kpi-link" href="?module=<?= htmlspecialchars($widget['module'], ENT_QUOTES, 'UTF-8') ?>">Ver módulo</a>
-                            <?php endif; ?>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </section>
-        <?php endif; ?>
-
-        <section class="dashboard-section-grid">
-            <article class="dashboard-section-card">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Producción vs presupuesto</h2>
-                        <small>Comparativa del periodo con ejecución real del plan</small>
-                    </div>
-                </header>
-                <div class="dashboard-compare-row">
-                    <div class="dashboard-compare-metric">
-                        <span>Total producción</span>
-                        <strong id="kpi-production-total"><?= htmlspecialchars(number_format((float) ($productionKpi['value'] ?? $metrics['production'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($productionKpi['unit'] ?? 'kg', ENT_QUOTES, 'UTF-8') ?></strong>
-                    </div>
-                    <div class="dashboard-compare-metric">
-                        <span>Costo operativo</span>
-                        <strong id="kpi-total-cost"><?= htmlspecialchars(number_format((float) ($totals['total_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
-                    </div>
-                    <div class="dashboard-compare-metric">
-                        <span>Presupuesto ejecutado</span>
-                        <strong id="kpi-budget-executed"><?= htmlspecialchars(number_format((float) ($budgetKpi['value'] ?? 0), 1, ',', '.'), ENT_QUOTES, 'UTF-8') ?>%</strong>
-                    </div>
-                </div>
-                <div class="dashboard-chart-frame">
-                    <?php if ($costSeries !== []): ?>
-                        <div class="dashboard-mini-chart">
-                            <span>Costos vs Presupuesto</span>
-                            <div class="dashboard-chart-body">
-                                <canvas id="productionBudgetChart" aria-label="Costos vs Presupuesto" role="img"></canvas>
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <p class="empty-state">No hay datos suficientes para mostrar la comparativa.</p>
-                    <?php endif; ?>
-                </div>
+        <div class="stats-row">
+            <article class="stat-card">
+                <span class="stat-label">Producción total</span>
+                <strong id="kpi-production-total"><?= htmlspecialchars(number_format((float) ($productionKpi['value'] ?? $metrics['production'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($productionKpi['unit'] ?? 'kg', ENT_QUOTES, 'UTF-8') ?></strong>
+                <small>Volumen total registrado en el periodo</small>
             </article>
-
-            <article class="dashboard-section-card">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Costos por proceso</h2>
-                        <small>Principales componentes de costo en el periodo</small>
-                    </div>
-                </header>
-                <div class="dashboard-chart-body">
-                    <?php if ($costProcesses !== []): ?>
-                        <canvas id="costProcessChart" aria-label="Costos por proceso" role="img"></canvas>
-                    <?php else: ?>
-                        <p class="empty-state">No hay costos categorizados en este periodo.</p>
-                    <?php endif; ?>
-                </div>
-                <div class="dashboard-section-list" id="cost-process-list">
-                    <?php if ($costProcesses !== []): ?>
-                        <?php foreach (array_slice($costProcesses, 0, 6) as $row): ?>
-                            <div class="dashboard-list-row">
-                                <span><?= htmlspecialchars((string) ($row['process'] ?? $row['category'] ?? 'Sin dato'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <strong><?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="empty-state">No hay costos categorizados en este periodo.</p>
-                    <?php endif; ?>
-                </div>
+            <article class="stat-card">
+                <span class="stat-label">Costo operativo</span>
+                <strong id="kpi-total-cost"><?= htmlspecialchars(number_format((float) ($totals['total_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
+                <small>Costos directos y de mano de obra</small>
             </article>
+            <article class="stat-card">
+                <span class="stat-label">Presupuesto ejecutado</span>
+                <strong id="kpi-budget-executed"><?= htmlspecialchars(number_format((float) ($budgetKpi['value'] ?? 0), 1, ',', '.'), ENT_QUOTES, 'UTF-8') ?>%</strong>
+                <small>Avance del presupuesto planificado</small>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Alertas críticas</span>
+                <strong><?= htmlspecialchars(number_format((int) ($alerts[0]['count'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                <small>Incidentes activos en el ERP</small>
+            </article>
+        </div>
 
-            <article class="dashboard-section-card dashboard-chart-group">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Evolución temporal</h2>
-                        <small>Tendencias de producción y costos en el periodo</small>
+        <div class="page-grid">
+            <main class="main-column">
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Producción vs presupuesto</h2>
+                            <p>Comparativa del periodo con ejecución real del plan.</p>
+                        </div>
+                        <span class="badge badge-neutral">Comparativo</span>
                     </div>
-                </header>
-                <?php if ($productionSeries !== [] || $costSeries !== []): ?>
+                    <div class="dashboard-chart-body">
+                        <canvas id="productionBudgetChart" aria-label="Costos vs Presupuesto" role="img"></canvas>
+                        <?php if ($costSeries === []): ?>
+                            <p class="empty-state">Sin información para el período seleccionado</p>
+                        <?php endif; ?>
+                    </div>
+                </section>
+
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Evolución temporal</h2>
+                            <p>Tendencias de producción y costos en el periodo actual.</p>
+                        </div>
+                        <span class="badge badge-neutral">Tendencia</span>
+                    </div>
                     <div class="dashboard-chart-body">
                         <canvas id="trendChart" aria-label="Evolución temporal de producción y costos" role="img"></canvas>
+                        <?php if ($productionSeries === [] && $costSeries === []): ?>
+                            <p class="empty-state">Sin información para el período seleccionado</p>
+                        <?php endif; ?>
                     </div>
-                <?php else: ?>
-                    <p class="empty-state">No hay indicadores temporales definidos en este dashboard.</p>
-                <?php endif; ?>
-            </article>
-        </section>
+                </section>
 
-        <section class="dashboard-bottom-grid">
-            <article class="dashboard-section-card">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Alertas críticas</h2>
-                        <small>Incidencias que requieren atención inmediata</small>
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Costos por proceso</h2>
+                            <p>Distribución de costos por unidad de proceso.</p>
+                        </div>
+                        <span class="badge badge-neutral">Detalle</span>
                     </div>
-                </header>
-                <div class="dashboard-section-list">
-                    <?php if ($alerts !== []): ?>
-                        <?php foreach ($alerts as $alert): ?>
-                            <div class="dashboard-list-row">
-                                <div>
-                                    <strong><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></strong>
-                                    <small><?= htmlspecialchars((string) ((int) ($alert['count'] ?? 0)) . ' items', ENT_QUOTES, 'UTF-8') ?></small>
-                                </div>
-                                <span class="dashboard-status-pill <?= htmlspecialchars((string) ($alert['severity'] ?? 'normal'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper((string) ($alert['severity'] ?? 'normal')), ENT_QUOTES, 'UTF-8') ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="empty-state">No hay alertas críticas en este periodo.</p>
+                    <div class="dashboard-chart-body">
+                        <canvas id="costProcessChart" aria-label="Costos por proceso" role="img"></canvas>
+                        <?php if ($costProcesses === []): ?>
+                            <p class="empty-state">Sin información para el período seleccionado</p>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($costProcesses !== []): ?>
+                        <div class="card-list">
+                            <?php foreach (array_slice($costProcesses, 0, 6) as $row): ?>
+                                <article class="item-card">
+                                    <div class="item-card-head">
+                                        <div>
+                                            <h3><?= htmlspecialchars((string) ($row['process'] ?? $row['category'] ?? 'Sin dato'), ENT_QUOTES, 'UTF-8') ?></h3>
+                                            <p>Costos asociados</p>
+                                        </div>
+                                        <span class="badge badge-secondary">CLP</span>
+                                    </div>
+                                    <div class="item-card-meta">
+                                        <strong><?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
-                </div>
-            </article>
+                </section>
+            </main>
 
-            <article class="dashboard-section-card">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Actividad reciente</h2>
-                        <small>Movimientos y transacciones recientes del ERP</small>
+            <aside class="sidebar-column">
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Contexto del periodo</h2>
+                            <p>Filtros seleccionados y estado del período.</p>
+                        </div>
                     </div>
-                </header>
-                <div class="dashboard-section-list">
-                    <?php if ($recentActivities !== []): ?>
-                        <?php foreach (array_slice($recentActivities, 0, 8) as $row): ?>
-                            <div class="dashboard-list-row">
-                                <div>
-                                    <strong><?= htmlspecialchars((string) ($row['label'] ?? $row['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                                    <small><?= htmlspecialchars((string) ($row['type'] ?? $row['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string) ($row['date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small>
-                                </div>
-                                <strong><?= htmlspecialchars(is_numeric($row['value']) ? number_format((float) $row['value'], 0, ',', '.') : (string) $row['value'], ENT_QUOTES, 'UTF-8') ?></strong>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="empty-state">No hay actividad reciente para mostrar.</p>
-                    <?php endif; ?>
-                </div>
-            </article>
+                    <div class="card-list">
+                        <article class="item-card">
+                            <span class="stat-label">Período</span>
+                            <strong id="selected-period"><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Fundo</span>
+                            <strong id="selected-farm"><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Cuartel</span>
+                            <strong id="selected-block"><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Proceso</span>
+                            <strong id="selected-process"><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                    </div>
+                </section>
 
-            <article class="dashboard-section-card dashboard-operational-panel">
-                <header class="dashboard-section-header">
-                    <div>
-                        <h2>Indicadores operacionales</h2>
-                        <small>Estado real de tareas, órdenes y recursos</small>
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Alertas críticas</h2>
+                            <p>Incidencias que requieren atención inmediata.</p>
+                        </div>
                     </div>
-                </header>
-                <div class="dashboard-operational-grid">
-                    <div class="dashboard-value-card">
-                        <span>Fincas activas</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($metrics['farms'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    <div class="dashboard-section-list">
+                        <?php if ($alerts !== []): ?>
+                            <?php foreach ($alerts as $alert): ?>
+                                <article class="item-card">
+                                    <div class="item-card-head">
+                                        <div>
+                                            <h3><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></h3>
+                                            <p><?= htmlspecialchars((string) (($alert['count'] ?? 0)) . ' items', ENT_QUOTES, 'UTF-8') ?></p>
+                                        </div>
+                                        <span class="badge <?= htmlspecialchars($alert['severity'] === 'warning' ? 'badge-secondary' : ($alert['severity'] === 'critical' ? 'badge-danger' : 'badge-neutral'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper((string) ($alert['severity'] ?? 'NORMAL')), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="empty-state">No hay alertas críticas en este periodo.</p>
+                        <?php endif; ?>
                     </div>
-                    <div class="dashboard-value-card">
-                        <span>Cuarteles activos</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($metrics['blocks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                </section>
+
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h2>Indicadores operacionales</h2>
+                            <p>Estado de recursos y tareas en el periodo.</p>
+                        </div>
                     </div>
-                    <div class="dashboard-value-card">
-                        <span>Trabajadores activos</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($metrics['workers'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    <div class="card-list">
+                        <article class="item-card">
+                            <span class="stat-label">Fincas activas</span>
+                            <strong><?= htmlspecialchars(number_format((int) ($metrics['farms'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Cuarteles activos</span>
+                            <strong><?= htmlspecialchars(number_format((int) ($metrics['blocks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Trabajadores activos</span>
+                            <strong><?= htmlspecialchars(number_format((int) ($metrics['workers'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
+                        <article class="item-card">
+                            <span class="stat-label">Órdenes pendientes</span>
+                            <strong><?= htmlspecialchars(number_format((int) ($operational['pending_orders'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        </article>
                     </div>
-                    <div class="dashboard-value-card">
-                        <span>Tareas abiertas</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($operational['pending_tasks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                    </div>
-                    <div class="dashboard-value-card">
-                        <span>Órdenes pendientes</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($operational['pending_orders'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                    </div>
-                    <div class="dashboard-value-card">
-                        <span>Solicitudes abiertas</span>
-                        <strong><?= htmlspecialchars(number_format((int) ($operational['open_requests'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                    </div>
-                </div>
-            </article>
-        </section>
+                </section>
+            </aside>
+        </div>
     </section>
 </main>
 
