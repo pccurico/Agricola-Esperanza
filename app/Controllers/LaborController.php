@@ -12,8 +12,14 @@ final class LaborController extends BaseController
         $error = null;
         $success = null;
         $workers = $service->workers();
-        $selectedWorkerId = isset($_GET['worker_id']) ? (int) $_GET['worker_id'] : (int) ($workers[0]['id'] ?? 0);
         $viewName = (string) ($_GET['view'] ?? '');
+
+        $selectedSeasonId = 0;
+        if ($viewName === 'worker-form' && !isset($_GET['worker_id'])) {
+            $selectedWorkerId = 0;
+        } else {
+            $selectedWorkerId = isset($_GET['worker_id']) ? (int) $_GET['worker_id'] : (int) ($workers[0]['id'] ?? 0);
+        }
 
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_worker') {
@@ -48,6 +54,8 @@ final class LaborController extends BaseController
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_labor') {
                 $service->createEntry($_POST, (int) $_SESSION['user_id']);
                 (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'labor_entry');
+                $selectedWorkerId = (int) ($_POST['worker_id'] ?? $selectedWorkerId);
+                $selectedSeasonId = (int) ($_POST['season_id'] ?? 0);
                 $success = 'Labor registrada correctamente.';
             }
         } catch (\Throwable $exception) {
@@ -62,6 +70,8 @@ final class LaborController extends BaseController
             $profileData = ['worker' => null, 'profile' => null, 'contract' => null, 'benefits' => null, 'bank' => null];
         }
 
-        return [...$service->options(), 'workers' => $workers, 'entries' => $service->entries(), 'error' => $error, 'success' => $success, 'selected_worker_id' => $selectedWorkerId, 'profile_data' => $profileData, 'view_name' => $viewName, 'worker_form' => $service->workerFormData($selectedWorkerId)];
+        $showMode = ($viewName === 'worker-form' && (string) ($_GET['show'] ?? '') === '1');
+
+        return [...$service->options(), 'workers' => $workers, 'entries' => $service->entries(), 'error' => $error, 'success' => $success, 'selected_worker_id' => $selectedWorkerId, 'selected_season_id' => $selectedSeasonId, 'profile_data' => $profileData, 'view_name' => $viewName, 'show_mode' => $showMode, 'worker_form' => $service->workerFormData($selectedWorkerId)];
     }
 }

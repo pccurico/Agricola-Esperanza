@@ -84,6 +84,7 @@ Assert-ProjectFile 'database/seeds/001_permissions.sql' 'seed inicial de permiso
 Assert-ProjectFile 'database/seeds/002_system_catalogs.sql' 'seed de catálogos del sistema'
 Assert-ProjectFile 'database/seeds/003_catalog_values.sql' 'seed de valores de catálogo'
 Assert-Directory 'app/Controllers' 'controladores del ERP'
+Assert-Directory 'app/Core' 'clases base del ERP'
 Assert-Directory 'app/Services' 'servicios del ERP'
 Assert-Directory 'app/Views' 'vistas del ERP'
 Assert-Directory 'public/assets' 'assets públicos'
@@ -105,7 +106,8 @@ $requiredMigrations = @(
     '013_procurement_reception_permission.sql', '014_inventory_warehouse_scope.sql', '015_warehouse_permissions.sql',
     '016_internal_request_items.sql', '017_internal_request_permissions.sql', '018_notification_permissions.sql',
     '019_tasks_calendar_permissions.sql', '020_document_permissions.sql', '021_api_token_permissions.sql',
-    '022_complete_module_permissions.sql', '023_demo_data_manager.sql', '024_purchase_invoices.sql', '025_reporting_indexes.sql'
+    '022_complete_module_permissions.sql', '023_demo_data_manager.sql', '024_purchase_invoices.sql', '025_reporting_indexes.sql',
+    '026_user_permissions.sql', '027_worker_profile_schema.sql'
 )
 foreach ($migrationName in $requiredMigrations) {
     Assert-ProjectFile ("database/migrations/$migrationName") 'migración requerida para instalación limpia'

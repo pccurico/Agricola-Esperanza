@@ -28,19 +28,15 @@
                         <h2>Registrar labor</h2>
                         <p>El total se calcula con cantidad por tarifa</p>
                     </header>
-                    <form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_labor"><label>Trabajador<select name="worker_id" required><?php foreach ($workers as $worker): ?><option value="<?= (int) $worker['id'] ?>"><?= htmlspecialchars($worker['full_name']) ?></option><?php endforeach; ?></select></label><label>Temporada<select name="season_id" required><?php foreach ($seasons as $season): ?><option value="<?= (int) $season['id'] ?>"><?= htmlspecialchars($season['name']) ?></option><?php endforeach; ?></select></label><label>Fundo<select name="farm_id">
+                    <form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_labor"><label>Trabajador<select name="worker_id" required><?php foreach ($workers as $worker): ?><option value="<?= (int) $worker['id'] ?>"<?= ((int) $worker['id'] === (int) ($selected_worker_id ?? 0)) ? ' selected' : '' ?>><?= htmlspecialchars($worker['full_name']) ?></option><?php endforeach; ?></select></label><label>Temporada<select name="season_id" required><?php foreach ($seasons as $season): ?><option value="<?= (int) $season['id'] ?>"<?= ((int) $season['id'] === (int) ($selected_season_id ?? 0)) ? ' selected' : '' ?>><?= htmlspecialchars($season['name']) ?></option><?php endforeach; ?></select></label><label>Fundo<select name="farm_id">
                                 <option value="">Sin fundo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name']) ?></option><?php endforeach; ?>
                             </select></label><label>Cuartel<select name="block_id">
                                 <option value="">Sin cuartel</option><?php foreach ($blocks as $block): ?><option value="<?= (int) $block['id'] ?>"><?= htmlspecialchars($block['code'] . ' · ' . $block['name']) ?></option><?php endforeach; ?>
-                            </select></label><label>Fecha<input type="date" name="labor_date" required value="<?= date('Y-m-d') ?>"></label><label>Labor<input name="labor_type" required placeholder="Poda, raleo, cosecha"></label><label>Cantidad<input type="number" name="quantity" min="0.01" step="0.01" required></label><label>Tarifa unitaria<input type="number" name="unit_rate" min="0" step="0.01" required></label><button class="primary-button" type="submit">Registrar labor</button></form>
+                            </select></label><label>Fecha<input type="date" name="labor_date" required value="<?= date('Y-m-d') ?>"></label><label>Labor<input name="labor_type" required placeholder="Poda, raleo, cosecha"></label><label>Cantidad<input type="number" name="quantity" min="0.01" step="0.01" required></label><label>Tarifa unitaria<input type="number" name="unit_rate" min="0" step="1" required></label><button class="primary-button" type="submit">Registrar labor</button></form>
                 </article>
             </section>
 
             <section class="admin-panel">
-                <header class="panel-header">
-                    <h2>Perfil Profesional</h2>
-                    <p>Listado de trabajadores con acceso a ver, editar e inactivar registros.</p>
-                </header>
                 <div class="table-scroll" style="padding: 0 0 22px;">
                     <table class="admin-table">
                         <thead>
@@ -65,6 +61,7 @@
                                     <td>
                                         <div class="table-action-cell">
                                             <a class="table-action" href="?module=labor&worker_id=<?= (int) $worker['id'] ?>&view=worker-form">Editar</a>
+                                            <a class="table-action" href="?module=labor&worker_id=<?= (int) $worker['id'] ?>&view=worker-form&show=1">Ver</a>
                                             <form method="post" style="margin:0;">
                                                 <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                                                 <input type="hidden" name="action" value="toggle_worker">
