@@ -8,7 +8,7 @@ return [
         'url' => 'http://localhost',
         'timezone' => 'America/Santiago',
         'environment' => 'local',
-        'version' => 'v1.7.02',
+        'version' => 'v1.8.04',
     ],
     'updates' => [
         'github_repo' => 'pccurico/Agricola-Esperanza',

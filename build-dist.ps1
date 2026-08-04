@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = 'v1.7.02',
+    [string]$Version = '',
     [switch]$SkipValidation,
     [switch]$SkipComposer
 )
@@ -40,6 +40,35 @@ function Assert-Directory {
     }
 }
 
+function Resolve-BuildVersion {
+    param(
+        [string]$Version
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Version)) {
+        return $Version
+    }
+
+    $configPaths = @(
+        'config/config.php',
+        'config/config.example.php'
+    )
+
+    foreach ($relativePath in $configPaths) {
+        $sourcePath = Join-Path $projectRoot $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath)) {
+            continue
+        }
+
+        $content = Get-Content -LiteralPath $sourcePath -Raw
+        if ($content -match "'version'\s*=>\s*'([^']*)'") {
+            return $Matches[1]
+        }
+    }
+
+    throw 'No se pudo determinar la versión de build. Indica -Version o define app.version en config/config.example.php.'
+}
+
 function Copy-DistributionItem {
     param(
         [Parameter(Mandatory)] [string]$RelativePath,
@@ -54,15 +83,40 @@ function Copy-DistributionItem {
     Copy-Item -Path $sourcePath -Destination $DestinationPath -Recurse -Force
 }
 
+function Copy-DistributionRootContents {
+    param(
+        [string]$DestinationRoot
+    )
+
+    $excludedEntries = @(
+        '.git', '.github', 'dist', 'docs', 'scripts', 'tests', 'node_modules', '.env', 'storage', 'config', 'build-dist.ps1'
+    )
+
+    Get-ChildItem -LiteralPath $projectRoot -Force | ForEach-Object {
+        if ($excludedEntries -contains $_.Name) {
+            return
+        }
+
+        $targetPath = Join-Path $DestinationRoot $_.Name
+        Copy-Item -Path $_.FullName -Destination $targetPath -Recurse -Force
+    }
+}
+
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $distRoot = Join-Path $projectRoot 'dist'
-$distributionName = "pccurico-agricola-$Version"
-$distributionRoot = Join-Path $distRoot $distributionName
-$archivePath = Join-Path $distRoot "$distributionName.tar.gz"
+
+$Version = Resolve-BuildVersion $Version
+if ($Version -match '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
+    $Version = "v$Version"
+}
 
 if ($Version -notmatch '^v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') {
     throw 'Version inválida. Usa el formato vMAJOR.MINOR.PATCH, por ejemplo v1.7.02.'
 }
+
+$distributionName = "pccurico-agricola-$Version"
+$distributionRoot = Join-Path $distRoot $distributionName
+$archivePath = Join-Path $distRoot "$distributionName.tar.gz"
 
 if (-not $SkipValidation) {
     & (Join-Path $projectRoot 'scripts/Validate-Project.ps1')
@@ -80,15 +134,13 @@ Assert-ProjectFile 'config/config.example.php' 'plantilla de configuración'
 Assert-ProjectFile 'config/.htaccess' 'protección de configuración'
 Assert-ProjectFile '.htaccess' 'reglas raíz'
 Assert-ProjectFile 'database/schema.sql' 'esquema base de instalación'
-Assert-ProjectFile 'database/seeds/001_permissions.sql' 'seed inicial de permisos'
-Assert-ProjectFile 'database/seeds/002_system_catalogs.sql' 'seed de catálogos del sistema'
-Assert-ProjectFile 'database/seeds/003_catalog_values.sql' 'seed de valores de catálogo'
+Assert-Directory 'database/seeds' 'datos iniciales de instalación'
+Assert-Directory 'database/migrations' 'migraciones del esquema'
 Assert-Directory 'app/Controllers' 'controladores del ERP'
 Assert-Directory 'app/Core' 'clases base del ERP'
 Assert-Directory 'app/Services' 'servicios del ERP'
 Assert-Directory 'app/Views' 'vistas del ERP'
 Assert-Directory 'public/assets' 'assets públicos'
-Assert-Directory 'database/migrations' 'migraciones del esquema'
 
 $composerJsonPath = Join-Path $projectRoot 'composer.json'
 $composerData = Get-Content -LiteralPath $composerJsonPath -Raw | ConvertFrom-Json
@@ -97,20 +149,6 @@ if (-not ($composerData.autoload -and $composerData.autoload.'psr-4')) {
 }
 if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'vendor/autoload.php'))) {
     throw 'vendor/autoload.php no está disponible para la distribución. La preparación de producción no puede continuar.'
-}
-
-$requiredMigrations = @(
-    '001_initial_schema.sql', '002_labor_schema.sql', '003_production_schema.sql', '004_procurement_schema.sql',
-    '005_budget_schema.sql', '006_machinery_schema.sql', '007_module_permissions.sql', '008_platform_entities.sql',
-    '009_system_logs.sql', '010_system_catalogs.sql', '011_catalog_backed_values.sql', '012_purchase_receptions.sql',
-    '013_procurement_reception_permission.sql', '014_inventory_warehouse_scope.sql', '015_warehouse_permissions.sql',
-    '016_internal_request_items.sql', '017_internal_request_permissions.sql', '018_notification_permissions.sql',
-    '019_tasks_calendar_permissions.sql', '020_document_permissions.sql', '021_api_token_permissions.sql',
-    '022_complete_module_permissions.sql', '023_demo_data_manager.sql', '024_purchase_invoices.sql', '025_reporting_indexes.sql',
-    '026_user_permissions.sql', '027_worker_profile_schema.sql'
-)
-foreach ($migrationName in $requiredMigrations) {
-    Assert-ProjectFile ("database/migrations/$migrationName") 'migración requerida para instalación limpia'
 }
 
 if (-not $SkipComposer) {
@@ -138,13 +176,7 @@ if (Test-Path -LiteralPath $archivePath) {
 }
 New-Item -ItemType Directory -Path $distributionRoot -Force | Out-Null
 
-Copy-DistributionItem '.htaccess' $distributionRoot
-Copy-DistributionItem 'index.php' $distributionRoot
-Copy-DistributionItem 'composer.json' $distributionRoot
-Copy-DistributionItem 'vendor' $distributionRoot
-Copy-DistributionItem 'app' $distributionRoot
-Copy-DistributionItem 'public' $distributionRoot
-Copy-DistributionItem 'database' $distributionRoot
+Copy-DistributionRootContents $distributionRoot
 
 $configDestination = Join-Path $distributionRoot 'config'
 New-Item -ItemType Directory -Path $configDestination -Force | Out-Null
@@ -168,7 +200,7 @@ Set-Content -Path (Join-Path $storageDestination '.htaccess') -Value $denyRules 
 Set-Content -Path (Join-Path $logsDestination '.htaccess') -Value $denyRules -Encoding ASCII
 Set-Content -Path (Join-Path $uploadsDestination '.htaccess') -Value $denyRules -Encoding ASCII
 
-$forbiddenReleaseFiles = @('config/config.php', 'config/development.php', '.env', '.git', 'docs', 'scripts', 'tests', 'node_modules')
+$forbiddenReleaseFiles = @('config/config.php', 'config/development.php', '.env', '.git', '.github', 'docs', 'scripts', 'tests', 'node_modules', 'build-dist.ps1')
 foreach ($relativePath in $forbiddenReleaseFiles) {
     if (Test-Path -LiteralPath (Join-Path $distributionRoot $relativePath)) {
         throw "El paquete de producción contiene un recurso no distribuible: $relativePath"
