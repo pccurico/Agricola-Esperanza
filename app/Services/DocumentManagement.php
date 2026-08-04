@@ -15,7 +15,9 @@ final class DocumentManagement extends BaseService
 
     public function documents(): array
     {
-        $query = $this->connection->prepare('SELECT d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name AS supplier_name, c.business_name AS client_name FROM documents d LEFT JOIN suppliers s ON s.id = d.supplier_id LEFT JOIN clients c ON c.id = d.client_id WHERE d.company_id = ? ORDER BY d.issue_date DESC, d.id DESC');
+        $query = $this->connection->prepare(
+            'SELECT d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name AS supplier_name, c.business_name AS client_name, COUNT(a.id) AS attachment_count FROM documents d LEFT JOIN suppliers s ON s.id = d.supplier_id LEFT JOIN clients c ON c.id = d.client_id LEFT JOIN attachments a ON a.company_id = d.company_id AND a.document_id = d.id WHERE d.company_id = ? GROUP BY d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name, c.business_name ORDER BY d.issue_date DESC, d.document_type ASC, d.id DESC'
+        );
         $query->execute([$this->companyId]);
         return $query->fetchAll();
     }

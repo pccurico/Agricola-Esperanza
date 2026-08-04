@@ -25,9 +25,14 @@ foreach ($navigationConfig['groups'] as $group) {
         continue;
     }
     $groupDepartment = (string) ($group['department'] ?? 'general');
-    $isSystemGroup = $groupDepartment === 'sistema';
-    $isDepartmentAllowed = $navigationRoleIsSystem || $navigationRoleDepartment === 'general' || $groupDepartment === 'general' || $groupDepartment === $navigationRoleDepartment || ($navigationRoleDepartment === 'bodega' && $groupDepartment === 'administracion') || ($navigationRoleDepartment === 'rrhh' && $groupDepartment === 'administracion') || ($navigationRoleDepartment === 'administracion' && $groupDepartment === 'produccion') || ($navigationRoleDepartment === 'gerencia' && $groupDepartment === 'administracion');
-    if (!$isDepartmentAllowed && !$isSystemGroup) {
+    $isDepartmentAllowed = $navigationRoleIsSystem
+        || $navigationRoleDepartment === 'general'
+        || $groupDepartment === 'general'
+        || $groupDepartment === $navigationRoleDepartment
+        || ($navigationRoleDepartment === 'bodega' && $groupDepartment === 'administracion')
+        || ($navigationRoleDepartment === 'rrhh' && $groupDepartment === 'administracion')
+        || ($navigationRoleDepartment === 'gerencia' && $groupDepartment === 'administracion');
+    if (!$isDepartmentAllowed) {
         continue;
     }
     $visibleItems = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole, $navigationUserId): bool {

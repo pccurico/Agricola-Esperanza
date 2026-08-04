@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 $reportSummary = $summary ?? [];
+$reportType = (string) ($summary['report_type'] ?? 'executive');
 $reportFilters = $filters ?? [];
+$reportFilters['report'] = $reportType;
 $options = $filter_options ?? [];
 $comparisons = $comparisons ?? ['periods' => [], 'seasons' => []];
 $trends = $trends ?? ['costs' => [], 'labor' => [], 'production' => [], 'budget' => []];
@@ -28,12 +30,13 @@ $hasReportFilters = (string) ($reportFilters['process'] ?? '') !== '' || (int) (
 <main class="admin-shell">
     <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
     <section class="module-content executive-reports">
-        <header class="admin-header"><div><p class="eyebrow">Gerencia agrícola</p><h1>Dashboard ejecutivo</h1><p class="setup-copy">Rentabilidad, producción y productividad sobre los registros operativos existentes.</p></div><div class="header-actions"><a class="secondary-link" href="?<?= htmlspecialchars($filterQuery('csv'), ENT_QUOTES, 'UTF-8') ?>">CSV</a><a class="secondary-link" href="?<?= htmlspecialchars($filterQuery('xlsx'), ENT_QUOTES, 'UTF-8') ?>">Excel</a><a class="secondary-link" href="./">Dashboard principal</a></div></header>
+        <header class="admin-header"><div><p class="eyebrow">Gerencia agrícola</p><h1>Dashboard ejecutivo</h1><p class="setup-copy">Rentabilidad, producción y productividad sobre los registros operativos existentes.</p></div><div class="header-actions"><a class="secondary-link" href="?<?= htmlspecialchars($filterQuery('csv'), ENT_QUOTES, 'UTF-8') ?>">CSV</a><a class="secondary-link" href="?<?= htmlspecialchars($filterQuery('xlsx'), ENT_QUOTES, 'UTF-8') ?>">Excel</a><a class="secondary-link" href="?<?= htmlspecialchars($filterQuery('pdf'), ENT_QUOTES, 'UTF-8') ?>">PDF</a><a class="secondary-link" href="./">Dashboard principal</a></div></header>
 
         <details class="admin-panel report-filter-panel" <?= $hasReportFilters ? 'open' : '' ?>><summary><span><b>Filtros del informe</b><small><?= $hasReportFilters ? 'Filtros activos aplicados' : 'Todos los registros' ?></small></span><i aria-hidden="true"></i></summary><form class="report-filter-grid executive-filter" method="get">
             <input type="hidden" name="module" value="reports">
             <label>Desde<input type="date" name="date_from" value="<?= htmlspecialchars((string) ($reportFilters['date_from'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
             <label>Hasta<input type="date" name="date_to" value="<?= htmlspecialchars((string) ($reportFilters['date_to'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <label>Tipo de informe<select name="report"><option value="executive" <?= $reportType === 'executive' ? 'selected' : '' ?>>Resumen ejecutivo</option><option value="costs" <?= $reportType === 'costs' ? 'selected' : '' ?>>Costos</option><option value="production" <?= $reportType === 'production' ? 'selected' : '' ?>>Producción</option><option value="labor" <?= $reportType === 'labor' ? 'selected' : '' ?>>Mano de obra</option><option value="documents" <?= $reportType === 'documents' ? 'selected' : '' ?>>Documentos</option></select></label>
             <label>Temporada<select name="season_id"><option value="0">Todas</option><?php foreach (($options['seasons'] ?? []) as $item): ?><option value="<?= (int) $item['id'] ?>" <?= (int) ($reportFilters['season_id'] ?? 0) === (int) $item['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string) $item['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
             <label>Fundo<select name="farm_id"><option value="0">Todos</option><?php foreach (($options['farms'] ?? []) as $item): ?><option value="<?= (int) $item['id'] ?>" <?= (int) ($reportFilters['farm_id'] ?? 0) === (int) $item['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string) $item['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
             <label>Cuartel<select name="block_id"><option value="0">Todos</option><?php foreach (($options['blocks'] ?? []) as $item): ?><option value="<?= (int) $item['id'] ?>" <?= (int) ($reportFilters['block_id'] ?? 0) === (int) $item['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string) $item['code'] . ' · ' . (string) $item['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>

@@ -44,22 +44,33 @@ final class Installer extends BaseService
             ]);
             $companyId = (int) $this->connection->lastInsertId();
 
-            $role = $this->connection->prepare(
-                'INSERT INTO roles (company_id, name, description, is_system) VALUES (?, ?, ?, 1)'
-            );
-            $role->execute([$companyId, 'Administrador', 'Acceso completo a la gestiÃ³n de la agrÃ­cola']);
-            $roleId = (int) $this->connection->lastInsertId();
+            $superAdminRoleId = $this->createRole($companyId, 'Super Administrador', 'Acceso completo al sistema', 1);
+            $this->grantAllPermissions($superAdminRoleId);
 
-            $this->connection->exec(
-                'INSERT INTO role_permissions (role_id, permission_id) SELECT ' . $roleId . ', id FROM permissions'
-            );
+            $roles = [
+                ['name' => 'Gerencia', 'description' => 'Acceso ejecutivo para gestión consolidada.', 'permissions' => ['dashboard.view', 'reports.view', 'reports.export', 'notifications.view']],
+                ['name' => 'Administración', 'description' => 'Gestión operativa de compras, producción y documentos.', 'permissions' => ['masters.view', 'procurement.view', 'production.view', 'machinery.view', 'documents.view', 'notifications.view', 'tasks.view', 'tasks.create', 'tasks.update', 'calendar.view', 'calendar.create']],
+                ['name' => 'Contabilidad y Finanzas', 'description' => 'Control de presupuestos y análisis financiero.', 'permissions' => ['costs.view', 'costs.manage', 'budgets.view', 'budgets.create', 'reports.view', 'reports.export']],
+                ['name' => 'RR.HH', 'description' => 'Gestión de personal, cuadrillas y mano de obra.', 'permissions' => ['labor.view', 'labor.create', 'reports.view']],
+                ['name' => 'Bodega', 'description' => 'Inventario, bodegas, solicitudes internas y recepciones.', 'permissions' => ['inventory.view', 'inventory.manage', 'warehouse.view', 'warehouse.create', 'warehouse.update', 'requests.view', 'requests.create', 'requests.approve', 'requests.fulfill', 'procurement.receive', 'notifications.view']],
+            ];
+
+            foreach ($roles as $roleDefinition) {
+                $roleId = $this->createRole(
+                    $companyId,
+                    $roleDefinition['name'],
+                    $roleDefinition['description'],
+                    0,
+                );
+                $this->assignPermissions($roleId, $roleDefinition['permissions']);
+            }
 
             $user = $this->connection->prepare(
                 'INSERT INTO users (company_id, role_id, full_name, email, password_hash, phone) VALUES (?, ?, ?, ?, ?, ?)'
             );
             $user->execute([
                 $companyId,
-                $roleId,
+                $superAdminRoleId,
                 $input['admin_name'],
                 strtolower($input['admin_email']),
                 password_hash($input['admin_password'], PASSWORD_DEFAULT),
@@ -123,6 +134,28 @@ final class Installer extends BaseService
             throw new RuntimeException('No fue posible guardar el logo.');
         }
         return 'storage/uploads/' . $filename;
+    }
+
+    private function createRole(int $companyId, string $name, string $description, int $isSystem): int
+    {
+        $statement = $this->connection->prepare(
+            'INSERT INTO roles (company_id, name, description, is_system) VALUES (?, ?, ?, ?)' 
+        );
+        $statement->execute([$companyId, $name, $description, $isSystem]);
+        return (int) $this->connection->lastInsertId();
+    }
+
+    private function grantAllPermissions(int $roleId): void
+    {
+        $this->connection->prepare('INSERT INTO role_permissions (role_id, permission_id) SELECT ?, id FROM permissions')->execute([$roleId]);
+    }
+
+    private function assignPermissions(int $roleId, array $permissions): void
+    {
+        $statement = $this->connection->prepare(
+            'INSERT IGNORE INTO role_permissions (role_id, permission_id) SELECT ?, id FROM permissions WHERE code IN (' . implode(',', array_fill(0, count($permissions), '?')) . ')'
+        );
+        $statement->execute(array_merge([$roleId], $permissions));
     }
 
     private function registerBaselineSchema(): void

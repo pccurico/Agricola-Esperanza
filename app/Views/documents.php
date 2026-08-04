@@ -77,22 +77,24 @@ $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                                     <th>Proveedor</th>
                                     <th>Cliente</th>
                                     <th>Estado</th>
+                                    <th>Adjuntos</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if ($documents === []): ?>
                                     <tr>
-                                        <td colspan="6" class="empty-state">No hay documentos registrados para tu empresa.</td>
+                                        <td colspan="7" class="empty-state">No hay documentos registrados para tu empresa.</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($documents as $document): ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($document['document_type'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($document['document_number'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($document['issue_date'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($document['supplier_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($document['client_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($document['status'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['document_type'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['document_number'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['issue_date'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['supplier_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['client_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars((string) ($document['status'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= (int) ($document['attachment_count'] ?? 0) ?> adjunto(s)</td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
