@@ -64,26 +64,175 @@ final class ReportsController extends BaseController
 
     private function exportPdf(array $summary, string $reportType): never
     {
-        header('Content-Type: text/html; charset=utf-8');
-        header('Content-Disposition: inline; filename="pccurico-' . $reportType . '-reporte.html"');
-        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte agrícola</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#1f2937}h1{font-size:22px;margin-bottom:8px}h2{font-size:16px;margin:24px 0 8px}table{border-collapse:collapse;width:100%;margin-bottom:18px;font-size:12px}th,td{border:1px solid #d1d5db;padding:8px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:700}small{color:#6b7280}.report-header{margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #e5e7eb}</style></head><body><div class="report-header"><h1>Reporte agrícola</h1><small>Tipo: ' . htmlspecialchars($reportType, ENT_QUOTES, 'UTF-8') . '</small></div>';
+        $company = $this->companyProfile();
+        $companyName = trim((string) (($company['trade_name'] ?: $company['legal_name']) ?? 'Empresa sin nombre'));
+        $reportLabel = match ($reportType) {
+            'costs' => 'Reporte de costos',
+            'production' => 'Reporte de producción',
+            'labor' => 'Reporte de mano de obra',
+            'documents' => 'Reporte de documentos',
+            default => 'Reporte ejecutivo',
+        };
+
+        $lines = [
+            $companyName,
+            'Email: ' . trim((string) ($company['email'] ?? '')),
+            'Teléfono: ' . trim((string) ($company['phone'] ?? '')),
+            'Ubicación: ' . trim((string) (($company['commune'] ?? '') . (!empty($company['region']) ? ', ' . $company['region'] : ''))),
+            '',
+            $reportLabel,
+            'Período: ' . ($summary['filters']['date_from'] ?? '—') . ' a ' . ($summary['filters']['date_to'] ?? '—'),
+            'Tipo: ' . $reportType,
+            '',
+        ];
+
         foreach ($this->exportRows($summary, $reportType) as $section) {
-            echo '<h2>' . htmlspecialchars((string) $section['title'], ENT_QUOTES, 'UTF-8') . '</h2><table><tr>';
-            foreach ($section['headers'] as $header) {
-                echo '<th>' . htmlspecialchars((string) $header, ENT_QUOTES, 'UTF-8') . '</th>';
-            }
-            echo '</tr>';
+            $lines[] = strtoupper((string) $section['title']);
+            $lines[] = implode(' | ', array_map(static fn ($header): string => (string) $header, $section['headers']));
             foreach ($section['rows'] as $row) {
-                echo '<tr>';
-                foreach ($row as $value) {
-                    echo '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
-                }
-                echo '</tr>';
+                $lines[] = implode(' | ', array_map(static fn ($value): string => (string) $value, $row));
             }
-            echo '</table>';
+            $lines[] = '';
         }
-        echo '</body></html>';
+
+        $contentStream = $this->buildPdfContentStream($lines);
+        $objects = [
+            1 => "<< /Type /Catalog /Pages 2 0 R >>",
+            2 => "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            3 => "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+            4 => "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            5 => "<< /Length " . strlen($contentStream) . " >>\nstream\n" . $contentStream . "\nendstream",
+        ];
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [];
+        foreach ($objects as $objectNumber => $objectData) {
+            $offsets[$objectNumber] = strlen($pdf);
+            $pdf .= $objectNumber . " 0 obj\n" . $objectData . "\nendobj\n";
+        }
+
+        $xrefOffset = strlen($pdf);
+        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n";
+        $pdf .= "0000000000 65535 f \n";
+        for ($i = 1; $i <= count($objects); $i++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+        }
+        $pdf .= "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n" . $xrefOffset . "\n%%EOF";
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="pccurico-' . $reportType . '-reporte.pdf"');
+        header('Content-Length: ' . strlen($pdf));
+        echo $pdf;
         exit;
+    }
+
+    private function companyProfile(): array
+    {
+        $query = database()->connection()->prepare('SELECT legal_name, trade_name, email, phone, commune, region, logo_path FROM companies WHERE active = 1 ORDER BY id DESC LIMIT 1');
+        $query->execute();
+        return $query->fetch() ?: [];
+    }
+
+    private function logoPdfObject(string $logoPath): ?array
+    {
+        if ($logoPath === '') {
+            return null;
+        }
+        $resolvedPath = dirname(__DIR__, 2) . '/' . ltrim($logoPath, '/');
+        if (!is_file($resolvedPath)) {
+            return null;
+        }
+
+        $imageData = @file_get_contents($resolvedPath);
+        if ($imageData === false) {
+            return null;
+        }
+
+        $image = @imagecreatefromstring($imageData);
+        if ($image === false) {
+            return null;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $resized = imagecreatetruecolor((int) min(120, $width), (int) min(60, $height));
+        if ($resized === false) {
+            imagedestroy($image);
+            return null;
+        }
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, min(120, $width), min(60, $height), $width, $height);
+        ob_start();
+        imagejpeg($resized, null, 80);
+        $jpeg = ob_get_clean();
+        imagedestroy($image);
+        imagedestroy($resized);
+
+        if ($jpeg === false || $jpeg === '') {
+            return null;
+        }
+
+        return ['stream' => $jpeg, 'width' => min(120, $width), 'height' => min(60, $height)];
+    }
+
+    private function pdfDocumentLines(array $summary, string $reportType, array $company): array
+    {
+        $companyName = trim((string) (($company['trade_name'] ?: $company['legal_name']) ?? 'Empresa sin nombre'));
+        $reportLabel = match ($reportType) {
+            'costs' => 'Reporte de costos',
+            'production' => 'Reporte de producción',
+            'labor' => 'Reporte de mano de obra',
+            'documents' => 'Reporte de documentos',
+            default => 'Reporte ejecutivo',
+        };
+
+        $lines = [
+            $companyName,
+            'Email: ' . trim((string) ($company['email'] ?? '')),
+            'Teléfono: ' . trim((string) ($company['phone'] ?? '')),
+            'Ubicación: ' . trim((string) (($company['commune'] ?? '') . (!empty($company['region']) ? ', ' . $company['region'] : ''))),
+            '',
+            $reportLabel,
+            'Período: ' . ($summary['filters']['date_from'] ?? '—') . ' a ' . ($summary['filters']['date_to'] ?? '—'),
+            'Tipo: ' . $reportType,
+            '',
+        ];
+
+        foreach ($this->exportRows($summary, $reportType) as $section) {
+            $lines[] = strtoupper((string) $section['title']);
+            $lines[] = implode(' | ', array_map(static fn ($header): string => (string) $header, $section['headers']));
+            foreach ($section['rows'] as $row) {
+                $lines[] = implode(' | ', array_map(static fn ($value): string => (string) $value, $row));
+            }
+            $lines[] = '';
+        }
+
+        return $lines;
+    }
+
+    private function buildPdfContentStream(array $lines): string
+    {
+        $content = "BT\n/F1 10 Tf\n";
+        $y = 790;
+
+        foreach ($lines as $line) {
+            $content .= "50 {$y} Td\n" . $this->pdfTextString((string) $line) . " Tj\n";
+            $y -= 14;
+        }
+
+        $content .= "ET\n";
+
+        return $content;
+    }
+
+    private function pdfTextString(string $value): string
+    {
+        $utf16 = mb_convert_encoding($value, 'UTF-16BE', 'UTF-8');
+        return '<' . bin2hex($utf16) . '>';
     }
 
     private function exportXlsx(array $summary, string $reportType): never
