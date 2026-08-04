@@ -20,4 +20,24 @@ abstract class BaseController
         header('Location: ' . $location);
         exit;
     }
+
+    protected function handleAction(callable $action, string $successMessage, string $entity, array $context = []): array
+    {
+        $error = null;
+        $success = null;
+
+        try {
+            $action();
+            $success = $successMessage;
+            if (($context['audit'] ?? false) && !empty($context['userId'])) {
+                (new \CampoSur\Services\AuditLog(database()->connection(), (int) ($_SESSION['company_id'] ?? 0)))->record((int) $context['userId'], $context['auditAction'] ?? 'UPDATE', $entity);
+            }
+        } catch (\Throwable $exception) {
+            $error = $exception instanceof \PDOException
+                ? 'No fue posible completar la operación. Verifica los datos e inténtalo nuevamente.'
+                : $exception->getMessage();
+        }
+
+        return ['error' => $error, 'success' => $success];
+    }
 }

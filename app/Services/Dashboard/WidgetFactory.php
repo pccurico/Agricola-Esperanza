@@ -85,7 +85,7 @@ final class WidgetFactory
                 (string) ($kpi['label'] ?? 'Indicador'),
                 $kpi['value'] ?? 0,
                 (string) ($kpi['unit'] ?? ''),
-                ['note' => $kpi['note'] ?? ($kpi['detail'] ?? '')],
+                ['note' => $kpi['note'] ?? ($kpi['detail'] ?? ''), 'trend' => $kpi['trend'] ?? '', 'detail' => $kpi['detail'] ?? ''],
                 $kpi['permission'] ?? '',
                 $kpi['module'] ?? ''
             );

@@ -24,7 +24,7 @@ final class DashboardBuilder
         $activeView = trim((string) ($requestParams['view'] ?? ''));
 
         $summary = $this->dashboardDataProvider->summary(
-            'month',
+            $requestParams['period'] ?: 'month',
             null,
             $filters,
             $activeView,

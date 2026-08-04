@@ -1,2 +1,66 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Producción | Sistema de Gestión Agrícola PCCURICO</title><link rel="stylesheet" href="assets/css/app.css"></head><body class="admin-page"><main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?><section class="module-content"><header class="admin-header"><div><p class="eyebrow">Cosechas y labores</p><h1>Producción</h1><p class="setup-copy">Anota tus cosechas y resultados por fundo y cuartel.</p></div><a class="secondary-link" href="./">Volver al dashboard</a></header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?><section class="kpi-grid"><article class="report-kpi"><span>Registros de producción</span><b><?= number_format((int) $summary['entries'], 0, ',', '.') ?></b></article><article class="report-kpi"><span>Cantidad acumulada</span><b><?= number_format((float) $summary['quantity'], 3, ',', '.') ?></b></article></section><section class="admin-columns"><article class="admin-panel"><header class="panel-header"><h2>Registrar producción</h2><p>Captura el resultado de una faena o cosecha</p></header><form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><label>Temporada<select name="season_id" required><?php foreach ($seasons as $season): ?><option value="<?= (int) $season['id'] ?>"><?= htmlspecialchars($season['name']) ?></option><?php endforeach; ?></select></label><label>Fundo<select name="farm_id"><option value="">Sin fundo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name']) ?></option><?php endforeach; ?></select></label><label>Cuartel<select name="block_id"><option value="">Sin cuartel</option><?php foreach ($blocks as $block): ?><option value="<?= (int) $block['id'] ?>"><?= htmlspecialchars($block['code'] . ' · ' . $block['name']) ?></option><?php endforeach; ?></select></label><label>Especie<select name="species_id"><option value="">Sin especie</option><?php foreach ($species as $item): ?><option value="<?= (int) $item['id'] ?>"><?= htmlspecialchars($item['name'] . ($item['variety'] ? ' · ' . $item['variety'] : '')) ?></option><?php endforeach; ?></select></label><label>Fecha<input type="date" name="production_date" value="<?= date('Y-m-d') ?>" required></label><label>Actividad<input name="activity" required placeholder="Cosecha, poda, raleo"></label><label>Cantidad<input type="number" name="quantity" min="0.001" step="0.001" required></label><label>Unidad<input name="unit" required placeholder="kg, bins, cajas"></label><label>Calidad<input name="quality" placeholder="Exportación, mercado interno"></label><label>Observaciones<input name="notes"></label><button class="primary-button" type="submit">Registrar producción</button></form></article><article class="admin-panel"><header class="panel-header"><h2>Últimos registros</h2><p>Historial de resultados agrícolas</p></header><div class="table-scroll"><table class="admin-table"><thead><tr><th>Fecha</th><th>Actividad</th><th>Ubicación</th><th>Cantidad</th></tr></thead><tbody><?php foreach ($entries as $entry): ?><tr><td><?= htmlspecialchars($entry['production_date']) ?></td><td><b><?= htmlspecialchars($entry['activity']) ?></b><small><?= htmlspecialchars($entry['species_name'] ?: 'Sin especie') ?></small></td><td><?= htmlspecialchars($entry['farm_name'] ?: 'Sin fundo') ?></td><td><b><?= number_format((float) $entry['quantity'], 3, ',', '.') ?> <?= htmlspecialchars($entry['unit']) ?></b></td></tr><?php endforeach; ?></tbody></table></div></article></section></section></main></body></html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Producción | Sistema de Gestión Agrícola PCCURICO</title>
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+
+<body class="admin-page">
+    <main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?><section class="module-content">
+            <header class="admin-header">
+                <div>
+                    <p class="eyebrow">Cosechas y labores</p>
+                    <h1>Producción</h1>
+                    <p class="setup-copy">Anota tus cosechas y resultados por fundo y cuartel.</p>
+                </div><a class="secondary-link" href="./">Volver al dashboard</a>
+            </header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?><section class="kpi-grid">
+                <article class="report-kpi"><span>Registros de producción</span><b><?= number_format((int) $summary['entries'], 0, ',', '.') ?></b></article>
+                <article class="report-kpi"><span>Cantidad acumulada</span><b><?= number_format((float) $summary['quantity'], 3, ',', '.') ?></b></article>
+            </section>
+            <section class="admin-columns">
+                <article class="admin-panel">
+                    <header class="panel-header">
+                        <h2>Registrar producción</h2>
+                        <p>Captura el resultado de una faena o cosecha</p>
+                    </header>
+                    <form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><label>Temporada<select name="season_id" required><?php foreach ($seasons as $season): ?><option value="<?= (int) $season['id'] ?>"><?= htmlspecialchars($season['name']) ?></option><?php endforeach; ?></select></label><label>Fundo<select name="farm_id">
+                                <option value="">Sin fundo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name']) ?></option><?php endforeach; ?>
+                            </select></label><label>Cuartel<select name="block_id">
+                                <option value="">Sin cuartel</option><?php foreach ($blocks as $block): ?><option value="<?= (int) $block['id'] ?>"><?= htmlspecialchars($block['code'] . ' · ' . $block['name']) ?></option><?php endforeach; ?>
+                            </select></label><label>Especie<select name="species_id">
+                                <option value="">Sin especie</option><?php foreach ($species as $item): ?><option value="<?= (int) $item['id'] ?>"><?= htmlspecialchars($item['name'] . ($item['variety'] ? ' · ' . $item['variety'] : '')) ?></option><?php endforeach; ?>
+                            </select></label><label>Fecha<input type="date" name="production_date" value="<?= date('Y-m-d') ?>" required></label><label>Actividad<input name="activity" required placeholder="Cosecha, poda, raleo"></label><label>Cantidad<input type="number" name="quantity" min="0.001" step="0.001" required></label><label>Unidad<input name="unit" required placeholder="kg, bins, cajas"></label><label>Calidad<input name="quality" placeholder="Exportación, mercado interno"></label><label>Observaciones<input name="notes"></label><button class="primary-button" type="submit">Registrar producción</button></form>
+                </article>
+                <article class="admin-panel">
+                    <header class="panel-header">
+                        <h2>Últimos registros</h2>
+                        <p>Historial de resultados agrícolas</p>
+                    </header>
+                    <div class="table-scroll">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Actividad</th>
+                                    <th>Ubicación</th>
+                                    <th>Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody><?php foreach ($entries as $entry): ?><tr>
+                                        <td><?= htmlspecialchars($entry['production_date']) ?></td>
+                                        <td><b><?= htmlspecialchars($entry['activity']) ?></b><small><?= htmlspecialchars($entry['species_name'] ?: 'Sin especie') ?></small></td>
+                                        <td><?= htmlspecialchars($entry['farm_name'] ?: 'Sin fundo') ?></td>
+                                        <td><b><?= number_format((float) $entry['quantity'], 3, ',', '.') ?> <?= htmlspecialchars($entry['unit']) ?></b></td>
+                                    </tr><?php endforeach; ?></tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -90,7 +90,7 @@ if (($_GET['asset'] ?? '') === 'attachment') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.view', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage'];
+$modulePermissions = ['users' => 'users.view', 'roles' => 'roles.manage', 'role' => 'roles.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage', 'dashboard_data' => 'dashboard.view'];
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
 $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
@@ -104,10 +104,17 @@ if ($path === 'index.php') {
 }
 $module = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
 if ($module === 'users') {
-    authorize_any(['users.view', 'users.manage', 'roles.manage']);
+    authorize_any(['users.view', 'users.manage']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         match ($_POST['action'] ?? '') {
             'create_user', 'update_user', 'delete_user', 'toggle_user' => authorize('users.manage'),
+            default => null,
+        };
+    }
+} elseif ($module === 'roles' || $module === 'role') {
+    authorize_any(['roles.manage', 'users.manage']);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        match ($_POST['action'] ?? '') {
             'create_role', 'update_role', 'delete_role' => authorize('roles.manage'),
             default => null,
         };
@@ -281,55 +288,72 @@ if ($module === 'users') {
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'masters') {
+if ($module === 'roles' || $module === 'role') {
+    $rolesData = (new CampoSur\Controllers\RolesController())->handle();
+    extract($rolesData, EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/roles.php';
+    exit;
+}
+
+if ($module === 'masters') {
     $masters = (new CampoSur\Controllers\MastersController())->handle();
     extract($masters, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/masters.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'costs') {
+if ($module === 'costs') {
     $costs = (new CampoSur\Controllers\CostsController())->handle();
     extract($costs, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/costs.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'inventory') {
+if ($module === 'inventory') {
     $inventory = (new CampoSur\Controllers\InventoryController())->handle();
     extract($inventory, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/inventory.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'reports') {
+if ($module === 'reports') {
     $report = (new CampoSur\Controllers\ReportsController())->handle();
     extract($report, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/reports.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'labor') {
+if ($module === 'dashboard_data') {
+    authorize('dashboard.view');
+    $dashboardData = (new CampoSur\Controllers\DashboardController())->data();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($dashboardData, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($module === 'labor') {
     $labor = (new CampoSur\Controllers\LaborController())->handle();
     extract($labor, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/labor.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'settings') {
+if ($module === 'settings') {
     $settings = (new CampoSur\Controllers\SettingsController())->handle();
     extract($settings, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/settings.php';
     exit;
 }
 
-if (($_GET['module'] ?? '') === 'audit') {
+if ($module === 'audit') {
     $audit = (new CampoSur\Controllers\AuditController())->handle();
     extract($audit, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/audit.php';
     exit;
 }
 
-$dashboard = (new CampoSur\Controllers\DashboardController())->handle();
-extract($dashboard, EXTR_SKIP);
+$dashboardResponse = (new CampoSur\Controllers\DashboardController())->handle();
+$dashboard = $dashboardResponse['dashboard'] ?? [];
+$error = $dashboardResponse['error'] ?? null;
+$success = $dashboardResponse['success'] ?? null;
 require dirname(__DIR__) . '/app/Views/dashboard.php';

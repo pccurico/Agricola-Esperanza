@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace CampoSur\Controllers;
 
-use CampoSur\Services\UserManagement;
-
 final class UsersController extends BaseController
 {
     public function handle(): array
@@ -13,56 +11,47 @@ final class UsersController extends BaseController
         $manager = new \CampoSur\Services\UserManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['role_id'], (int) $_SESSION['user_id']);
         $error = null;
         $success = null;
-        try {
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_user') {
-                $manager->createUser($_POST);
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'user');
-                $success = 'Usuario creado correctamente.';
+        $toggleSuccess = null;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            $result = null;
+
+            if ($action === 'create_user') {
+                $result = $this->handleAction(function () use ($manager): void {
+                    $manager->createUser($_POST);
+                }, 'Usuario creado correctamente.', 'user', ['audit' => true, 'auditAction' => 'CREATE', 'userId' => (int) ($_SESSION['user_id'] ?? 0)]);
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_user') {
-                $manager->updateUser($_POST);
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'UPDATE', 'user');
-                $success = 'Usuario actualizado correctamente.';
+            if ($action === 'update_user') {
+                $result = $this->handleAction(function () use ($manager): void {
+                    $manager->updateUser($_POST);
+                }, 'Usuario actualizado correctamente.', 'user', ['audit' => true, 'auditAction' => 'UPDATE', 'userId' => (int) ($_SESSION['user_id'] ?? 0)]);
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_user') {
-                $manager->deleteUser((int) ($_POST['user_id'] ?? 0));
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'DELETE', 'user');
-                $success = 'Usuario eliminado correctamente.';
+            if ($action === 'delete_user') {
+                $result = $this->handleAction(function () use ($manager): void {
+                    $manager->deleteUser((int) ($_POST['user_id'] ?? 0));
+                }, 'Usuario eliminado correctamente.', 'user', ['audit' => true, 'auditAction' => 'DELETE', 'userId' => (int) ($_SESSION['user_id'] ?? 0)]);
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_role') {
-                $manager->createRole(['name' => (string) ($_POST['name'] ?? ''), 'description' => (string) ($_POST['description'] ?? ''), 'permissions' => (array) ($_POST['permissions'] ?? [])]);
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'role');
-                $success = 'Rol creado correctamente.';
+            if ($action === 'toggle_user') {
+                $result = $this->handleAction(function () use ($manager, &$toggleSuccess): void {
+                    $active = $manager->toggleUser((int) ($_POST['user_id'] ?? 0));
+                    $toggleSuccess = $active ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
+                }, 'Usuario actualizado correctamente.', 'user', ['audit' => true, 'auditAction' => 'ACTIVATE', 'userId' => (int) ($_SESSION['user_id'] ?? 0)]);
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_role') {
-                $manager->updateRole(['role_id' => (int) ($_POST['role_id'] ?? 0), 'name' => (string) ($_POST['name'] ?? ''), 'description' => (string) ($_POST['description'] ?? ''), 'permissions' => (array) ($_POST['permissions'] ?? [])]);
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'UPDATE', 'role');
-                $success = 'Rol actualizado correctamente.';
+
+            $error = $result['error'] ?? null;
+            $success = $result['success'] ?? null;
+            if ($toggleSuccess !== null) {
+                $success = $toggleSuccess;
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_role') {
-                $manager->deleteRole((int) ($_POST['role_id'] ?? 0));
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'DELETE', 'role');
-                $success = 'Rol eliminado correctamente.';
-            }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_user') {
-                $active = $manager->toggleUser((int) ($_POST['user_id'] ?? 0));
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], $active ? 'ACTIVATE' : 'DEACTIVATE', 'user');
-                $success = $active ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
-            }
-        } catch (\Throwable $exception) {
-            $error = $exception instanceof \PDOException
-                ? 'No fue posible completar la operación. Verifica los datos e inténtalo nuevamente.'
-                : $exception->getMessage();
         }
 
         $selectedUser = null;
-        $selectedRole = null;
         if (isset($_GET['edit_user_id'])) {
             $selectedUser = $manager->findUser((int) $_GET['edit_user_id']);
         }
-        if (isset($_GET['edit_role_id'])) {
-            $selectedRole = $manager->findRole((int) $_GET['edit_role_id']);
-        }
+
+        $showUserForm = isset($_GET['new_user']) || isset($_GET['edit_user_id']);
 
         return [
             'users' => $manager->users(),
@@ -72,7 +61,7 @@ final class UsersController extends BaseController
             'can_manage_users' => $manager->canManageUsers(),
             'can_manage_roles' => $manager->canManageRoles(),
             'selected_user' => $selectedUser,
-            'selected_role' => $selectedRole,
+            'show_user_form' => $showUserForm,
             'error' => $error,
             'success' => $success,
         ];

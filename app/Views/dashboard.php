@@ -12,7 +12,46 @@ $selectedFilters = $dashboard['filters'] ?? ['process' => '', 'farm_id' => 0, 'b
 $sections = $dashboard['sections'] ?? [];
 $analyses = $dashboard['analyses'] ?? [];
 $chartDefinitions = $dashboard['charts'] ?? [];
+$productionSeries = $dashboard['production_series'] ?? [];
+$costSeries = $dashboard['cost_series'] ?? [];
 $recentActivities = $dashboard['recent'] ?? [];
+$selectName = static function (array $items, int $selected, string $default): string {
+    foreach ($items as $item) {
+        if ((int) ($item['id'] ?? 0) === $selected) {
+            return (string) ($item['name'] ?? $item['label'] ?? $default);
+        }
+    }
+    return $default;
+};
+$selectedFarm = $selectName($filterOptions['farms'] ?? [], (int) ($selectedFilters['farm_id'] ?? 0), 'Todos');
+$selectedBlock = $selectName($filterOptions['blocks'] ?? [], (int) ($selectedFilters['block_id'] ?? 0), 'Todos');
+$selectedSeason = $selectName($filterOptions['seasons'] ?? [], (int) ($selectedFilters['season_id'] ?? 0), 'Todas');
+$selectedProcess = trim((string) ($selectedFilters['process'] ?? '')) !== '' ? trim((string) ($selectedFilters['process'] ?? '')) : 'Todos';
+$selectedPeriod = trim((string) ($selectedFilters['date_from'] ?? '')) . ' – ' . trim((string) ($selectedFilters['date_to'] ?? ''));
+$budgetKpi = null;
+$productionKpi = null;
+foreach ($kpis as $kpi) {
+    if ($budgetKpi === null && stripos((string) ($kpi['label'] ?? ''), 'presupuesto') !== false) {
+        $budgetKpi = $kpi;
+    }
+    if ($productionKpi === null && stripos((string) ($kpi['label'] ?? ''), 'producción') !== false) {
+        $productionKpi = $kpi;
+    }
+}
+$chartWidgets = array_values(array_filter($dashboard['widgets'] ?? [], static fn (array $widget): bool => ($widget['type'] ?? '') === 'chart'));
+$costProcesses = $sections['costs']['by_process'] ?? [];
+$operational = $dashboard['operational'] ?? [];
+$metrics = $dashboard['metrics'] ?? [];
+$totals = $dashboard['totals'] ?? [];
+$dashboardJson = json_encode([
+    'production_series' => $productionSeries,
+    'cost_series' => $costSeries,
+    'cost_by_process' => $costProcesses,
+    'totals' => $totals,
+    'metrics' => $metrics,
+    'budget' => $dashboard['budget'] ?? [],
+    'filters' => $selectedFilters,
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 ?>
 <!doctype html>
 <html lang="es">
@@ -45,181 +84,277 @@ $recentActivities = $dashboard['recent'] ?? [];
             <div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
 
-        <details class="admin-panel report-filter-panel" open>
-            <summary>
-                <span>
-                    <b>Filtros del dashboard</b>
-                    <small><?= ((int) ($selectedFilters['farm_id'] ?? 0) || (int) ($selectedFilters['block_id'] ?? 0) || trim((string) ($selectedFilters['process'] ?? '')) !== '') ? 'Filtros activos aplicados' : 'Todos los registros' ?></small>
-                </span>
-                <i aria-hidden="true"></i>
-            </summary>
-            <form class="report-filter-grid" method="get">
-                <label>Empresa<span><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></span></label>
-                <label>Desde<input type="date" name="date_from" value="<?= htmlspecialchars($selectedFilters['date_from'] ?? '', ENT_QUOTES, 'UTF-8') ?>"></label>
-                <label>Hasta<input type="date" name="date_to" value="<?= htmlspecialchars($selectedFilters['date_to'] ?? '', ENT_QUOTES, 'UTF-8') ?>"></label>
-                <label>Fundo<select name="farm_id"><option value="0">Todos</option><?php foreach (($filterOptions['farms'] ?? []) as $farm): ?><option value="<?= (int) $farm['id'] ?>" <?= (int) $selectedFilters['farm_id'] === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
-                <label>Cuartel<select name="block_id"><option value="0">Todos</option><?php foreach (($filterOptions['blocks'] ?? []) as $block): ?><option value="<?= (int) $block['id'] ?>" <?= (int) $selectedFilters['block_id'] === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
-                <label>Proceso<select name="process"><option value="">Todos</option><?php foreach (($filterOptions['processes'] ?? []) as $p): $pv = (string) ($p['process'] ?? ''); ?><option value="<?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?>" <?= $pv === ($selectedFilters['process'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
-                <button class="primary-button" type="submit">Aplicar</button>
+        <section class="dashboard-filter-bar admin-panel">
+            <div class="dashboard-filter-brand">
+                <span>Empresa</span>
+                <strong><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <form id="dashboard-filter-form" class="dashboard-filter-grid" method="get">
+                <div class="dashboard-filter-item">
+                    <label>Periodo</label>
+                    <div class="dashboard-filter-range">
+                        <input type="date" name="date_from" value="<?= htmlspecialchars($selectedFilters['date_from'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        <span>–</span>
+                        <input type="date" name="date_to" value="<?= htmlspecialchars($selectedFilters['date_to'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                    </div>
+                </div>
+                <div class="dashboard-filter-item">
+                    <label>Fundo</label>
+                    <select name="farm_id">
+                        <option value="0">Todos</option>
+                        <?php foreach (($filterOptions['farms'] ?? []) as $farm): ?>
+                            <option value="<?= (int) $farm['id'] ?>" <?= (int) $selectedFilters['farm_id'] === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="dashboard-filter-item">
+                    <label>Cuartel</label>
+                    <select name="block_id">
+                        <option value="0">Todos</option>
+                        <?php foreach (($filterOptions['blocks'] ?? []) as $block): ?>
+                            <option value="<?= (int) $block['id'] ?>" <?= (int) $selectedFilters['block_id'] === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="dashboard-filter-item">
+                    <label>Proceso</label>
+                    <select name="process">
+                        <option value="">Todos</option>
+                        <?php foreach (($filterOptions['processes'] ?? []) as $p): $pv = (string) ($p['process'] ?? ''); ?>
+                            <option value="<?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?>" <?= $pv === ($selectedFilters['process'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <input type="hidden" name="season_id" value="<?= (int) ($selectedFilters['season_id'] ?? 0) ?>">
+                <input type="hidden" name="cost_center_id" value="<?= (int) ($selectedFilters['cost_center_id'] ?? 0) ?>">
+                <div class="dashboard-filter-status">
+                    <span class="dashboard-loading" id="dashboard-loading" hidden>Cargando...</span>
+                    <button class="secondary-button" type="submit">Actualizar</button>
+                </div>
             </form>
-        </details>
-
-        <section class="report-kpi-grid">
-            <?php foreach (array_slice($kpis, 0, 4) as $kpi): ?>
-                <article class="report-kpi">
-                    <span><?= htmlspecialchars($kpi['label'] ?? '-', ENT_QUOTES, 'UTF-8') ?></span>
-                    <strong><?= htmlspecialchars(number_format((float) ($kpi['value'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?><?= !empty($kpi['unit']) ? ' ' . htmlspecialchars($kpi['unit'], ENT_QUOTES, 'UTF-8') : '' ?></strong>
-                    <?php if (!empty($kpi['note'])): ?><small><?= htmlspecialchars($kpi['note'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
-                </article>
-            <?php endforeach; ?>
         </section>
 
-        <?php if (!empty($analyses)): ?>
-            <section class="admin-columns">
-                <article class="admin-panel">
-                    <header class="panel-header"><h2>Hallazgos</h2></header>
-                    <div class="panel-body">
-                        <ul class="simple-list">
-                            <?php foreach ($analyses as $analysis): ?><li><?= htmlspecialchars($analysis, ENT_QUOTES, 'UTF-8') ?></li><?php endforeach; ?>
-                        </ul>
-                    </div>
-                </article>
+        <section class="dashboard-context-row">
+            <div class="dashboard-context-pill">
+                <span>Período seleccionado</span>
+                <strong id="selected-period"><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <div class="dashboard-context-pill">
+                <span>Fundo</span>
+                <strong id="selected-farm"><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <div class="dashboard-context-pill">
+                <span>Cuartel</span>
+                <strong id="selected-block"><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+            <div class="dashboard-context-pill">
+                <span>Proceso</span>
+                <strong id="selected-process"><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+        </section>
+
+        <?php if ($kpis !== []): ?>
+            <section class="dashboard-kpi-row">
+                <?php foreach ($kpis as $widget): ?>
+                    <?php $trend = strtolower((string) ($widget['metadata']['trend'] ?? $widget['trend'] ?? '')); ?>
+                    <?php $direction = $trend === 'up' ? '▲' : ($trend === 'down' || $trend === 'warning' ? '▼' : '→'); ?>
+                    <?php $statusClass = $trend === 'up' ? 'positive' : ($trend === 'down' ? 'negative' : 'neutral'); ?>
+                    <?php $iconLabel = strtoupper(substr((string) ($widget['module'] ?? $widget['label'] ?? 'BI'), 0, 2)); ?>
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-card-head">
+                            <div class="dashboard-kpi-card-icon"><?= htmlspecialchars($iconLabel, ENT_QUOTES, 'UTF-8') ?></div>
+                            <span class="dashboard-kpi-chip"><?= htmlspecialchars(strtoupper((string) ($widget['module'] ?? 'GENERAL')), ENT_QUOTES, 'UTF-8') ?></span>
+                        </div>
+                        <div class="dashboard-kpi-card-body">
+                            <p><?= htmlspecialchars($widget['title'] ?? $widget['label'] ?? 'Indicador', ENT_QUOTES, 'UTF-8') ?></p>
+                            <strong class="dashboard-kpi-card-value">
+                                <?= htmlspecialchars(is_numeric($widget['value']) ? number_format((float) $widget['value'], ($widget['unit'] ?? '') === '%' ? 1 : (((float) abs($widget['value']) >= 1000 || floor((float) abs($widget['value'])) === (float) abs($widget['value'])) ? 0 : 2), ',', '.') : (string) $widget['value'], ENT_QUOTES, 'UTF-8') ?>
+                                <?= !empty($widget['unit']) ? htmlspecialchars($widget['unit'], ENT_QUOTES, 'UTF-8') : '' ?>
+                            </strong>
+                        </div>
+                        <div class="dashboard-kpi-card-meta">
+                            <span class="dashboard-kpi-trend <?= $statusClass ?>"><?= $direction ?> <?= htmlspecialchars((string) ($widget['metadata']['note'] ?? $widget['metadata']['detail'] ?? '')) ?></span>
+                            <?php if (!empty($widget['module'])): ?>
+                                <a class="dashboard-kpi-link" href="?module=<?= htmlspecialchars($widget['module'], ENT_QUOTES, 'UTF-8') ?>">Ver módulo</a>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
             </section>
         <?php endif; ?>
 
-        <?php if (!empty($chartDefinitions)): ?>
-            <?php $mainChart = $chartDefinitions[0]; ?>
-            <section class="admin-columns">
-                <article class="admin-panel">
-                    <header class="panel-header"><h2><?= htmlspecialchars($mainChart['title'] ?? 'Tendencia principal', ENT_QUOTES, 'UTF-8') ?></h2></header>
-                    <div class="panel-body report-bars">
-                        <?php
-                            $labels = $mainChart['data']['labels'] ?? [];
-                            $dataset = $mainChart['data']['datasets'][0] ?? ['data' => []];
-                            $values = is_array($dataset['data'] ?? null) ? $dataset['data'] : [];
-                            $maxValue = $values !== [] ? max(array_map('floatval', $values)) : 0;
-                        ?>
-                        <?php if ($values !== [] && $maxValue > 0): ?>
-                            <?php foreach ($values as $index => $value): ?>
-                                <div class="report-bar-row">
-                                    <small><?= htmlspecialchars($labels[$index] ?? '', ENT_QUOTES, 'UTF-8') ?></small>
-                                    <div class="report-bar"><i style="width: <?= htmlspecialchars((string) min(100, max(0, ((float) $value / $maxValue) * 100)), ENT_QUOTES, 'UTF-8') ?>%;"></i></div>
-                                    <b><?= htmlspecialchars(number_format((float) $value, 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></b>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="empty-state">No hay datos de tendencia para el período seleccionado.</p>
-                        <?php endif; ?>
+        <section class="dashboard-section-grid">
+            <article class="dashboard-section-card">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Producción vs presupuesto</h2>
+                        <small>Comparativa del periodo con ejecución real del plan</small>
                     </div>
-                </article>
-            </section>
-            <?php if (count($chartDefinitions) > 1): ?>
-                <section class="dashboard-chart-grid">
-                    <?php foreach (array_slice($chartDefinitions, 1) as $chart): ?>
-                        <article class="admin-panel">
-                            <header class="panel-header"><h2><?= htmlspecialchars($chart['title'] ?? 'Análisis', ENT_QUOTES, 'UTF-8') ?></h2></header>
-                            <div class="panel-body report-bars">
-                                <?php
-                                    $labels = $chart['data']['labels'] ?? [];
-                                    $dataset = $chart['data']['datasets'][0] ?? ['data' => []];
-                                    $values = is_array($dataset['data'] ?? null) ? $dataset['data'] : [];
-                                    $maxValue = $values !== [] ? max(array_map('floatval', $values)) : 0;
-                                ?>
-                                <?php if ($values !== [] && $maxValue > 0): ?>
-                                    <?php foreach ($values as $index => $value): ?>
-                                        <div class="report-bar-row">
-                                            <small><?= htmlspecialchars($labels[$index] ?? '', ENT_QUOTES, 'UTF-8') ?></small>
-                                            <div class="report-bar"><i style="width: <?= htmlspecialchars((string) min(100, max(0, ((float) $value / $maxValue) * 100)), ENT_QUOTES, 'UTF-8') ?>%;"></i></div>
-                                            <b><?= htmlspecialchars(number_format((float) $value, 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></b>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <p class="empty-state">No hay datos de tendencia adicionales.</p>
-                                <?php endif; ?>
+                </header>
+                <div class="dashboard-compare-row">
+                    <div class="dashboard-compare-metric">
+                        <span>Total producción</span>
+                        <strong id="kpi-production-total"><?= htmlspecialchars(number_format((float) ($productionKpi['value'] ?? $metrics['production'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($productionKpi['unit'] ?? 'kg', ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-compare-metric">
+                        <span>Costo operativo</span>
+                        <strong id="kpi-total-cost"><?= htmlspecialchars(number_format((float) ($totals['total_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
+                    </div>
+                    <div class="dashboard-compare-metric">
+                        <span>Presupuesto ejecutado</span>
+                        <strong id="kpi-budget-executed"><?= htmlspecialchars(number_format((float) ($budgetKpi['value'] ?? 0), 1, ',', '.'), ENT_QUOTES, 'UTF-8') ?>%</strong>
+                    </div>
+                </div>
+                <div class="dashboard-chart-frame">
+                    <?php if ($costSeries !== []): ?>
+                        <div class="dashboard-mini-chart">
+                            <span>Costos vs Presupuesto</span>
+                            <div class="dashboard-chart-body">
+                                <canvas id="productionBudgetChart" aria-label="Costos vs Presupuesto" role="img"></canvas>
                             </div>
-                        </article>
-                    <?php endforeach; ?>
-                </section>
-            <?php endif; ?>
-        <?php endif; ?>
-
-        <section class="admin-columns report-columns">
-            <?php if (!empty($sections['production'])): $prod = $sections['production']; ?>
-                <article class="admin-panel">
-                    <header class="panel-header"><h2>Producción</h2></header>
-                    <div class="panel-body simple-list">
-                        <?php foreach (array_slice($prod['by_farm'] ?? [], 0, 5) as $row): ?>
-                            <div><?= htmlspecialchars($row['farm'] ?? '-', ENT_QUOTES, 'UTF-8') ?>: <?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> kg</div>
-                        <?php endforeach; ?>
-                    </div>
-                </article>
-            <?php endif; ?>
-
-            <?php if (!empty($sections['warehouse'])): $warehouse = $sections['warehouse']; ?>
-                <article class="admin-panel">
-                    <header class="panel-header"><h2>Bodega</h2></header>
-                    <div class="panel-body simple-list">
-                        <?php foreach (array_slice($warehouse['critical_stock'] ?? [], 0, 5) as $row): ?>
-                            <div><?= htmlspecialchars($row['name'] ?? '-', ENT_QUOTES, 'UTF-8') ?>: <?= htmlspecialchars(number_format((float) ($row['stock'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($row['unit'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
-                        <?php endforeach; ?>
-                    </div>
-                </article>
-            <?php endif; ?>
-
-            <?php if (!empty($sections['accounting'])): $acc = $sections['accounting']; ?>
-                <article class="admin-panel">
-                    <header class="panel-header"><h2>Contabilidad</h2></header>
-                    <div class="report-kpi-grid">
-                        <article class="report-kpi"><span>Gastos</span><strong><?= htmlspecialchars(number_format((float) ($acc['expenses'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong></article>
-                        <article class="report-kpi"><span>Costo laboral</span><strong><?= htmlspecialchars(number_format((float) ($acc['labor_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong></article>
-                        <article class="report-kpi"><span>Facturas</span><strong><?= htmlspecialchars(number_format(count($acc['purchase_invoices'] ?? []), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong><small>Compras registradas</small></article>
-                    </div>
-                </article>
-            <?php endif; ?>
-        </section>
-
-        <section class="admin-columns">
-            <article class="admin-panel">
-                <header class="panel-header"><h2>Visión de alertas</h2></header>
-                <div class="panel-body">
-                    <?php if (!empty($alerts)): ?>
-                        <ul class="simple-list">
-                            <?php foreach ($alerts as $alert): ?>
-                                <li>
-                                    <strong><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></strong>
-                                    <?php if (!empty($alert['count'])): ?> - <?= htmlspecialchars((int) $alert['count'], ENT_QUOTES, 'UTF-8') ?> registros<?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+                        </div>
                     <?php else: ?>
-                        <p class="setup-copy">No hay alertas activas en el periodo seleccionado.</p>
+                        <p class="empty-state">No hay datos suficientes para mostrar la comparativa.</p>
                     <?php endif; ?>
                 </div>
             </article>
 
-            <article class="admin-panel">
-                <header class="panel-header"><h2>Acciones</h2></header>
-                <div class="panel-body admin-form">
-                    <form method="post">
-                        <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="action" value="save_dashboard_view">
-                        <label>Nombre de vista<input type="text" name="view_name" placeholder="Mi vista personal"></label>
-                        <label>Desde<input type="date" name="date_from" value="<?= htmlspecialchars($selectedFilters['date_from'] ?? '', ENT_QUOTES, 'UTF-8') ?>"></label>
-                        <label>Hasta<input type="date" name="date_to" value="<?= htmlspecialchars($selectedFilters['date_to'] ?? '', ENT_QUOTES, 'UTF-8') ?>"></label>
-                        <label>Fundo<select name="farm_id"><option value="0">Todos</option><?php foreach (($filterOptions['farms'] ?? []) as $farm): ?><option value="<?= (int) $farm['id'] ?>" <?= (int) $selectedFilters['farm_id'] === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
-                        <label>Cuartel<select name="block_id"><option value="0">Todos</option><?php foreach (($filterOptions['blocks'] ?? []) as $block): ?><option value="<?= (int) $block['id'] ?>" <?= (int) $selectedFilters['block_id'] === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
-                        <button class="primary-button" type="submit">Guardar vista</button>
-                    </form>
-                    <form method="post" onsubmit="return confirm('Restablecer layout por defecto?')">
-                        <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="action" value="reset_dashboard">
-                        <button class="secondary-button" type="submit">Restablecer dashboard</button>
-                    </form>
+            <article class="dashboard-section-card">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Costos por proceso</h2>
+                        <small>Principales componentes de costo en el periodo</small>
+                    </div>
+                </header>
+                <div class="dashboard-chart-body">
+                    <?php if ($costProcesses !== []): ?>
+                        <canvas id="costProcessChart" aria-label="Costos por proceso" role="img"></canvas>
+                    <?php else: ?>
+                        <p class="empty-state">No hay costos categorizados en este periodo.</p>
+                    <?php endif; ?>
+                </div>
+                <div class="dashboard-section-list" id="cost-process-list">
+                    <?php if ($costProcesses !== []): ?>
+                        <?php foreach (array_slice($costProcesses, 0, 6) as $row): ?>
+                            <div class="dashboard-list-row">
+                                <span><?= htmlspecialchars((string) ($row['process'] ?? $row['category'] ?? 'Sin dato'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="empty-state">No hay costos categorizados en este periodo.</p>
+                    <?php endif; ?>
+                </div>
+            </article>
+
+            <article class="dashboard-section-card dashboard-chart-group">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Evolución temporal</h2>
+                        <small>Tendencias de producción y costos en el periodo</small>
+                    </div>
+                </header>
+                <?php if ($productionSeries !== [] || $costSeries !== []): ?>
+                    <div class="dashboard-chart-body">
+                        <canvas id="trendChart" aria-label="Evolución temporal de producción y costos" role="img"></canvas>
+                    </div>
+                <?php else: ?>
+                    <p class="empty-state">No hay indicadores temporales definidos en este dashboard.</p>
+                <?php endif; ?>
+            </article>
+        </section>
+
+        <section class="dashboard-bottom-grid">
+            <article class="dashboard-section-card">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Alertas críticas</h2>
+                        <small>Incidencias que requieren atención inmediata</small>
+                    </div>
+                </header>
+                <div class="dashboard-section-list">
+                    <?php if ($alerts !== []): ?>
+                        <?php foreach ($alerts as $alert): ?>
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <small><?= htmlspecialchars((string) ((int) ($alert['count'] ?? 0)) . ' items', ENT_QUOTES, 'UTF-8') ?></small>
+                                </div>
+                                <span class="dashboard-status-pill <?= htmlspecialchars((string) ($alert['severity'] ?? 'normal'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper((string) ($alert['severity'] ?? 'normal')), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="empty-state">No hay alertas críticas en este periodo.</p>
+                    <?php endif; ?>
+                </div>
+            </article>
+
+            <article class="dashboard-section-card">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Actividad reciente</h2>
+                        <small>Movimientos y transacciones recientes del ERP</small>
+                    </div>
+                </header>
+                <div class="dashboard-section-list">
+                    <?php if ($recentActivities !== []): ?>
+                        <?php foreach (array_slice($recentActivities, 0, 8) as $row): ?>
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong><?= htmlspecialchars((string) ($row['label'] ?? $row['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <small><?= htmlspecialchars((string) ($row['type'] ?? $row['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string) ($row['date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small>
+                                </div>
+                                <strong><?= htmlspecialchars(is_numeric($row['value']) ? number_format((float) $row['value'], 0, ',', '.') : (string) $row['value'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="empty-state">No hay actividad reciente para mostrar.</p>
+                    <?php endif; ?>
+                </div>
+            </article>
+
+            <article class="dashboard-section-card dashboard-operational-panel">
+                <header class="dashboard-section-header">
+                    <div>
+                        <h2>Indicadores operacionales</h2>
+                        <small>Estado real de tareas, órdenes y recursos</small>
+                    </div>
+                </header>
+                <div class="dashboard-operational-grid">
+                    <div class="dashboard-value-card">
+                        <span>Fincas activas</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($metrics['farms'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-value-card">
+                        <span>Cuarteles activos</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($metrics['blocks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-value-card">
+                        <span>Trabajadores activos</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($metrics['workers'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-value-card">
+                        <span>Tareas abiertas</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($operational['pending_tasks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-value-card">
+                        <span>Órdenes pendientes</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($operational['pending_orders'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="dashboard-value-card">
+                        <span>Solicitudes abiertas</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($operational['open_requests'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
                 </div>
             </article>
         </section>
     </section>
 </main>
 
+<script>
+    window.dashboardData = <?= $dashboardJson ?>;
+</script>
+<script src="assets/js/chart.min.js" defer></script>
+<script src="assets/js/dashboard.js" defer></script>
 </body>
 </html>

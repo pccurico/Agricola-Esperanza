@@ -4,37 +4,35 @@ declare(strict_types=1);
 
 namespace CampoSur\Services;
 
-final class FilterManager
+class FilterManager
 {
-    private array $defaults;
-    private array $options;
+    private array $values;
 
-    public function __construct(array $defaults = [], array $options = [])
+    public function __construct(array $defaults = [], private readonly array $options = [])
     {
-        $this->defaults = $defaults;
-        $this->options = $options;
+        $this->values = $defaults;
     }
 
-    public function resolve(array $input): array
+    public function resolve(array $incoming): array
     {
-        $resolved = $this->defaults;
+        $resolved = $this->values;
 
         foreach ($resolved as $key => $value) {
-            if (!array_key_exists($key, $input)) {
+            if (!array_key_exists($key, $incoming)) {
                 continue;
             }
 
-            $incoming = $input[$key];
-            if ($incoming === '' || $incoming === null) {
+            $incomingValue = $incoming[$key];
+            if ($incomingValue === '' || $incomingValue === null) {
                 continue;
             }
 
-            if (is_int($value)) {
-                $resolved[$key] = max(0, (int) $incoming);
+            if (in_array($key, ['farm_id', 'block_id'], true)) {
+                $resolved[$key] = max(0, (int) $incomingValue);
                 continue;
             }
 
-            $resolved[$key] = trim((string) $incoming);
+            $resolved[$key] = trim((string) $incomingValue);
         }
 
         return $resolved;
@@ -42,7 +40,7 @@ final class FilterManager
 
     public function defaults(): array
     {
-        return $this->defaults;
+        return $this->values;
     }
 
     public function options(): array

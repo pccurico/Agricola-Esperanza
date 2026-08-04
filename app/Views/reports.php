@@ -17,7 +17,7 @@ $filterQuery = static function (string $export = '') use ($reportFilters): strin
     return http_build_query(array_filter($values, static fn (mixed $value): bool => $value !== '' && $value !== 0));
 };
 $maxTrend = static function (array $rows): float {
-    return max(1, ...array_map(static fn (array $row): float => (float) ($row['value'] ?? 0), $rows));
+    return max([1, ...array_map(static fn (array $row): float => (float) ($row['value'] ?? 0), $rows)]);
 };
 $hasReportFilters = (string) ($reportFilters['process'] ?? '') !== '' || (int) ($reportFilters['season_id'] ?? 0) > 0 || (int) ($reportFilters['farm_id'] ?? 0) > 0 || (int) ($reportFilters['block_id'] ?? 0) > 0 || (int) ($reportFilters['cost_center_id'] ?? 0) > 0 || (int) ($reportFilters['worker_id'] ?? 0) > 0 || (int) ($reportFilters['supervisor_id'] ?? 0);
 ?>

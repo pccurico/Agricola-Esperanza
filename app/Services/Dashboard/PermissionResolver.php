@@ -8,12 +8,16 @@ use CampoSur\Services\Auth;
 
 final class PermissionResolver
 {
-    public function __construct(private readonly Auth $auth, private readonly int $roleId, private readonly ?int $userId = null, private readonly array $activeModules = [])
+    public function __construct(private readonly Auth $auth, private readonly int $roleId, private readonly ?int $userId = null, private readonly array $activeModules = [], private readonly bool $roleIsSystem = false)
     {
     }
 
     public function filterWidgets(array $widgets): array
     {
+        if ($this->roleIsSystem) {
+            return array_values($widgets);
+        }
+
         return array_values(array_filter($widgets, [$this, 'canViewWidget']));
     }
 

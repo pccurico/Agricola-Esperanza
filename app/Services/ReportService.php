@@ -287,7 +287,7 @@ final class ReportService extends BaseService
         return $query->fetchAll();
     }
 
-    private function fetchRows(string $sql, array $params): array
+    protected function fetchRows(string $sql, array $params = []): array
     {
         $query = $this->connection->prepare($sql);
         $query->execute($params);

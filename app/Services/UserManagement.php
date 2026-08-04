@@ -176,20 +176,30 @@ final class UserManagement extends BaseService
     private function syncUserPermissions(int $userId, array $permissionIds): void
     {
         $this->connection->prepare('DELETE FROM user_permissions WHERE user_id = ?')->execute([$userId]);
-        $permissionIds = array_values(array_unique(array_map('intval', $permissionIds)));
+        $permissionIds = $this->normalizePermissionIds($permissionIds, 'Uno de los permisos asignados directamente no es válido.');
         if ($permissionIds === []) {
             return;
-        }
-        $placeholders = implode(',', array_fill(0, count($permissionIds), '?'));
-        $permissionCheck = $this->connection->prepare('SELECT COUNT(*) FROM permissions WHERE id IN (' . $placeholders . ')');
-        $permissionCheck->execute($permissionIds);
-        if ((int) $permissionCheck->fetchColumn() !== count($permissionIds)) {
-            throw new RuntimeException('Uno de los permisos asignados directamente no es válido.');
         }
         $insert = $this->connection->prepare('INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)');
         foreach ($permissionIds as $permissionId) {
             $insert->execute([$userId, $permissionId]);
         }
+    }
+
+    private function normalizePermissionIds(array $permissionIds, string $errorMessage): array
+    {
+        $permissionIds = array_values(array_unique(array_map('intval', $permissionIds)));
+        if ($permissionIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($permissionIds), '?'));
+        $permissionCheck = $this->connection->prepare('SELECT COUNT(*) FROM permissions WHERE id IN (' . $placeholders . ')');
+        $permissionCheck->execute($permissionIds);
+        if ((int) $permissionCheck->fetchColumn() !== count($permissionIds)) {
+            throw new RuntimeException($errorMessage);
+        }
+
+        return $permissionIds;
     }
 
     public function deleteUser(int $userId): void
@@ -213,14 +223,8 @@ final class UserManagement extends BaseService
             $statement = $this->connection->prepare('INSERT INTO roles (company_id, name, description) VALUES (?, ?, ?)');
             $statement->execute([$this->companyId, trim((string) ($input['name'] ?? '')), trim((string) ($input['description'] ?? '')) ?: null]);
             $roleId = (int) $this->connection->lastInsertId();
-            if (!empty($input['permissions'])) {
-                $permissionIds = array_values(array_unique(array_map('intval', $input['permissions'])));
-                $placeholders = implode(',', array_fill(0, count($permissionIds), '?'));
-                $permissionCheck = $this->connection->prepare('SELECT COUNT(*) FROM permissions WHERE id IN (' . $placeholders . ')');
-                $permissionCheck->execute($permissionIds);
-                if ((int) $permissionCheck->fetchColumn() !== count($permissionIds)) {
-                    throw new RuntimeException('Uno de los permisos seleccionados no es vÃ¡lido.');
-                }
+            $permissionIds = $this->normalizePermissionIds((array) ($input['permissions'] ?? []), 'Uno de los permisos seleccionados no es válido.');
+            if ($permissionIds !== []) {
                 $permission = $this->connection->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)');
                 foreach ($permissionIds as $permissionId) {
                     $permission->execute([$roleId, $permissionId]);
@@ -249,14 +253,8 @@ final class UserManagement extends BaseService
             $statement = $this->connection->prepare('UPDATE roles SET name = ?, description = ? WHERE id = ? AND company_id = ?');
             $statement->execute([trim((string) ($input['name'] ?? '')), trim((string) ($input['description'] ?? '')) ?: null, $roleId, $this->companyId]);
             $this->connection->prepare('DELETE FROM role_permissions WHERE role_id = ?')->execute([$roleId]);
-            $permissionIds = array_values(array_unique(array_map('intval', (array) ($input['permissions'] ?? []))));
+            $permissionIds = $this->normalizePermissionIds((array) ($input['permissions'] ?? []), 'Uno de los permisos seleccionados no es válido.');
             if ($permissionIds !== []) {
-                $placeholders = implode(',', array_fill(0, count($permissionIds), '?'));
-                $permissionCheck = $this->connection->prepare('SELECT COUNT(*) FROM permissions WHERE id IN (' . $placeholders . ')');
-                $permissionCheck->execute($permissionIds);
-                if ((int) $permissionCheck->fetchColumn() !== count($permissionIds)) {
-                    throw new RuntimeException('Uno de los permisos seleccionados no es válido.');
-                }
                 $permission = $this->connection->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)');
                 foreach ($permissionIds as $permissionId) {
                     $permission->execute([$roleId, $permissionId]);

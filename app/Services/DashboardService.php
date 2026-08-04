@@ -46,11 +46,15 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         $periodEnd = $toDate->format('Y-m-d');
         $farmId = max(0, (int) ($filters['farm_id'] ?? 0));
         $blockId = max(0, (int) ($filters['block_id'] ?? 0));
+        $seasonId = max(0, (int) ($filters['season_id'] ?? 0));
+        $costCenterId = max(0, (int) ($filters['cost_center_id'] ?? 0));
         $process = trim((string) ($filters['process'] ?? ''));
         $processValue = $process !== '' ? $this->connection->quote($process) : null;
-        $expenseFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . ($processValue ? " AND description = {$processValue}" : '');
-        $laborFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . ($processValue ? " AND labor_type = {$processValue}" : '');
-        $productionFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . ($processValue ? " AND activity = {$processValue}" : '');
+        $seasonFilter = $seasonId > 0 ? " AND season_id = {$seasonId}" : '';
+        $costCenterFilter = $costCenterId > 0 ? " AND cost_center_id = {$costCenterId}" : '';
+        $expenseFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . $seasonFilter . $costCenterFilter . ($processValue ? " AND description = {$processValue}" : '');
+        $laborFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . $seasonFilter . ($processValue ? " AND labor_type = {$processValue}" : '');
+        $productionFilters = ($farmId ? " AND farm_id = {$farmId}" : '') . ($blockId ? " AND block_id = {$blockId}" : '') . $seasonFilter . ($processValue ? " AND activity = {$processValue}" : '');
 
         $company = $this->connection->prepare('SELECT trade_name, logo_path FROM companies WHERE id = ?');
         $company->execute([$this->companyId]);
@@ -61,9 +65,27 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         $recentRows = $recent->fetchAll();
         $metrics = $this->connection->prepare("SELECT (SELECT COUNT(*) FROM farms WHERE company_id = ? AND active = 1) AS farms, (SELECT COUNT(*) FROM blocks WHERE company_id = ? AND active = 1) AS blocks, (SELECT COUNT(*) FROM workers WHERE company_id = ? AND active = 1) AS workers, (SELECT COUNT(*) FROM inventory_items WHERE company_id = ? AND active = 1) AS items, (SELECT COUNT(*) FROM machinery WHERE company_id = ? AND status = 'ACTIVE') AS machinery, (SELECT COALESCE(SUM(quantity), 0) FROM production_entries WHERE company_id = ? AND production_date BETWEEN '{$periodStart}' AND '{$periodEnd}'{$productionFilters}) AS production");
         $metrics->execute([$this->companyId, $this->companyId, $this->companyId, $this->companyId, $this->companyId, $this->companyId]);
-        $operational = $this->connection->prepare('SELECT (SELECT COUNT(*) FROM tasks WHERE company_id = ? AND status NOT IN ("DONE", "CANCELLED")) AS pending_tasks, (SELECT COUNT(*) FROM internal_requests WHERE company_id = ? AND status IN ("REQUESTED", "APPROVED")) AS open_requests, (SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("SENT", "PARTIAL")) AS pending_orders');
+        $operational = $this->connection->prepare('SELECT (SELECT COUNT(*) FROM tasks WHERE company_id = ? AND status NOT IN ("DONE", "CANCELLED")) AS pending_tasks, (SELECT COUNT(*) FROM internal_requests WHERE company_id = ? AND status IN ("REQUESTED", "APPROVED")) AS open_requests, (SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("SENT", "PARTIAL", "PENDING")) AS pending_orders');
         $operational->execute([$this->companyId, $this->companyId, $this->companyId]);
         $operationalData = $operational->fetch() ?: ['pending_tasks' => 0, 'open_requests' => 0, 'pending_orders' => 0];
+
+        $pendingInvoicesQuery = $this->connection->prepare("SELECT COUNT(*) FROM purchase_invoices WHERE company_id = ? AND status NOT IN ('PAID', 'CANCELLED')");
+        $pendingInvoicesQuery->execute([$this->companyId]);
+        $pendingInvoices = (int) $pendingInvoicesQuery->fetchColumn();
+
+        $totalsData = $totals->fetch() ?: ['total_cost' => 0, 'hectares' => 0, 'movements' => 0];
+
+        $budgetQuery = $this->connection->prepare('SELECT COALESCE(SUM(amount), 0) AS planned FROM budgets WHERE company_id = ? AND period_start <= ? AND period_end >= ?' . ($seasonId > 0 ? ' AND season_id = ?' : '') . ($costCenterId > 0 ? ' AND cost_center_id = ?' : ''));
+        $budgetParams = [$this->companyId, $periodEnd, $periodStart];
+        if ($seasonId > 0) {
+            $budgetParams[] = $seasonId;
+        }
+        if ($costCenterId > 0) {
+            $budgetParams[] = $costCenterId;
+        }
+        $budgetQuery->execute($budgetParams);
+        $budgetPlanned = (float) $budgetQuery->fetchColumn();
+        $budgetExecution = $budgetPlanned > 0 ? min(100.0, (($totalsData['total_cost'] ?? 0) / $budgetPlanned) * 100.0) : 0.0;
 
         $costLimit = $period === 'day' ? 14 : ($period === 'week' ? 12 : ($period === 'month' ? 12 : 5));
         $costFormat = $config['cost_format'];
@@ -73,7 +95,6 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         $inventoryAlerts = $this->connection->prepare('SELECT i.name, i.unit, i.minimum_stock, COALESCE(SUM(CASE WHEN m.movement_type = "IN" THEN m.quantity WHEN m.movement_type = "OUT" THEN -m.quantity ELSE m.quantity END), 0) AS stock FROM inventory_items i LEFT JOIN inventory_movements m ON m.item_id = i.id AND m.company_id = i.company_id WHERE i.company_id = ? AND i.active = 1 GROUP BY i.id, i.name, i.unit, i.minimum_stock HAVING stock <= i.minimum_stock ORDER BY stock ASC, i.name LIMIT 6');
         $inventoryAlerts->execute([$this->companyId]);
 
-        $totalsData = $totals->fetch() ?: ['total_cost' => 0, 'hectares' => 0, 'movements' => 0];
         $metricsData = $metrics->fetch() ?: [];
         $inventoryAlertRows = $inventoryAlerts->fetchAll();
         $costPerUnit = (float) ($metricsData['production'] ?? 0) > 0 ? (float) ($totalsData['total_cost'] ?? 0) / (float) ($metricsData['production'] ?? 0) : 0;
@@ -198,30 +219,26 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         }
 
         $kpis = [
-            ['label' => 'Costo operativo', 'value' => (float) ($totalsData['total_cost'] ?? 0), 'trend' => 'up', 'color' => 'indigo', 'detail' => 'Costos + mano de obra'],
-            ['label' => 'Producción', 'value' => (float) ($metricsData['production'] ?? 0), 'trend' => 'up', 'color' => 'emerald', 'detail' => 'Kg registrados'],
-            ['label' => 'Rentabilidad', 'value' => (float) ($profitability * 100), 'trend' => 'stable', 'color' => 'amber', 'detail' => 'Producción por costo'],
-            ['label' => 'Stock crítico', 'value' => $inventoryAlertCount, 'trend' => 'warning', 'color' => 'rose', 'detail' => 'Insumos por reabastecer'],
-            ['label' => 'Pendientes', 'value' => (int) (($operationalData['pending_tasks'] ?? 0) + ($operationalData['open_requests'] ?? 0) + ($operationalData['pending_orders'] ?? 0)), 'trend' => 'warning', 'color' => 'slate', 'detail' => 'Tareas, solicitudes y órdenes'],
+            ['label' => 'Costo total', 'value' => (float) ($totalsData['total_cost'] ?? 0), 'trend' => $variationCost['trend'], 'color' => 'indigo', 'detail' => 'Costos + mano de obra', 'module' => 'costs'],
+            ['label' => 'Producción', 'value' => (float) ($metricsData['production'] ?? 0), 'trend' => $variationProduction['trend'], 'color' => 'emerald', 'detail' => 'Kg registrados', 'module' => 'production'],
+            ['label' => 'Costo por ha', 'value' => (float) ($totalsData['hectares'] ?? 0) > 0 ? (float) ($totalsData['total_cost'] ?? 0) / (float) ($totalsData['hectares'] ?? 0) : 0.0, 'trend' => 'stable', 'color' => 'amber', 'detail' => 'Eficiencia agrícola', 'module' => 'reports'],
+            ['label' => 'Costo por unidad', 'value' => $costPerUnit, 'trend' => 'stable', 'color' => 'sky', 'detail' => 'Costo por kg', 'module' => 'reports'],
+            ['label' => 'Stock crítico', 'value' => $inventoryAlertCount, 'trend' => $inventoryAlertCount > 0 ? 'warning' : 'stable', 'color' => 'rose', 'detail' => 'Insumos por reabastecer', 'module' => 'inventory'],
+            ['label' => 'Compras pendientes', 'value' => (int) ($operationalData['pending_orders'] ?? 0), 'trend' => (int) ($operationalData['pending_orders'] ?? 0) > 0 ? 'warning' : 'stable', 'color' => 'slate', 'detail' => 'Órdenes abiertas', 'module' => 'procurement'],
+            ['label' => 'Facturas pendientes', 'value' => $pendingInvoices, 'trend' => $pendingInvoices > 0 ? 'warning' : 'stable', 'color' => 'violet', 'detail' => 'Pagos y compromisos', 'module' => 'procurement'],
+            ['label' => 'Presupuesto ejecutado', 'value' => round($budgetExecution, 1), 'trend' => $budgetExecution >= 100 ? 'warning' : 'stable', 'color' => 'teal', 'detail' => 'Porcentaje del plan', 'module' => 'budgets'],
         ];
         $alerts = [
             ['title' => 'Stock crítico', 'count' => $inventoryAlertCount, 'module' => 'inventory', 'link' => '?module=inventory', 'severity' => $inventoryAlertCount > 0 ? 'critical' : 'normal'],
-            ['title' => 'Tareas pendientes', 'count' => (int) ($operationalData['pending_tasks'] ?? 0), 'module' => 'planning', 'link' => '?module=planning', 'severity' => (int) ($operationalData['pending_tasks'] ?? 0) > 0 ? 'warning' : 'normal'],
-            ['title' => 'Solicitudes abiertas', 'count' => (int) ($operationalData['open_requests'] ?? 0), 'module' => 'requests', 'link' => '?module=requests', 'severity' => (int) ($operationalData['open_requests'] ?? 0) > 0 ? 'warning' : 'normal'],
-            ['title' => 'Órdenes pendientes', 'count' => (int) ($operationalData['pending_orders'] ?? 0), 'module' => 'procurement', 'link' => '?module=procurement', 'severity' => (int) ($operationalData['pending_orders'] ?? 0) > 0 ? 'warning' : 'normal'],
+            ['title' => 'Compras pendientes', 'count' => (int) ($operationalData['pending_orders'] ?? 0), 'module' => 'procurement', 'link' => '?module=procurement', 'severity' => (int) ($operationalData['pending_orders'] ?? 0) > 0 ? 'warning' : 'normal'],
+            ['title' => 'Facturas pendientes', 'count' => $pendingInvoices, 'module' => 'procurement', 'link' => '?module=procurement', 'severity' => $pendingInvoices > 0 ? 'warning' : 'normal'],
+            ['title' => 'Tareas y solicitudes', 'count' => (int) (($operationalData['pending_tasks'] ?? 0) + ($operationalData['open_requests'] ?? 0)), 'module' => 'planning', 'link' => '?module=planning', 'severity' => (int) (($operationalData['pending_tasks'] ?? 0) + ($operationalData['open_requests'] ?? 0)) > 0 ? 'warning' : 'normal'],
         ];
         $widgets = [
             ['id' => 'cost-trend', 'title' => 'Evolución de costos', 'type' => 'bars', 'period' => $period, 'data' => array_reverse($costSeries)],
             ['id' => 'production-trend', 'title' => 'Producción', 'type' => 'bars', 'period' => $period, 'data' => array_reverse($productionSeries)],
             ['id' => 'inventory-alerts', 'title' => 'Alertas de inventario', 'type' => 'list', 'data' => $inventoryAlertRows],
             ['id' => 'recent-activity', 'title' => 'Actividad reciente', 'type' => 'list', 'data' => $recentRows],
-        ];
-
-        $alerts = [
-            ['title' => 'Stock crítico', 'count' => $inventoryAlertCount, 'module' => 'inventory', 'link' => '?module=inventory', 'severity' => $inventoryAlertCount > 0 ? 'critical' : 'normal'],
-            ['title' => 'Tareas pendientes', 'count' => (int) ($operationalData['pending_tasks'] ?? 0), 'module' => 'planning', 'link' => '?module=planning', 'severity' => (int) ($operationalData['pending_tasks'] ?? 0) > 0 ? 'warning' : 'normal'],
-            ['title' => 'Solicitudes abiertas', 'count' => (int) ($operationalData['open_requests'] ?? 0), 'module' => 'requests', 'link' => '?module=requests', 'severity' => (int) ($operationalData['open_requests'] ?? 0) > 0 ? 'warning' : 'normal'],
-            ['title' => 'Órdenes pendientes', 'count' => (int) ($operationalData['pending_orders'] ?? 0), 'module' => 'procurement', 'link' => '?module=procurement', 'severity' => (int) ($operationalData['pending_orders'] ?? 0) > 0 ? 'warning' : 'normal'],
         ];
 
         $sections['alerts'] = ['title' => 'Alertas', 'items' => $alerts];
@@ -255,7 +272,8 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
             'reference_date' => $fromDate->format('Y-m-d'),
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
-            'filters' => ['process' => $process, 'farm_id' => $farmId, 'block_id' => $blockId, 'date_from' => $periodStart, 'date_to' => $periodEnd],
+            'filters' => ['process' => $process, 'farm_id' => $farmId, 'block_id' => $blockId, 'season_id' => $seasonId, 'cost_center_id' => $costCenterId, 'date_from' => $periodStart, 'date_to' => $periodEnd],
+            'budget' => ['planned' => $budgetPlanned, 'execution' => $budgetExecution],
             'filter_options' => $this->filterOptions(),
             'activity_dates' => $this->activityDates($periodStart, $periodEnd, $expenseFilters, $laborFilters, $productionFilters),
         ];
@@ -332,7 +350,11 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         $blocks->execute([$this->companyId]);
         $processes = $this->connection->prepare("SELECT DISTINCT process FROM (SELECT description AS process FROM expense_entries WHERE company_id = ? UNION SELECT labor_type AS process FROM labor_entries WHERE company_id = ? UNION SELECT activity AS process FROM production_entries WHERE company_id = ?) process_options WHERE process <> '' ORDER BY process");
         $processes->execute([$this->companyId, $this->companyId, $this->companyId]);
-        return ['processes' => $processes->fetchAll(), 'farms' => $farms->fetchAll(), 'blocks' => $blocks->fetchAll()];
+        $seasons = $this->connection->prepare('SELECT id, name FROM seasons WHERE company_id = ? ORDER BY starts_on DESC');
+        $seasons->execute([$this->companyId]);
+        $costCenters = $this->connection->prepare('SELECT id, name, category FROM cost_centers WHERE company_id = ? AND active = 1 ORDER BY category, name');
+        $costCenters->execute([$this->companyId]);
+        return ['processes' => $processes->fetchAll(), 'farms' => $farms->fetchAll(), 'blocks' => $blocks->fetchAll(), 'seasons' => $seasons->fetchAll(), 'cost_centers' => $costCenters->fetchAll()];
     }
 
     private function dashboardSettings(string $department = 'general', ?int $userId = null): array
