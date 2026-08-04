@@ -37,6 +37,13 @@ final class ToolsService extends BaseService
         $latestAvailable = $this->latestAvailableMigration();
         $updateAvailable = $latestInstalled !== '' && $latestAvailable !== '' && $latestInstalled !== $latestAvailable;
 
+        $remoteRelease = $this->remoteReleaseStatus();
+        $remoteVersion = (string) ($remoteRelease['tag_name'] ?? '');
+        $remoteUrl = (string) ($remoteRelease['html_url'] ?? '');
+        $remoteError = (string) ($remoteRelease['error'] ?? '');
+        $localVersion = (string) app_config('app.version', '');
+        $remoteUpdateAvailable = $remoteVersion !== '' && $localVersion !== '' && version_compare(ltrim($remoteVersion, 'v'), ltrim($localVersion, 'v'), '>');
+
         return [
             'installed_version' => $latestInstalled ?: 'sin-migraciones',
             'available_version' => $latestAvailable ?: 'sin-migraciones',
@@ -45,6 +52,11 @@ final class ToolsService extends BaseService
             'missing_columns' => $missingColumns,
             'backup_count' => count($this->backups()),
             'recent_logs' => $this->recentLogs(),
+            'remote_version' => $remoteVersion ?: 'no disponible',
+            'remote_url' => $remoteUrl,
+            'remote_error' => $remoteError,
+            'remote_update_available' => $remoteUpdateAvailable,
+            'local_app_version' => $localVersion ?: 'no definido',
         ];
     }
 
@@ -278,6 +290,39 @@ final class ToolsService extends BaseService
         }
         sort($versions, SORT_STRING);
         return $versions === [] ? '' : (string) end($versions);
+    }
+
+    private function remoteReleaseStatus(): array
+    {
+        $apiUrl = (string) app_config('updates.github_api', 'https://api.github.com/repos/jcares/Agricola-Esperanza/releases/latest');
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "User-Agent: PCCURICO-Update-Checker\r\nAccept: application/vnd.github.v3+json\r\n",
+                'timeout' => 10,
+            ],
+        ]);
+
+        $response = @file_get_contents($apiUrl, false, $context);
+        if ($response === false) {
+            return ['error' => 'No fue posible acceder a GitHub.'];
+        }
+
+        $payload = json_decode($response, true);
+        if (!is_array($payload)) {
+            return ['error' => 'Respuesta inválida de GitHub.'];
+        }
+
+        if (isset($payload['message']) && is_string($payload['message']) && $payload['message'] !== '') {
+            return ['error' => 'GitHub API error: ' . $payload['message']];
+        }
+
+        return [
+            'tag_name' => (string) ($payload['tag_name'] ?? ''),
+            'html_url' => (string) ($payload['html_url'] ?? ''),
+            'name' => (string) ($payload['name'] ?? ''),
+            'body' => (string) ($payload['body'] ?? ''),
+        ];
     }
 
     private function expectedSchemaTables(string $schemaSql): array

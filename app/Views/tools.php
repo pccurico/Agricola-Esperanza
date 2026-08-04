@@ -10,6 +10,11 @@ $missingTables = (array) ($toolsStatus['missing_tables'] ?? []);
 $missingColumns = (int) ($toolsStatus['missing_columns'] ?? 0);
 $backupCount = (int) ($toolsStatus['backup_count'] ?? 0);
 $updateAvailable = (bool) ($toolsStatus['can_update'] ?? false);
+$remoteVersion = (string) ($toolsStatus['remote_version'] ?? 'no disponible');
+$remoteUrl = (string) ($toolsStatus['remote_url'] ?? '');
+$remoteError = (string) ($toolsStatus['remote_error'] ?? '');
+$remoteUpdateAvailable = (bool) ($toolsStatus['remote_update_available'] ?? false);
+$localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido');
 ?>
 <!doctype html>
 <html lang="es">
@@ -95,6 +100,8 @@ $updateAvailable = (bool) ($toolsStatus['can_update'] ?? false);
                     <div class="stats-grid">
                         <div class="stat-card"><span>Versión instalada</span><strong class="version-label" title="<?= htmlspecialchars($installedVersion, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($installedVersion, ENT_QUOTES, 'UTF-8') ?></strong></div>
                         <div class="stat-card"><span>Versión disponible</span><strong class="version-label" title="<?= htmlspecialchars($availableVersion, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($availableVersion, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                        <div class="stat-card"><span>App local</span><strong class="version-label" title="<?= htmlspecialchars($localAppVersion, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($localAppVersion, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                        <div class="stat-card"><span>Release GitHub</span><strong class="version-label" title="<?= htmlspecialchars($remoteVersion, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($remoteVersion, ENT_QUOTES, 'UTF-8') ?></strong></div>
                         <div class="stat-card"><span>Respaldos disponibles</span><strong><?= $backupCount ?></strong></div>
                         <div class="stat-card"><span>Drift de esquema</span><strong><?= count($missingTables) + $missingColumns ?></strong></div>
                     </div>

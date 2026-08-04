@@ -8,6 +8,11 @@ return [
         'url' => 'http://localhost',
         'timezone' => 'America/Santiago',
         'environment' => 'local',
+        'version' => 'v1.7.02',
+    ],
+    'updates' => [
+        'github_repo' => 'jcares/Agricola-Esperanza',
+        'github_api' => 'https://api.github.com/repos/jcares/Agricola-Esperanza/releases/latest',
     ],
     'database' => [
         'host' => 'localhost',
