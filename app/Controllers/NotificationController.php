@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class NotificationController extends BaseController
 {
     public function handle(): array
     {
-        $service = new \CampoSur\Services\NotificationManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['user_id']);
+        $service = new \AgroPCC\Services\NotificationManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['user_id']);
         $error = null;
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {

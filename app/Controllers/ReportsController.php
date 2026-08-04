@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class ReportsController extends BaseController
 {
     public function handle(): array
     {
         $reportType = $this->normalizeReportType((string) ($_GET['report'] ?? 'executive'));
-        $report = new \CampoSur\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
+        $report = new \AgroPCC\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
         $summary = $report->summary([
             'date_from' => (string) ($_GET['date_from'] ?? ''),
             'date_to' => (string) ($_GET['date_to'] ?? ''),
@@ -24,15 +24,15 @@ final class ReportsController extends BaseController
         $summary['report_type'] = $reportType;
 
         if (($_GET['export'] ?? '') === 'csv') {
-            (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'csv', 'report' => $reportType]);
+            (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'csv', 'report' => $reportType]);
             $this->exportCsv($summary, $reportType);
         }
         if (($_GET['export'] ?? '') === 'xlsx') {
-            (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'xlsx', 'report' => $reportType]);
+            (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'xlsx', 'report' => $reportType]);
             $this->exportXlsx($summary, $reportType);
         }
         if (($_GET['export'] ?? '') === 'pdf') {
-            (new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'pdf', 'report' => $reportType]);
+            (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'pdf', 'report' => $reportType]);
             $this->exportPdf($summary, $reportType);
         }
         return $summary;
@@ -277,7 +277,7 @@ final class ReportsController extends BaseController
 
     private function exportRows(array $summary, string $reportType): array
     {
-        $documentService = new \CampoSur\Services\DocumentManagement(database()->connection(), (int) $_SESSION['company_id'], dirname(__DIR__, 2));
+        $documentService = new \AgroPCC\Services\DocumentManagement(database()->connection(), (int) $_SESSION['company_id'], dirname(__DIR__, 2));
         $documents = $documentService->documents();
 
         $executive = [

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Services\Dashboard;
+namespace AgroPCC\Services\Dashboard;
 
 final class ProductionDashboardService
 {

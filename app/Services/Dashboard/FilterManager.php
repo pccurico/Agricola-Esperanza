@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Services\Dashboard;
+namespace AgroPCC\Services\Dashboard;
 
-use CampoSur\Services\FilterManager as BaseFilterManager;
+use AgroPCC\Services\FilterManager as BaseFilterManager;
 
 final class FilterManager extends BaseFilterManager
 {

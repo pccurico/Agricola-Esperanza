@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
-use CampoSur\Core\Database;
-use CampoSur\Services\Installer;
+use AgroPCC\Core\Database;
+use AgroPCC\Services\Installer;
 use RuntimeException;
 
 final class SetupController extends BaseController
@@ -20,16 +20,16 @@ final class SetupController extends BaseController
         }
 
         $data = [
-            'legal_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['legal_name'] ?? '')),
-            'trade_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['trade_name'] ?? '')),
-            'tax_id' => \CampoSur\Services\InputNormalizer::rut((string) ($_POST['tax_id'] ?? '')),
-            'company_email' => \CampoSur\Services\InputNormalizer::email((string) ($_POST['company_email'] ?? '')),
-            'company_phone' => \CampoSur\Services\InputNormalizer::phone((string) ($_POST['company_phone'] ?? '')),
-            'commune' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['commune'] ?? '')),
-            'region' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['region'] ?? '')),
-            'admin_name' => \CampoSur\Services\InputNormalizer::text((string) ($_POST['admin_name'] ?? '')),
-            'admin_email' => \CampoSur\Services\InputNormalizer::email((string) ($_POST['admin_email'] ?? '')),
-            'admin_phone' => \CampoSur\Services\InputNormalizer::phone((string) ($_POST['admin_phone'] ?? '')),
+            'legal_name' => \AgroPCC\Services\InputNormalizer::text((string) ($_POST['legal_name'] ?? '')),
+            'trade_name' => \AgroPCC\Services\InputNormalizer::text((string) ($_POST['trade_name'] ?? '')),
+            'tax_id' => \AgroPCC\Services\InputNormalizer::rut((string) ($_POST['tax_id'] ?? '')),
+            'company_email' => \AgroPCC\Services\InputNormalizer::email((string) ($_POST['company_email'] ?? '')),
+            'company_phone' => \AgroPCC\Services\InputNormalizer::phone((string) ($_POST['company_phone'] ?? '')),
+            'commune' => \AgroPCC\Services\InputNormalizer::text((string) ($_POST['commune'] ?? '')),
+            'region' => \AgroPCC\Services\InputNormalizer::text((string) ($_POST['region'] ?? '')),
+            'admin_name' => \AgroPCC\Services\InputNormalizer::text((string) ($_POST['admin_name'] ?? '')),
+            'admin_email' => \AgroPCC\Services\InputNormalizer::email((string) ($_POST['admin_email'] ?? '')),
+            'admin_phone' => \AgroPCC\Services\InputNormalizer::phone((string) ($_POST['admin_phone'] ?? '')),
             'admin_password' => (string) ($_POST['admin_password'] ?? ''),
             'install_demo' => ($_POST['install_demo'] ?? '') === '1',
             'db_host' => trim((string) ($_POST['db_host'] ?? 'localhost')),

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
-use CampoSur\Services\ToolsService;
+use AgroPCC\Services\ToolsService;
 
 final class ToolsController extends BaseController
 {
@@ -28,7 +28,7 @@ final class ToolsController extends BaseController
                     match ($action) {
                         'backup' => $service->createBackup(),
                         'sync_schema' => $service->syncSchema(),
-                        'repair' => $service->repairSystem(),
+                        'repair' => $service->repairApplication(),
                         'restore' => $service->restoreBackup((int) ($_POST['backup_id'] ?? 0)),
                         'update' => $service->runUpdate(),
                         default => null,
@@ -47,7 +47,7 @@ final class ToolsController extends BaseController
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();
             try {
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) ($_SESSION['company_id'] ?? 0)))->record((int) ($_SESSION['user_id'] ?? 0), 'ERROR', 'tools', null, ['error' => $exception->getMessage()]);
+                (new \AgroPCC\Services\AuditLog(database()->connection(), (int) ($_SESSION['company_id'] ?? 0)))->record((int) ($_SESSION['user_id'] ?? 0), 'ERROR', 'tools', null, ['error' => $exception->getMessage()]);
             } catch (\Throwable $auditException) {
                 $error .= ' | Auditoría no disponible: ' . $auditException->getMessage();
             }

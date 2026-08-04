@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Library\Charts;
+namespace AgroPCC\Library\Charts;
 
 final class ChartService
 {

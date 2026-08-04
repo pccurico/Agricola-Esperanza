@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Services;
+namespace AgroPCC\Services;
 
 use DateTimeImmutable;
 use PDO;
@@ -84,7 +84,7 @@ final class ToolsService extends BaseService
                 escapeshellarg((string) ($dbConfig['database'] ?? '')),
                 escapeshellarg($backupFile)
             );
-            shell_exec($command);
+            $this->runExternalCommand($command);
         }
 
         if (!is_file($backupFile) || filesize($backupFile) < 100) {
@@ -172,7 +172,7 @@ final class ToolsService extends BaseService
             escapeshellarg((string) ($dbConfig['database'] ?? '')),
             escapeshellarg($backupFile)
         );
-        $restoreOutput = shell_exec($command);
+        $restoreOutput = $this->runExternalCommand($command);
         if ($restoreOutput === null) {
             $this->connection->prepare('UPDATE restore_records SET status = ?, error_message = ? WHERE id = ?')->execute([
                 'FAILED',
@@ -196,7 +196,7 @@ final class ToolsService extends BaseService
         $this->logSystemEvent('tools.schema', 'INFO', 'Sincronización de esquema completada', []);
     }
 
-    public function repairSystem(): void
+    public function repairApplication(): void
     {
         $this->logSystemEvent('tools.repair', 'INFO', 'Reparación de sistema iniciada', []);
         if (function_exists('opcache_reset')) {
@@ -382,24 +382,57 @@ final class ToolsService extends BaseService
 
     private function resolveDumpCommand(): ?string
     {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $where = shell_exec('where mysqldump');
-            return $where ? trim(explode(PHP_EOL, (string) $where)[0]) : null;
-        }
-
-        $resolved = shell_exec('command -v mysqldump');
-        return $resolved ? trim((string) $resolved) : null;
+        return $this->resolveExecutablePath('mysqldump');
     }
 
     private function resolveRestoreCommand(): ?string
     {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $where = shell_exec('where mysql');
-            return $where ? trim(explode(PHP_EOL, (string) $where)[0]) : null;
+        return $this->resolveExecutablePath('mysql');
+    }
+
+    private function resolveExecutablePath(string $binary): ?string
+    {
+        $command = DIRECTORY_SEPARATOR === '\\'
+            ? 'where ' . escapeshellarg($binary)
+            : 'command -v ' . escapeshellarg($binary);
+
+        $output = $this->runExternalCommand($command);
+        if ($output === null || trim($output) === '') {
+            return null;
         }
 
-        $resolved = shell_exec('command -v mysql');
-        return $resolved ? trim((string) $resolved) : null;
+        $path = trim((string) $output);
+        return explode(PHP_EOL, $path)[0] ?: null;
+    }
+
+    private function runExternalCommand(string $command): ?string
+    {
+        $descriptorSpec = [
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = @proc_open($command, $descriptorSpec, $pipes);
+        if (!is_resource($process)) {
+            return null;
+        }
+
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0) {
+            return null;
+        }
+
+        if (trim((string) $stdout) !== '') {
+            return trim((string) $stdout);
+        }
+
+        $stderrValue = trim((string) $stderr);
+        return $stderrValue !== '' ? $stderrValue : null;
     }
 }
 

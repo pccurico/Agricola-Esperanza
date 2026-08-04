@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class UsersController extends BaseController
 {
     public function handle(): array
     {
-        $manager = new \CampoSur\Services\UserManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['role_id'], (int) $_SESSION['user_id']);
+        $manager = new \AgroPCC\Services\UserManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['role_id'], (int) $_SESSION['user_id']);
         $error = null;
         $success = null;
         $toggleSuccess = null;

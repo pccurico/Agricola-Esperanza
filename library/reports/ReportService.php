@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Library\Reports;
+namespace AgroPCC\Library\Reports;
 
 final class ReportService
 {

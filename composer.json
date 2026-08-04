@@ -1,6 +1,6 @@
 {
     "name": "pccurico/sistema-gestion-agricola",
-    "description": "Sistema de Gesti\u00f3n Agr\u00edcola PCCURICO.",
+    "description": "Sistema de Gestión Agrícola PCCURICO.",
     "license": "proprietary",
     "type": "project",
     "require": {
@@ -8,7 +8,7 @@
     },
     "autoload": {
         "psr-4": {
-            "CampoSur\\": "app/"
+            "AgroPCC\\": "app/"
         }
     },
     "config": {

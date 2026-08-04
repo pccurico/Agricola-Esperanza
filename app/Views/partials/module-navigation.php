@@ -6,7 +6,7 @@ $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
 $path = trim($path, '/');
 $currentModule = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
-$navigationAuth = new \CampoSur\Services\Auth(database()->connection());
+$navigationAuth = new \AgroPCC\Services\Auth(database()->connection());
 $navigationRole = (int) ($_SESSION['role_id'] ?? 0);
 $navigationUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
 $navigationRoleDepartment = (string) ($_SESSION['role_department'] ?? 'general');

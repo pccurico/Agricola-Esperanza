@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Library\Helpers;
+namespace AgroPCC\Library\Helpers;
 
 final class LibraryRegistry
 {

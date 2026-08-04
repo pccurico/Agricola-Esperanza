@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 abstract class BaseController
 {
@@ -30,7 +30,7 @@ abstract class BaseController
             $action();
             $success = $successMessage;
             if (($context['audit'] ?? false) && !empty($context['userId'])) {
-                (new \CampoSur\Services\AuditLog(database()->connection(), (int) ($_SESSION['company_id'] ?? 0)))->record((int) $context['userId'], $context['auditAction'] ?? 'UPDATE', $entity);
+                (new \AgroPCC\Services\AuditLog(database()->connection(), (int) ($_SESSION['company_id'] ?? 0)))->record((int) $context['userId'], $context['auditAction'] ?? 'UPDATE', $entity);
             }
         } catch (\Throwable $exception) {
             $error = $exception instanceof \PDOException

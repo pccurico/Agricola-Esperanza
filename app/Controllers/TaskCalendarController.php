@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class TaskCalendarController extends BaseController
 {
     public function handle(): array
     {
-        $service = new \CampoSur\Services\TaskCalendarManagement(database()->connection(), (int) $_SESSION['company_id']);
+        $service = new \AgroPCC\Services\TaskCalendarManagement(database()->connection(), (int) $_SESSION['company_id']);
         $error = null;
         $success = null;
         try {

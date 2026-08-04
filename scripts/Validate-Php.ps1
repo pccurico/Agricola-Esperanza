@@ -58,7 +58,7 @@ $composer = if (Test-Path $composerPath) {
     $null
 }
 Write-Result 'Bootstrap usa autoload de Composer' ($bootstrapText -match [regex]::Escape('vendor/autoload.php')) 'Referencia encontrada.'
-Write-Result 'Autoload PSR-4 CampoSur configurado' ($null -ne $composer -and $composer.autoload.'psr-4'.'CampoSur\' -eq 'app/') 'Mapeo CampoSur\\ a app/ encontrado.'
+Write-Result 'Autoload PSR-4 AgroPCC configurado' ($null -ne $composer -and $composer.autoload.'psr-4'.'AgroPCC\' -eq 'app/') 'Mapeo AgroPCC\\ a app/ encontrado.'
 
 $setupController = Join-Path $ProjectRoot 'app/Controllers/SetupController.php'
 $setupView = Join-Path $ProjectRoot 'app/Views/setup.php'

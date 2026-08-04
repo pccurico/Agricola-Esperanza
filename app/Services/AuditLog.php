@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Services;
+namespace AgroPCC\Services;
 
 use PDO;
 

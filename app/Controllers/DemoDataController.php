@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
-use CampoSur\Services\DemoDataManager;
+use AgroPCC\Services\DemoDataManager;
 
 final class DemoDataController extends BaseController
 {

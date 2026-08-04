@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class CatalogController extends BaseController
 {
     public function handle(): array
     {
-        $service = new \CampoSur\Services\CatalogManagement(
+        $service = new \AgroPCC\Services\CatalogManagement(
             database()->connection(),
             (int) $_SESSION['company_id'],
-            new \CampoSur\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id'])
+            new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id'])
         );
         $error = null;
         $success = null;

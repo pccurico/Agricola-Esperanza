@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Library\Pdf;
+namespace AgroPCC\Library\Pdf;
 
 final class PdfService
 {

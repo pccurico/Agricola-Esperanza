@@ -2,32 +2,32 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class DashboardController extends BaseController
 {
-    private function createBuilder(): \CampoSur\Services\Dashboard\DashboardBuilder
+    private function createBuilder(): \AgroPCC\Services\Dashboard\DashboardBuilder
     {
-        $service = new \CampoSur\Services\DashboardService(database()->connection(), (int) ($_SESSION['company_id'] ?? 0));
-        $filterManager = new \CampoSur\Services\Dashboard\FilterManager([
+        $service = new \AgroPCC\Services\DashboardService(database()->connection(), (int) ($_SESSION['company_id'] ?? 0));
+        $filterManager = new \AgroPCC\Services\Dashboard\FilterManager([
             'date_from' => '',
             'date_to' => '',
             'farm_id' => 0,
             'block_id' => 0,
             'process' => '',
         ], $service->filterOptions());
-        $widgetFactory = new \CampoSur\Services\Dashboard\WidgetFactory();
-        $chartProvider = new \CampoSur\Services\Dashboard\ChartProvider();
-        $layoutManager = new \CampoSur\Services\Dashboard\LayoutManager(database()->connection(), (int) ($_SESSION['company_id'] ?? 0), isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null);
-        $permissionResolver = new \CampoSur\Services\Dashboard\PermissionResolver(
-            new \CampoSur\Services\Auth(database()->connection()),
+        $widgetFactory = new \AgroPCC\Services\Dashboard\WidgetFactory();
+        $chartProvider = new \AgroPCC\Services\Dashboard\ChartProvider();
+        $layoutManager = new \AgroPCC\Services\Dashboard\LayoutManager(database()->connection(), (int) ($_SESSION['company_id'] ?? 0), isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null);
+        $permissionResolver = new \AgroPCC\Services\Dashboard\PermissionResolver(
+            new \AgroPCC\Services\Auth(database()->connection()),
             (int) ($_SESSION['role_id'] ?? 0),
             isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null,
             ['inventory', 'production', 'costs', 'labor', 'procurement', 'reports', 'audit', 'machinery', 'documents', 'masters', 'settings', 'tools'],
             (bool) ($_SESSION['role_is_system'] ?? false),
         );
 
-        return new \CampoSur\Services\Dashboard\DashboardBuilder(
+        return new \AgroPCC\Services\Dashboard\DashboardBuilder(
             $filterManager,
             $widgetFactory,
             $chartProvider,
@@ -53,7 +53,7 @@ final class DashboardController extends BaseController
             verify_csrf();
             try {
                 if (($_POST['action'] ?? '') === 'save_dashboard_view') {
-                    $service = new \CampoSur\Services\DashboardService(database()->connection(), (int) ($_SESSION['company_id'] ?? 0));
+                    $service = new \AgroPCC\Services\DashboardService(database()->connection(), (int) ($_SESSION['company_id'] ?? 0));
                     $name = trim((string) ($_POST['view_name'] ?? ''));
                     $layout = [
                         'filters' => [

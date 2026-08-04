@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
-use CampoSur\Services\Auth;
+use AgroPCC\Services\Auth;
 
 final class AuthController extends BaseController
 {

@@ -87,7 +87,7 @@ try {
 if ($null -ne $composer) {
     Write-Result 'Nombre del paquete' ($composer.name -eq 'pccurico/sistema-gestion-agricola') 'Identidad PCCURICO configurada.'
     Write-Result 'PHP requerido' ($composer.require.php -eq '^8.2') 'Requisito PHP 8.2 configurado.'
-    Write-Result 'PSR-4 configurado' ($composer.autoload.'psr-4'.'CampoSur\' -eq 'app/') 'Namespace existente conservado para compatibilidad.'
+    Write-Result 'PSR-4 configurado' ($composer.autoload.'psr-4'.'AgroPCC\' -eq 'app/') 'Namespace existente conservado para compatibilidad.'
 }
 
 $bootstrapPath = Get-ProjectPath 'app/bootstrap.php'
@@ -101,7 +101,7 @@ foreach ($file in $phpFiles) {
     $source = Get-Content -Raw -LiteralPath $file.FullName
     $namespace = [regex]::Match($source, '(?m)^namespace\s+([^;]+);')
     $class = [regex]::Match($source, '(?m)^\s*(?:final\s+|abstract\s+)?class\s+(\w+)')
-    if ($namespace.Success -and $class.Success -and $namespace.Groups[1].Value.StartsWith('CampoSur\')) {
+    if ($namespace.Success -and $class.Success -and $namespace.Groups[1].Value.StartsWith('AgroPCC\')) {
         $expected = $namespace.Groups[1].Value.Substring(9).Replace('\', '/') + '/' + $class.Groups[1].Value + '.php'
         $actual = $file.FullName.Substring((Get-ProjectPath 'app').Length + 1).Replace('\', '/')
         if ($expected -cne $actual) {
@@ -118,11 +118,11 @@ $sourceFiles = @(Get-ChildItem -Path $ProjectRoot -Recurse -File -Force | Where-
     $_.Name -ne 'Validate-System.ps1'
 })
 
-$forbiddenTechnicalIdentifiers = 'camposur_session|camposur-navigation|camposur-'
+$forbiddenTechnicalIdentifiers = 'AgroPCC_session|AgroPCC-navigation|AgroPCC-'
 $technicalMatches = @($sourceFiles | Select-String -Pattern $forbiddenTechnicalIdentifiers -CaseSensitive:$false)
 Write-Result 'Identificadores técnicos anteriores' ($technicalMatches.Count -eq 0) $(if ($technicalMatches.Count) { 'Se encontraron identificadores obsoletos.' } else { 'No se encontraron.' })
 
-$visibleBrandMatches = @($sourceFiles | Select-String -Pattern '<title>[^<]*(CampoSur|Esperanza|Agricola-Esperanza)' -CaseSensitive:$false)
+$visibleBrandMatches = @($sourceFiles | Select-String -Pattern '<title>[^<]*(AgroPCC|Esperanza|Agricola-Esperanza)' -CaseSensitive:$false)
 Write-Result 'Marca visible anterior' ($visibleBrandMatches.Count -eq 0) $(if ($visibleBrandMatches.Count) { 'Se encontraron títulos con la marca anterior.' } else { 'No se encontraron.' })
 
 $customerMatches = @($sourceFiles | Where-Object { $_.FullName -notmatch '[\\/]config[\\/]config\.php$' } | Select-String -Pattern 'Agr[ií]cola Esperanza|Agricola-Esperanza|laesperanza' -CaseSensitive:$false)
@@ -139,7 +139,7 @@ if (Test-Path -LiteralPath $privateConfig) {
     }
 }
 
-$legacyDist = @(Get-ChildItem -Path (Get-ProjectPath 'dist') -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)camposur|agricola-?esperanza|esperanza' })
+$legacyDist = @(Get-ChildItem -Path (Get-ProjectPath 'dist') -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)AgroPCC|agricola-?esperanza|esperanza' })
 if ($legacyDist.Count -gt 0) {
     Add-PendingTask 'Eliminar los artefactos históricos de dist con marca anterior antes de distribuir el producto.'
     Write-Result 'Artefactos de distribución históricos' $false "$($legacyDist.Count) artefacto(s) requieren retiro manual." -Warning

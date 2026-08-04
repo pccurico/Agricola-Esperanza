@@ -13,7 +13,7 @@ $setupRequired = !file_exists($configPath);
 
 if (!$setupRequired) {
     try {
-        $setupRequired = !(new CampoSur\Services\InstallationStatus(database()->connection()))->isComplete();
+        $setupRequired = !(new AgroPCC\Services\InstallationStatus(database()->connection()))->isComplete();
     } catch (\Throwable) {
         $setupRequired = true;
     }
@@ -22,25 +22,25 @@ if (!$setupRequired) {
 if (!$setupRequired && isset($_GET['api'])) {
     $headers = function_exists('getallheaders') ? getallheaders() : [];
     $authorization = (string) ($headers['Authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? '');
-    $identity = (new CampoSur\Services\ApiAuthenticator(database()->connection()))->authenticate($authorization);
+    $identity = (new AgroPCC\Services\ApiAuthenticator(database()->connection()))->authenticate($authorization);
     if (!$identity) {
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(401);
         echo json_encode(['error' => 'Credenciales API inválidas'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    (new CampoSur\Controllers\ApiController())->handle($identity);
+    (new AgroPCC\Controllers\ApiController())->handle($identity);
     exit;
 }
 
 if ($setupRequired) {
-    $setup = (new CampoSur\Controllers\SetupController())->handle();
+    $setup = (new AgroPCC\Controllers\SetupController())->handle();
     extract($setup, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/setup.php';
     exit;
 }
 
-(new CampoSur\Services\MigrationRunner(database()->connection(), dirname(__DIR__)))->run();
+(new AgroPCC\Services\MigrationRunner(database()->connection(), dirname(__DIR__)))->run();
 
 if (($_GET['asset'] ?? '') === 'logo') {
     $companyId = (int) ($_SESSION['company_id'] ?? 0);
@@ -63,7 +63,7 @@ if (($_GET['asset'] ?? '') === 'logo') {
     exit;
 }
 
-$auth = (new CampoSur\Controllers\AuthController())->handle();
+$auth = (new AgroPCC\Controllers\AuthController())->handle();
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (($_GET['asset'] ?? '') === 'attachment') {
     authorize('documents.view');
-    $attachment = (new CampoSur\Services\DocumentManagement(database()->connection(), (int) $_SESSION['company_id'], dirname(__DIR__)))->attachment((int) ($_GET['id'] ?? 0));
+    $attachment = (new AgroPCC\Services\DocumentManagement(database()->connection(), (int) $_SESSION['company_id'], dirname(__DIR__)))->attachment((int) ($_GET['id'] ?? 0));
     if (!$attachment) {
         http_response_code(404);
         exit;
@@ -139,7 +139,7 @@ if ($module === 'procurement' && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POS
 }
 
 if ($module === 'receptions') {
-    $receptions = (new CampoSur\Controllers\ProcurementController())->handle();
+    $receptions = (new AgroPCC\Controllers\ProcurementController())->handle();
     extract($receptions, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/purchase_receptions.php';
     exit;
@@ -149,7 +149,7 @@ if ($module === 'notifications') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('notifications.update');
     }
-    $notificationsData = (new CampoSur\Controllers\NotificationController())->handle();
+    $notificationsData = (new AgroPCC\Controllers\NotificationController())->handle();
     extract($notificationsData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/notifications.php';
     exit;
@@ -159,7 +159,7 @@ if ($module === 'planning') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize(($_POST['action'] ?? '') === 'create_event' ? 'calendar.create' : (($_POST['action'] ?? '') === 'update_task' ? 'tasks.update' : 'tasks.create'));
     }
-    $planning = (new CampoSur\Controllers\TaskCalendarController())->handle();
+    $planning = (new AgroPCC\Controllers\TaskCalendarController())->handle();
     extract($planning, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/tasks_calendar.php';
     exit;
@@ -169,7 +169,7 @@ if ($module === 'documents') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('documents.create');
     }
-    $documents = (new CampoSur\Controllers\DocumentController())->handle();
+    $documents = (new AgroPCC\Controllers\DocumentController())->handle();
     extract($documents, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/documents.php';
     exit;
@@ -180,7 +180,7 @@ if ($module === 'tools') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('setup.manage');
     }
-    $tools = (new CampoSur\Controllers\ToolsController())->handle();
+    $tools = (new AgroPCC\Controllers\ToolsController())->handle();
     extract($tools, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/tools.php';
     exit;
@@ -191,7 +191,7 @@ if ($module === 'demo') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('demo.manage');
     }
-    $demo = (new CampoSur\Controllers\DemoDataController())->handle();
+    $demo = (new AgroPCC\Controllers\DemoDataController())->handle();
     extract($demo, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/demo_data_manager.php';
     exit;
@@ -202,7 +202,7 @@ if ($module === 'api') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('api_tokens.manage');
     }
-    $api = (new CampoSur\Controllers\ApiTokenController())->handle();
+    $api = (new AgroPCC\Controllers\ApiTokenController())->handle();
     extract($api, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/api_tokens.php';
     exit;
@@ -217,7 +217,7 @@ if ($module === 'requests') {
         };
         authorize($actionPermission);
     }
-    $requests = (new CampoSur\Controllers\InternalRequestController())->handle();
+    $requests = (new AgroPCC\Controllers\InternalRequestController())->handle();
     extract($requests, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/internal_requests.php';
     exit;
@@ -233,91 +233,91 @@ if ($module === 'warehouses') {
         };
         authorize($actionPermission);
     }
-    $warehouses = (new CampoSur\Controllers\WarehouseController())->handle();
+    $warehouses = (new AgroPCC\Controllers\WarehouseController())->handle();
     extract($warehouses, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/warehouses.php';
     exit;
 }
 
 if ($module === 'catalogs') {
-    $catalogsData = (new CampoSur\Controllers\CatalogController())->handle();
+    $catalogsData = (new AgroPCC\Controllers\CatalogController())->handle();
     extract($catalogsData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/catalogs.php';
     exit;
 }
 
 if ($module === 'machinery') {
-    $machinery = (new CampoSur\Controllers\MachineryController())->handle();
+    $machinery = (new AgroPCC\Controllers\MachineryController())->handle();
     extract($machinery, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/machinery.php';
     exit;
 }
 
 if ($module === 'budgets') {
-    $budgets = (new CampoSur\Controllers\BudgetController())->handle();
+    $budgets = (new AgroPCC\Controllers\BudgetController())->handle();
     extract($budgets, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/budgets.php';
     exit;
 }
 
 if ($module === 'production') {
-    $production = (new CampoSur\Controllers\ProductionController())->handle();
+    $production = (new AgroPCC\Controllers\ProductionController())->handle();
     extract($production, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/production.php';
     exit;
 }
 
 if ($module === 'profile') {
-    $profile = (new CampoSur\Controllers\ProfileController())->handle();
+    $profile = (new AgroPCC\Controllers\ProfileController())->handle();
     extract($profile, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/profile.php';
     exit;
 }
 
 if ($module === 'procurement') {
-    $procurement = (new CampoSur\Controllers\ProcurementController())->handle();
+    $procurement = (new AgroPCC\Controllers\ProcurementController())->handle();
     extract($procurement, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/procurement.php';
     exit;
 }
 
 if ($module === 'users') {
-    $usersData = (new CampoSur\Controllers\UsersController())->handle();
+    $usersData = (new AgroPCC\Controllers\UsersController())->handle();
     extract($usersData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/users.php';
     exit;
 }
 
 if ($module === 'roles' || $module === 'role') {
-    $rolesData = (new CampoSur\Controllers\RolesController())->handle();
+    $rolesData = (new AgroPCC\Controllers\RolesController())->handle();
     extract($rolesData, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/roles.php';
     exit;
 }
 
 if ($module === 'masters') {
-    $masters = (new CampoSur\Controllers\MastersController())->handle();
+    $masters = (new AgroPCC\Controllers\MastersController())->handle();
     extract($masters, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/masters.php';
     exit;
 }
 
 if ($module === 'costs') {
-    $costs = (new CampoSur\Controllers\CostsController())->handle();
+    $costs = (new AgroPCC\Controllers\CostsController())->handle();
     extract($costs, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/costs.php';
     exit;
 }
 
 if ($module === 'inventory') {
-    $inventory = (new CampoSur\Controllers\InventoryController())->handle();
+    $inventory = (new AgroPCC\Controllers\InventoryController())->handle();
     extract($inventory, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/inventory.php';
     exit;
 }
 
 if ($module === 'reports') {
-    $report = (new CampoSur\Controllers\ReportsController())->handle();
+    $report = (new AgroPCC\Controllers\ReportsController())->handle();
     extract($report, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/reports.php';
     exit;
@@ -325,34 +325,34 @@ if ($module === 'reports') {
 
 if ($module === 'dashboard_data') {
     authorize('dashboard.view');
-    $dashboardData = (new CampoSur\Controllers\DashboardController())->data();
+    $dashboardData = (new AgroPCC\Controllers\DashboardController())->data();
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($dashboardData, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 if ($module === 'labor') {
-    $labor = (new CampoSur\Controllers\LaborController())->handle();
+    $labor = (new AgroPCC\Controllers\LaborController())->handle();
     extract($labor, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/labor.php';
     exit;
 }
 
 if ($module === 'settings') {
-    $settings = (new CampoSur\Controllers\SettingsController())->handle();
+    $settings = (new AgroPCC\Controllers\SettingsController())->handle();
     extract($settings, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/settings.php';
     exit;
 }
 
 if ($module === 'audit') {
-    $audit = (new CampoSur\Controllers\AuditController())->handle();
+    $audit = (new AgroPCC\Controllers\AuditController())->handle();
     extract($audit, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/audit.php';
     exit;
 }
 
-$dashboardResponse = (new CampoSur\Controllers\DashboardController())->handle();
+$dashboardResponse = (new AgroPCC\Controllers\DashboardController())->handle();
 $dashboard = $dashboardResponse['dashboard'] ?? [];
 $error = $dashboardResponse['error'] ?? null;
 $success = $dashboardResponse['success'] ?? null;

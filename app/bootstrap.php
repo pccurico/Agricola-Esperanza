@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use CampoSur\Core\Database;
+use AgroPCC\Core\Database;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -76,7 +76,7 @@ function authorize(string $permission): void
 {
     $roleId = (int) ($_SESSION['role_id'] ?? 0);
     $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-    if (!(new \CampoSur\Services\Auth(database()->connection()))->can($roleId, $permission, $userId)) {
+    if (!(new \AgroPCC\Services\Auth(database()->connection()))->can($roleId, $permission, $userId)) {
         http_response_code(403);
         exit('No tienes permisos para acceder a este módulo.');
     }
@@ -84,7 +84,7 @@ function authorize(string $permission): void
 
 function authorize_any(array $permissions): void
 {
-    $auth = new \CampoSur\Services\Auth(database()->connection());
+    $auth = new \AgroPCC\Services\Auth(database()->connection());
     $roleId = (int) ($_SESSION['role_id'] ?? 0);
     $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     foreach ($permissions as $permission) {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace CampoSur\Controllers;
+namespace AgroPCC\Controllers;
 
 final class ApiTokenController extends BaseController
 {
     public function handle(): array
     {
-        $service = new \CampoSur\Services\ApiTokenManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['user_id']);
+        $service = new \AgroPCC\Services\ApiTokenManagement(database()->connection(), (int) $_SESSION['company_id'], (int) $_SESSION['user_id']);
         $error = null;
         $newToken = null;
         try {
