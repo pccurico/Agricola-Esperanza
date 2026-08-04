@@ -27,11 +27,21 @@ final class BackupService extends BaseService
     public function listBackups(): array
     {
         $query = $this->connection->prepare(
-            'SELECT br.id, br.file_path, br.file_size, br.status, br.created_at, u.full_name AS created_by FROM backup_records br LEFT JOIN users u ON u.id = br.created_by WHERE br.company_id = ? ORDER BY br.id DESC LIMIT 100'
+            'SELECT br.id, br.file_path, br.file_size, br.status, br.created_at, u.full_name AS created_by FROM backup_records br LEFT JOIN users u ON u.id = br.created_by WHERE br.company_id = ? AND br.file_path <> ? AND br.status <> ? ORDER BY br.id DESC LIMIT 100'
         );
-        $query->execute([$this->companyId]);
+        $query->execute([$this->companyId, '', '']);
 
-        return $query->fetchAll(PDO::FETCH_ASSOC);
+        $backups = $query->fetchAll(PDO::FETCH_ASSOC);
+        $validBackups = [];
+        foreach ($backups as $backup) {
+            $fullPath = $this->resolveBackupFilePath((string) ($backup['file_path'] ?? ''));
+            if (!is_file($fullPath)) {
+                continue;
+            }
+            $validBackups[] = $backup;
+        }
+
+        return $validBackups;
     }
 
     public function createBackup(): array
@@ -82,7 +92,7 @@ final class BackupService extends BaseService
             ->execute([$this->companyId, $backupId, 'STARTED', $this->userId]);
         $restoreId = (int) $this->connection->lastInsertId();
 
-        $fullPath = $this->backupDirectory . '/' . $backup['file_path'];
+        $fullPath = $this->resolveBackupFilePath((string) ($backup['file_path'] ?? ''));
         if (!is_file($fullPath)) {
             $this->updateRestoreStatus($restoreId, 'FAILED', 'El archivo de respaldo no existe.');
             throw new RuntimeException('El archivo de respaldo no existe.');
@@ -108,7 +118,7 @@ final class BackupService extends BaseService
             throw new RuntimeException('El respaldo solicitado no existe.');
         }
 
-        $fullPath = $this->backupDirectory . '/' . $backup['file_path'];
+        $fullPath = $this->resolveBackupFilePath((string) ($backup['file_path'] ?? ''));
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
@@ -126,7 +136,7 @@ final class BackupService extends BaseService
             throw new RuntimeException('El respaldo solicitado no existe.');
         }
 
-        $fullPath = $this->backupDirectory . '/' . $backup['file_path'];
+        $fullPath = $this->resolveBackupFilePath((string) ($backup['file_path'] ?? ''));
         if (!is_file($fullPath)) {
             throw new RuntimeException('El archivo de respaldo no está disponible.');
         }
@@ -174,5 +184,27 @@ final class BackupService extends BaseService
     {
         $query = $this->connection->prepare('UPDATE restore_records SET status = ?, error_message = ? WHERE id = ?');
         $query->execute([$status, $errorMessage, $restoreId]);
+    }
+
+    private function resolveBackupFilePath(string $filePath): string
+    {
+        $filePath = str_replace('\\', '/', trim($filePath));
+        if ($filePath === '') {
+            return $this->backupDirectory;
+        }
+
+        if (str_starts_with($filePath, '/')) {
+            return $filePath;
+        }
+
+        if (str_starts_with($filePath, 'storage/backups/')) {
+            return $this->rootPath . '/' . $filePath;
+        }
+
+        if (preg_match('#^[A-Za-z]:/#', $filePath) === 1) {
+            return $filePath;
+        }
+
+        return $this->backupDirectory . '/' . ltrim($filePath, '/');
     }
 }

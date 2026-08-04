@@ -275,10 +275,41 @@ final class ToolsService extends BaseService
     public function backups(): array
     {
         $query = $this->connection->prepare(
-            'SELECT br.id, br.file_path, br.file_size, br.checksum, br.status, br.created_at, u.full_name AS created_by FROM backup_records br LEFT JOIN users u ON u.id = br.created_by WHERE br.company_id = ? ORDER BY br.id DESC LIMIT 20'
+            'SELECT br.id, br.file_path, br.file_size, br.checksum, br.status, br.created_at, u.full_name AS created_by FROM backup_records br LEFT JOIN users u ON u.id = br.created_by WHERE br.company_id = ? AND br.file_path <> ? AND br.status <> ? ORDER BY br.id DESC LIMIT 20'
         );
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
+        $query->execute([$this->companyId, '', '']);
+        $backups = $query->fetchAll();
+        $validBackups = [];
+        foreach ($backups as $backup) {
+            $fullPath = $this->resolveBackupFilePath((string) ($backup['file_path'] ?? ''));
+            if (!is_file($fullPath)) {
+                continue;
+            }
+            $validBackups[] = $backup;
+        }
+        return $validBackups;
+    }
+
+    private function resolveBackupFilePath(string $filePath): string
+    {
+        $filePath = str_replace('\\', '/', trim($filePath));
+        if ($filePath === '') {
+            return $this->rootPath . '/storage/backups';
+        }
+
+        if (str_starts_with($filePath, '/')) {
+            return $filePath;
+        }
+
+        if (str_starts_with($filePath, 'storage/backups/')) {
+            return $this->rootPath . '/' . $filePath;
+        }
+
+        if (preg_match('#^[A-Za-z]:/#', $filePath) === 1) {
+            return $filePath;
+        }
+
+        return $this->rootPath . '/storage/backups/' . ltrim($filePath, '/');
     }
 
     public function recentLogs(): array
