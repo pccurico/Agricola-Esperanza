@@ -7,7 +7,7 @@ namespace CampoSur\Services;
 use DateTimeImmutable;
 use PDO;
 
-final class DashboardService extends BaseService
+final class DashboardService extends BaseService implements Dashboard\DashboardDataProviderInterface
 {
     public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
@@ -324,7 +324,7 @@ final class DashboardService extends BaseService
         return array_values(array_map(static fn (array $row): string => (string) $row['activity_date'], $query->fetchAll()));
     }
 
-    private function filterOptions(): array
+    public function filterOptions(): array
     {
         $farms = $this->connection->prepare('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name');
         $farms->execute([$this->companyId]);

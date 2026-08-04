@@ -9,6 +9,32 @@ final class DashboardController extends BaseController
     public function handle(): array
     {
         $service = new \CampoSur\Services\DashboardService(database()->connection(), (int) ($_SESSION['company_id'] ?? 0));
+        $filterManager = new \CampoSur\Services\Dashboard\FilterManager([
+            'date_from' => '',
+            'date_to' => '',
+            'farm_id' => 0,
+            'block_id' => 0,
+            'process' => '',
+        ], $service->filterOptions());
+        $widgetFactory = new \CampoSur\Services\Dashboard\WidgetFactory();
+        $chartProvider = new \CampoSur\Services\Dashboard\ChartProvider();
+        $layoutManager = new \CampoSur\Services\Dashboard\LayoutManager(database()->connection(), (int) ($_SESSION['company_id'] ?? 0), isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null);
+        $permissionResolver = new \CampoSur\Services\Dashboard\PermissionResolver(
+            new \CampoSur\Services\Auth(database()->connection()),
+            (int) ($_SESSION['role_id'] ?? 0),
+            isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null,
+            ['inventory', 'production', 'costs', 'labor', 'procurement', 'reports', 'audit', 'machinery', 'documents', 'masters', 'settings', 'tools'],
+        );
+
+        $builder = new \CampoSur\Services\Dashboard\DashboardBuilder(
+            $filterManager,
+            $widgetFactory,
+            $chartProvider,
+            $layoutManager,
+            $permissionResolver,
+            $service,
+        );
+
         $error = null;
         $success = null;
 
@@ -35,25 +61,17 @@ final class DashboardController extends BaseController
             }
         }
 
-        $selectedPeriod = (string) ($_GET['period'] ?? 'month');
-        $selectedFilters = [
+        $requestParams = [
             'process' => (string) ($_GET['process'] ?? ''),
             'farm_id' => (int) ($_GET['farm_id'] ?? 0),
             'block_id' => (int) ($_GET['block_id'] ?? 0),
             'date_from' => (string) ($_GET['date_from'] ?? ''),
             'date_to' => (string) ($_GET['date_to'] ?? ''),
+            'view' => (string) ($_GET['view'] ?? ''),
+            'period' => (string) ($_GET['period'] ?? 'month'),
         ];
-        $defaultDates = $service->defaultDateRange();
-        if ($selectedFilters['date_from'] === '') {
-            $selectedFilters['date_from'] = $defaultDates['date_from'];
-        }
-        if ($selectedFilters['date_to'] === '') {
-            $selectedFilters['date_to'] = $defaultDates['date_to'];
-        }
-        $activeView = (string) ($_GET['view'] ?? '');
         $department = (string) ($_SESSION['role_department'] ?? 'general');
-
-        $dashboard = $service->summary($selectedPeriod, null, $selectedFilters, $activeView, $department, (int) ($_SESSION['user_id'] ?? 0));
+        $dashboard = $builder->build($requestParams, $department, isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null);
 
         return ['dashboard' => $dashboard, 'error' => $error, 'success' => $success];
     }
