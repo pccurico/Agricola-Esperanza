@@ -37,7 +37,7 @@ return [
             ['id' => 'budgets-module', 'module' => 'budgets', 'label' => 'Presupuestos', 'route' => '/budgets', 'permission' => 'budgets.view', 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
         ['id' => 'rrhh', 'label' => 'RR.HH', 'description' => 'Gestión del personal, cuadrillas y costos laborales.', 'icon' => 'users', 'order' => 40, 'visible' => true, 'department' => 'rrhh', 'badge' => null, 'count' => null, 'items' => [
-            ['id' => 'labor-module', 'module' => 'labor', 'label' => 'Mano de Obra', 'route' => '/labor', 'permission' => 'labor.view', 'icon' => 'users', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'labor-module', 'module' => 'labor', 'label' => 'Trabajador', 'route' => '/labor', 'permission' => 'labor.view', 'icon' => 'users', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
         ['id' => 'bodega', 'label' => 'Bodega', 'description' => 'Inventario, bodegas, solicitudes internas y stock.', 'icon' => 'boxes', 'order' => 50, 'visible' => true, 'department' => 'bodega', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'inventory-module', 'module' => 'inventory', 'label' => 'Inventario', 'route' => '/inventory', 'permission' => 'inventory.view', 'icon' => 'boxes', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],

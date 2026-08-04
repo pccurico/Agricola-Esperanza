@@ -334,6 +334,10 @@ if ($module === 'dashboard_data') {
 if ($module === 'labor') {
     $labor = (new AgroPCC\Controllers\LaborController())->handle();
     extract($labor, EXTR_SKIP);
+    if (($view_name ?? '') === 'worker-form') {
+        require dirname(__DIR__) . '/app/Views/labor_worker_form.php';
+        exit;
+    }
     require dirname(__DIR__) . '/app/Views/labor.php';
     exit;
 }

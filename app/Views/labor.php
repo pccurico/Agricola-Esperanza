@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mano de obra | Sistema de Gestión Agrícola PCCURICO</title>
+    <title>Trabajador | Sistema de Gestión Agrícola PCCURICO</title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 
@@ -12,22 +12,17 @@
     <main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?><section class="module-content">
             <header class="admin-header">
                 <div>
-                    <p class="eyebrow">Trabajadores</p>
-                    <h1>Mano de obra</h1>
-                    <p class="setup-copy">Registra a tus trabajadores y las labores que realizan.</p>
-                </div><a class="secondary-link" href="./">Volver al dashboard</a>
-            </header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?><section class="admin-columns">
-                <article class="admin-panel">
-                    <header class="panel-header">
-                        <h2>Nuevo trabajador</h2>
-                        <p>Personas permanentes, temporales o contratistas</p>
-                    </header>
-                    <form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_worker"><label>Nombre completo<input name="full_name" required></label><label>RUT<input name="tax_id"></label><label>Tipo<select name="worker_type">
-                                <option value="PERMANENTE">Permanente</option>
-                                <option value="TEMPORAL">Temporal</option>
-                                <option value="CONTRATISTA">Contratista</option>
-                            </select></label><label>Tarifa base<input type="number" name="default_rate" min="0" step="0.01"></label><button class="primary-button" type="submit">Crear trabajador</button></form>
-                </article>
+                    <p class="eyebrow">RR.HH</p>
+                    <h1>Trabajador</h1>
+                    <p class="setup-copy">Gestiona trabajadores, perfiles profesionales y registros de labor.</p>
+                </div>
+                <div class="header-actions">
+                    <a class="primary-button" href="?module=labor&view=worker-form">Agregar Trabajador</a>
+                    <a class="secondary-link" href="./">Volver al dashboard</a>
+                </div>
+            </header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
+
+            <section class="admin-columns">
                 <article class="admin-panel">
                     <header class="panel-header">
                         <h2>Registrar labor</h2>
@@ -40,30 +35,52 @@
                             </select></label><label>Fecha<input type="date" name="labor_date" required value="<?= date('Y-m-d') ?>"></label><label>Labor<input name="labor_type" required placeholder="Poda, raleo, cosecha"></label><label>Cantidad<input type="number" name="quantity" min="0.01" step="0.01" required></label><label>Tarifa unitaria<input type="number" name="unit_rate" min="0" step="0.01" required></label><button class="primary-button" type="submit">Registrar labor</button></form>
                 </article>
             </section>
+
             <section class="admin-panel">
                 <header class="panel-header">
-                    <h2>Trabajadores registrados</h2>
-                    <p><?= count($workers) ?> personas</p>
+                    <h2>Perfil Profesional</h2>
+                    <p>Listado de trabajadores con acceso a ver, editar e inactivar registros.</p>
                 </header>
-                <div class="table-scroll">
+                <div class="table-scroll" style="padding: 0 0 22px;">
                     <table class="admin-table">
                         <thead>
                             <tr>
                                 <th>Trabajador</th>
+                                <th>RUT</th>
                                 <th>Tipo</th>
-                                <th>Tarifa base</th>
+                                <th>Departamento</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody><?php foreach ($workers as $worker): ?><tr>
-                                    <td><b><?= htmlspecialchars($worker['full_name']) ?></b><small><?= htmlspecialchars($worker['tax_id'] ?: 'Sin RUT') ?></small></td>
-                                    <td><?= htmlspecialchars($worker['worker_type']) ?></td>
-                                    <td>$<?= number_format((float) $worker['default_rate'], 0, ',', '.') ?></td>
-                                    <td><span class="status-pill status-active">Activo</span></td>
-                                </tr><?php endforeach; ?></tbody>
+                        <tbody>
+                            <?php foreach ($workers as $worker): ?>
+                                <?php $profileInfo = $worker['profile'] ?? []; ?>
+                                <tr>
+                                    <td><b><?= htmlspecialchars((string) ($worker['full_name'] ?? '')) ?></b><small><?= htmlspecialchars((string) ($worker['position'] ?? 'Sin cargo')) ?></small></td>
+                                    <td><?= htmlspecialchars((string) ($worker['tax_id'] ?: 'Sin RUT')) ?></td>
+                                    <td><?= htmlspecialchars((string) ($worker['worker_type'] ?: 'Sin tipo')) ?></td>
+                                    <td><?= htmlspecialchars((string) ($worker['department'] ?: '-')) ?></td>
+                                    <td><span class="status-pill <?= (int) ($worker['active'] ?? 1) === 1 ? 'status-active' : 'status-inactive' ?>"><?= (int) ($worker['active'] ?? 1) === 1 ? 'Activo' : 'Inactivo' ?></span></td>
+                                    <td>
+                                        <div class="table-action-cell">
+                                            <a class="table-action" href="?module=labor&worker_id=<?= (int) $worker['id'] ?>&view=worker-form">Editar</a>
+                                            <form method="post" style="margin:0;">
+                                                <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="action" value="toggle_worker">
+                                                <input type="hidden" name="worker_id" value="<?= (int) $worker['id'] ?>">
+                                                <input type="hidden" name="active" value="<?= (int) (($worker['active'] ?? 1) === 1 ? 0 : 1) ?>">
+                                                <button class="table-action" type="submit"><?= (int) ($worker['active'] ?? 1) === 1 ? 'Inactivar' : 'Activar' ?></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
                     </table>
                 </div>
             </section>
+
             <section class="admin-panel labor-entries">
                 <header class="panel-header">
                     <h2>Últimas labores</h2>

@@ -15,7 +15,7 @@ final class LaborManagement extends BaseService
 
     public function workers(): array
     {
-        $query = $this->connection->prepare('SELECT id, full_name, tax_id, worker_type, default_rate, active FROM workers WHERE company_id = ? ORDER BY full_name');
+        $query = $this->connection->prepare('SELECT w.id, w.full_name, w.tax_id, w.worker_type, w.default_rate, w.active, p.department, p.position FROM workers w LEFT JOIN worker_profiles p ON p.worker_id = w.id WHERE w.company_id = ? ORDER BY w.full_name');
         $query->execute([$this->companyId]);
         return $query->fetchAll();
     }
@@ -27,12 +27,149 @@ final class LaborManagement extends BaseService
         return $query->fetchAll();
     }
 
+    public function workerProfile(int $workerId): array
+    {
+        $worker = $this->connection->prepare('SELECT id, company_id, full_name, tax_id, worker_type, default_rate, active FROM workers WHERE id = ? AND company_id = ? LIMIT 1');
+        $worker->execute([$workerId, $this->companyId]);
+        $workerData = $worker->fetch();
+        if (!$workerData) {
+            return ['worker' => null, 'profile' => null, 'contract' => null, 'benefits' => null, 'bank' => null];
+        }
+
+        $profile = $this->connection->prepare('SELECT * FROM worker_profiles WHERE worker_id = ? LIMIT 1');
+        $profile->execute([$workerId]);
+
+        $contract = $this->connection->prepare('SELECT * FROM worker_contracts WHERE worker_id = ? ORDER BY start_date DESC LIMIT 1');
+        $contract->execute([$workerId]);
+
+        $benefits = $this->connection->prepare('SELECT * FROM worker_benefits WHERE worker_id = ? LIMIT 1');
+        $benefits->execute([$workerId]);
+
+        $bank = $this->connection->prepare('SELECT * FROM worker_bank_accounts WHERE worker_id = ? ORDER BY is_primary DESC, id DESC LIMIT 1');
+        $bank->execute([$workerId]);
+
+        return ['worker' => $workerData, 'profile' => $profile->fetch(), 'contract' => $contract->fetch(), 'benefits' => $benefits->fetch(), 'bank' => $bank->fetch()];
+    }
+
+    public function workerFormData(int $workerId): array
+    {
+        if ($workerId <= 0) {
+            return ['worker' => [], 'profile' => [], 'contract' => [], 'benefits' => [], 'bank' => []];
+        }
+
+        return $this->workerProfile($workerId);
+    }
+
+    public function updateWorker(int $workerId, array $input): void
+    {
+        $this->belongs('workers', $workerId);
+        $fullName = trim((string) ($input['full_name'] ?? ''));
+        if ($fullName === '') {
+            throw new RuntimeException('El nombre del trabajador es obligatorio.');
+        }
+
+        $this->execute(
+            'UPDATE workers SET full_name = ?, tax_id = ?, worker_type = ?, default_rate = ?, active = ? WHERE id = ? AND company_id = ?',
+            [
+                $fullName,
+                trim((string) ($input['tax_id'] ?? '')) ?: null,
+                strtoupper(trim((string) ($input['worker_type'] ?? 'TEMPORAL'))),
+                (float) ($input['default_rate'] ?? 0),
+                (int) ($input['active'] ?? 1),
+                $workerId,
+                $this->companyId,
+            ]
+        );
+    }
+
+    public function toggleWorker(int $workerId, int $active): void
+    {
+        $this->belongs('workers', $workerId);
+        $this->execute('UPDATE workers SET active = ? WHERE id = ? AND company_id = ?', [$active ? 1 : 0, $workerId, $this->companyId]);
+    }
+
+    public function upsertWorkerProfile(array $input): void
+    {
+        $workerId = (int) ($input['worker_id'] ?? 0);
+        $this->belongs('workers', $workerId);
+
+        $this->execute(
+            'INSERT INTO worker_profiles (worker_id, birth_date, gender, marital_status, nationality, address, commune, region, email, phone, emergency_contact_name, emergency_contact_phone, employee_number, department, position, hire_date, contract_type, base_salary, currency, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE birth_date = VALUES(birth_date), gender = VALUES(gender), marital_status = VALUES(marital_status), nationality = VALUES(nationality), address = VALUES(address), commune = VALUES(commune), region = VALUES(region), email = VALUES(email), phone = VALUES(phone), emergency_contact_name = VALUES(emergency_contact_name), emergency_contact_phone = VALUES(emergency_contact_phone), employee_number = VALUES(employee_number), department = VALUES(department), position = VALUES(position), hire_date = VALUES(hire_date), contract_type = VALUES(contract_type), base_salary = VALUES(base_salary), currency = VALUES(currency), notes = VALUES(notes), updated_at = CURRENT_TIMESTAMP',
+            [
+                $workerId,
+                $input['birth_date'] ?? null,
+                trim((string) ($input['gender'] ?? '')) ?: null,
+                trim((string) ($input['marital_status'] ?? '')) ?: null,
+                trim((string) ($input['nationality'] ?? '')) ?: null,
+                trim((string) ($input['address'] ?? '')) ?: null,
+                trim((string) ($input['commune'] ?? '')) ?: null,
+                trim((string) ($input['region'] ?? '')) ?: null,
+                trim((string) ($input['email'] ?? '')) ?: null,
+                trim((string) ($input['phone'] ?? '')) ?: null,
+                trim((string) ($input['emergency_contact_name'] ?? '')) ?: null,
+                trim((string) ($input['emergency_contact_phone'] ?? '')) ?: null,
+                trim((string) ($input['employee_number'] ?? '')) ?: null,
+                trim((string) ($input['department'] ?? '')) ?: null,
+                trim((string) ($input['position'] ?? '')) ?: null,
+                $input['hire_date'] ?? null,
+                trim((string) ($input['contract_type'] ?? '')) ?: null,
+                (float) ($input['base_salary'] ?? 0),
+                trim((string) ($input['currency'] ?? 'CLP')) ?: 'CLP',
+                trim((string) ($input['notes'] ?? '')) ?: null,
+            ]
+        );
+
+        if (!empty($input['contract_type']) || !empty($input['hire_date']) || !empty($input['base_salary'])) {
+            $this->execute(
+                'INSERT INTO worker_contracts (worker_id, contract_type, status, start_date, weekly_hours, base_salary, currency, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE contract_type = VALUES(contract_type), status = VALUES(status), start_date = VALUES(start_date), weekly_hours = VALUES(weekly_hours), base_salary = VALUES(base_salary), currency = VALUES(currency), notes = VALUES(notes), updated_at = CURRENT_TIMESTAMP',
+                [
+                    $workerId,
+                    trim((string) ($input['contract_type'] ?? '')) ?: 'PERMANENTE',
+                    trim((string) ($input['contract_status'] ?? 'ACTIVE')) ?: 'ACTIVE',
+                    $input['hire_date'] ?? date('Y-m-d'),
+                    (float) ($input['weekly_hours'] ?? 45),
+                    (float) ($input['base_salary'] ?? 0),
+                    trim((string) ($input['currency'] ?? 'CLP')) ?: 'CLP',
+                    trim((string) ($input['contract_notes'] ?? '')) ?: null,
+                ]
+            );
+        }
+
+        if (!empty($input['health_system']) || !empty($input['afp_name'])) {
+            $this->execute(
+                'INSERT INTO worker_benefits (worker_id, health_system, afp_name, pension_type, extra_benefit, health_plan) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE health_system = VALUES(health_system), afp_name = VALUES(afp_name), pension_type = VALUES(pension_type), extra_benefit = VALUES(extra_benefit), health_plan = VALUES(health_plan)',
+                [
+                    $workerId,
+                    trim((string) ($input['health_system'] ?? '')) ?: null,
+                    trim((string) ($input['afp_name'] ?? '')) ?: null,
+                    trim((string) ($input['pension_type'] ?? '')) ?: null,
+                    trim((string) ($input['extra_benefit'] ?? '')) ?: null,
+                    trim((string) ($input['health_plan'] ?? '')) ?: null,
+                ]
+            );
+        }
+
+        if (!empty($input['bank_name']) || !empty($input['account_number'])) {
+            $this->execute(
+                'INSERT INTO worker_bank_accounts (worker_id, bank_name, account_type, account_number, swift_code, is_primary) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE bank_name = VALUES(bank_name), account_type = VALUES(account_type), account_number = VALUES(account_number), swift_code = VALUES(swift_code), is_primary = VALUES(is_primary)',
+                [
+                    $workerId,
+                    trim((string) ($input['bank_name'] ?? '')) ?: null,
+                    trim((string) ($input['account_type'] ?? '')) ?: null,
+                    trim((string) ($input['account_number'] ?? '')) ?: null,
+                    trim((string) ($input['swift_code'] ?? '')) ?: null,
+                    1,
+                ]
+            );
+        }
+    }
+
     public function options(): array
     {
         return ['seasons' => $this->fetch('SELECT id, name FROM seasons WHERE company_id = ? AND active = 1 ORDER BY starts_on DESC'), 'farms' => $this->fetch('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name'), 'blocks' => $this->fetch('SELECT id, code, name FROM blocks WHERE company_id = ? AND active = 1 ORDER BY code')];
     }
 
-    public function createWorker(array $input): void
+    public function createWorker(array $input): int
     {
         if (trim((string) ($input['full_name'] ?? '')) === '') {
             throw new RuntimeException('El nombre del trabajador es obligatorio.');
@@ -40,7 +177,9 @@ final class LaborManagement extends BaseService
         if (!(new CatalogLookup($this->connection, $this->companyId))->exists('WORKER_TYPE', (string) $input['worker_type'])) {
             throw new RuntimeException('El tipo de trabajador no está habilitado.');
         }
-        $this->execute('INSERT INTO workers (company_id, full_name, tax_id, worker_type, default_rate) VALUES (?, ?, ?, ?, ?)', [$this->companyId, trim($input['full_name']), trim($input['tax_id']) ?: null, strtoupper(trim($input['worker_type'])), $input['default_rate'] ?: 0]);
+        $this->execute('INSERT INTO workers (company_id, full_name, tax_id, worker_type, default_rate, active) VALUES (?, ?, ?, ?, ?, ?)', [$this->companyId, trim((string) $input['full_name']), trim((string) ($input['tax_id'] ?? '')) ?: null, strtoupper(trim((string) ($input['worker_type'] ?? 'TEMPORAL'))), (float) ($input['default_rate'] ?? 0), isset($input['active']) ? (int) $input['active'] : 1]);
+
+        return (int) $this->connection->lastInsertId();
     }
 
     public function createEntry(array $input, int $userId): void
