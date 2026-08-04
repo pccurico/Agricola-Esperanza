@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class DocumentManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly string $rootPath)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId, private readonly string $rootPath)
     {
     }
 
@@ -127,3 +127,4 @@ final class DocumentManagement extends BaseService
         }
     }
 }
+

@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class Installer extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly string $rootPath)
+    public function __construct(protected readonly PDO $connection, private readonly string $rootPath)
     {
     }
 
@@ -200,3 +200,4 @@ final class Installer extends BaseService
         }
     }
 }
+

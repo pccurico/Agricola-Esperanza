@@ -8,7 +8,7 @@ use PDO;
 
 final class ApiAuthenticator extends BaseService
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(protected readonly PDO $connection)
     {
     }
 
@@ -34,3 +34,4 @@ final class ApiAuthenticator extends BaseService
         return $identity;
     }
 }
+

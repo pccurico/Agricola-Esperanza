@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class BudgetManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -51,3 +51,4 @@ final class BudgetManagement extends BaseService
         $query->execute([$this->companyId, (int) $input['season_id'], (int) $input['cost_center_id'], $input['period_start'], $input['period_end'], $input['amount'], trim($input['notes']) ?: null, $userId]);
     }
 }
+

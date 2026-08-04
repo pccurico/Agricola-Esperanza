@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-$currentModule = (string) ($_GET['module'] ?? '');
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+$path = trim($path, '/');
+$currentModule = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
 $navigationAuth = new \CampoSur\Services\Auth(database()->connection());
 $navigationRole = (int) ($_SESSION['role_id'] ?? 0);
+$navigationUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
 $navigationRoleDepartment = (string) ($_SESSION['role_department'] ?? 'general');
 $navigationRoleIsSystem = (bool) ((int) ($_SESSION['role_is_system'] ?? 0) === 1);
 $navigationCompanyQuery = database()->connection()->prepare('SELECT trade_name, logo_path FROM companies WHERE id = ? LIMIT 1');
@@ -26,13 +30,13 @@ foreach ($navigationConfig['groups'] as $group) {
     if (!$isDepartmentAllowed && !$isSystemGroup) {
         continue;
     }
-    $visibleItems = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole): bool {
+    $visibleItems = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole, $navigationUserId): bool {
         if (($item['visible'] ?? true) !== true) {
             return false;
         }
         $permissions = $item['permissions'] ?? [(string) ($item['permission'] ?? '')];
         foreach ($permissions as $permission) {
-            if ($permission !== '' && $navigationAuth->can($navigationRole, (string) $permission)) {
+            if ($permission !== '' && $navigationAuth->can($navigationRole, (string) $permission, $navigationUserId)) {
                 return true;
             }
         }

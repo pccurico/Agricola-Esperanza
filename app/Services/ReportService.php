@@ -9,7 +9,7 @@ use PDO;
 
 final class ReportService extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -271,10 +271,10 @@ final class ReportService extends BaseService
 
     private function inventoryAlerts(int $farmId, int $blockId, string $dateFrom, string $dateTo): array
     {
-        $params = [$this->companyId, $dateFrom, $dateTo];
+        $params = [$dateFrom, $dateTo, $this->companyId];
         $where = 'i.company_id = ? AND i.active = 1';
         if ($farmId > 0) {
-            $where .= ' AND EXISTS (SELECT 1 FROM inventory_movements m WHERE m.company_id = i.company_id AND m.item_id = i.id AND m.farm_id = ?)';
+            $where .= ' AND EXISTS (SELECT 1 FROM inventory_movements m LEFT JOIN blocks b ON b.id = m.block_id WHERE m.company_id = i.company_id AND m.item_id = i.id AND b.farm_id = ?)';
             $params[] = $farmId;
         }
         if ($blockId > 0) {
@@ -283,7 +283,7 @@ final class ReportService extends BaseService
         }
 
         $query = $this->connection->prepare('SELECT i.id, i.name, i.unit, i.minimum_stock, COALESCE(SUM(CASE WHEN m.movement_type = "IN" THEN m.quantity WHEN m.movement_type = "OUT" THEN -m.quantity ELSE m.quantity END), 0) AS stock FROM inventory_items i LEFT JOIN inventory_movements m ON m.item_id = i.id AND m.company_id = i.company_id AND m.movement_date BETWEEN ? AND ? WHERE ' . $where . ' GROUP BY i.id, i.name, i.unit, i.minimum_stock HAVING stock <= i.minimum_stock ORDER BY stock ASC, i.name LIMIT 5');
-        $query->execute(array_merge($params, [$dateFrom, $dateTo]));
+        $query->execute($params);
         return $query->fetchAll();
     }
 
@@ -294,3 +294,4 @@ final class ReportService extends BaseService
         return $query->fetchAll();
     }
 }
+

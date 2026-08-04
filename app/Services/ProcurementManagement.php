@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class ProcurementManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId)
     {
     }
 
@@ -384,3 +384,4 @@ final class ProcurementManagement extends BaseService
         return ['supplier_options' => $suppliers->fetchAll(), 'season_options' => $seasons->fetchAll(), 'farm_options' => $farms->fetchAll(), 'item_options' => $items->fetchAll()];
     }
 }
+

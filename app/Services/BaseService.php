@@ -9,10 +9,21 @@ use Throwable;
 
 abstract class BaseService
 {
-    protected function fetch(string $sql): array
+    protected readonly PDO $connection;
+    protected readonly int $companyId;
+
+    protected function fetch(string $sql, array $params = []): array
     {
         $query = $this->connection->prepare($sql);
-        $query->execute([$this->companyId]);
+        $query->execute($params === [] ? [$this->companyId] : $params);
+
+        return $query->fetchAll();
+    }
+
+    protected function fetchRows(string $sql, array $params = []): array
+    {
+        $query = $this->connection->prepare($sql);
+        $query->execute($params);
 
         return $query->fetchAll();
     }

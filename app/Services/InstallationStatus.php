@@ -8,13 +8,13 @@ use PDO;
 
 final class InstallationStatus extends BaseService
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(protected readonly PDO $connection)
     {
     }
 
     public function isComplete(): bool
     {
-        $requiredTables = ['companies', 'users', 'roles', 'permissions', 'schema_migrations'];
+        $requiredTables = ['companies', 'users', 'roles', 'permissions', 'role_permissions', 'schema_migrations'];
         $placeholders = implode(',', array_fill(0, count($requiredTables), '?'));
         $tables = $this->connection->prepare(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN ($placeholders)"
@@ -39,3 +39,4 @@ final class InstallationStatus extends BaseService
             && (int) $counts['migrations_count'] > 0;
     }
 }
+

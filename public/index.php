@@ -91,13 +91,24 @@ if (($_GET['asset'] ?? '') === 'attachment') {
 }
 
 $modulePermissions = ['users' => 'users.view', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage'];
-$module = (string) ($_GET['module'] ?? '');
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+$scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$path = parse_url($requestUri, PHP_URL_PATH) ?: '';
+if ($scriptDir !== '' && $scriptDir !== '/') {
+    $path = preg_replace('#^' . preg_quote($scriptDir, '#') . '#', '', $path);
+}
+$path = trim($path, '/');
+if ($path === 'index.php') {
+    $path = '';
+}
+$module = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
 if ($module === 'users') {
     authorize_any(['users.view', 'users.manage', 'roles.manage']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         match ($_POST['action'] ?? '') {
-            'create_user', 'toggle_user' => authorize('users.manage'),
-            'create_role' => authorize('roles.manage'),
+            'create_user', 'update_user', 'delete_user', 'toggle_user' => authorize('users.manage'),
+            'create_role', 'update_role', 'delete_role' => authorize('roles.manage'),
             default => null,
         };
     }
@@ -319,4 +330,6 @@ if (($_GET['module'] ?? '') === 'audit') {
     exit;
 }
 
+$dashboard = (new CampoSur\Controllers\DashboardController())->handle();
+extract($dashboard, EXTR_SKIP);
 require dirname(__DIR__) . '/app/Views/dashboard.php';

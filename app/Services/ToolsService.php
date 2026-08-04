@@ -11,9 +11,9 @@ use RuntimeException;
 final class ToolsService extends BaseService
 {
     public function __construct(
-        private readonly PDO $connection,
+        protected readonly PDO $connection,
         private readonly string $rootPath,
-        private readonly int $companyId,
+        protected readonly int $companyId,
         private readonly int $userId
     ) {
     }
@@ -71,21 +71,22 @@ final class ToolsService extends BaseService
         $dbConfig = app_config('database');
         $dumpCommand = $this->resolveDumpCommand();
         if ($dumpCommand === null) {
-            $this->markBackupStatus($backupId, 'FAILED', 'No se encontró mysqldump en el entorno.');
-            throw new RuntimeException('No se encontró mysqldump; no se puede crear el respaldo automático.');
+            $this->logSystemEvent('tools.backup', 'WARNING', 'No se encontró mysqldump; usando respaldo PHP interno', []);
+            $this->dumpDatabaseWithPdo($backupFile);
+        } else {
+            $command = sprintf(
+                '%s --defaults-extra-file=/dev/null --host=%s --port=%s --user=%s --password=%s --single-transaction --routines --events --skip-comments %s > %s',
+                escapeshellarg($dumpCommand),
+                escapeshellarg((string) ($dbConfig['host'] ?? '127.0.0.1')),
+                escapeshellarg((string) ($dbConfig['port'] ?? '3306')),
+                escapeshellarg((string) ($dbConfig['username'] ?? 'root')),
+                escapeshellarg((string) ($dbConfig['password'] ?? '')),
+                escapeshellarg((string) ($dbConfig['database'] ?? '')),
+                escapeshellarg($backupFile)
+            );
+            shell_exec($command);
         }
 
-        $command = sprintf(
-            '%s --defaults-extra-file=/dev/null --host=%s --port=%s --user=%s --password=%s --single-transaction --routines --events --skip-comments %s > %s',
-            escapeshellarg($dumpCommand),
-            escapeshellarg((string) ($dbConfig['host'] ?? '127.0.0.1')),
-            escapeshellarg((string) ($dbConfig['port'] ?? '3306')),
-            escapeshellarg((string) ($dbConfig['username'] ?? 'root')),
-            escapeshellarg((string) ($dbConfig['password'] ?? '')),
-            escapeshellarg((string) ($dbConfig['database'] ?? '')),
-            escapeshellarg($backupFile)
-        );
-        $result = shell_exec($command);
         if (!is_file($backupFile) || filesize($backupFile) < 100) {
             $this->markBackupStatus($backupId, 'FAILED', 'El respaldo de base de datos no pudo generarse.');
             throw new RuntimeException('El respaldo de base de datos no pudo generarse.');
@@ -321,6 +322,64 @@ final class ToolsService extends BaseService
         return array_values(array_map(static fn ($row): string => (string) $row, $query->fetchAll(PDO::FETCH_COLUMN)));
     }
 
+    private function dumpDatabaseWithPdo(string $backupFile): void
+    {
+        $handle = fopen($backupFile, 'wb');
+        if ($handle === false) {
+            throw new RuntimeException('No se pudo abrir el archivo de respaldo para escritura.');
+        }
+
+        fwrite($handle, "-- Respaldo de base de datos generado por PHP\n");
+        fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n");
+        fwrite($handle, "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n");
+        fwrite($handle, "SET NAMES utf8mb4;\n\n");
+
+        $tables = $this->connection->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($tables as $table) {
+            $table = (string) $table;
+            $create = $this->connection->query('SHOW CREATE TABLE `' . str_replace('`', '', $table) . '`')->fetch(PDO::FETCH_ASSOC);
+            if (!isset($create['Create Table'])) {
+                continue;
+            }
+
+            fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
+            fwrite($handle, $create['Create Table'] . ";\n\n");
+
+            $stmt = $this->connection->query('SELECT * FROM `' . str_replace('`', '', $table) . '`');
+            $rowCount = 0;
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                if ($rowCount === 0) {
+                    fwrite($handle, "LOCK TABLES `{$table}` WRITE;\n");
+                }
+
+                $columns = array_map(static fn ($column): string => '`' . str_replace('`', '``', $column) . '`', array_keys($row));
+                $values = array_map([$this, 'quoteValue'], array_values($row));
+                fwrite($handle, 'INSERT INTO `' . $table . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ");\n");
+                $rowCount++;
+            }
+
+            if ($rowCount > 0) {
+                fwrite($handle, "UNLOCK TABLES;\n\n");
+            }
+        }
+
+        fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
+        fclose($handle);
+    }
+
+    private function quoteValue(mixed $value): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        return "'" . str_replace(["\\", "'", "\n", "\r", "\t", "\0"], ["\\\\", "\\'", "\\n", "\\r", "\\t", "\\0"], (string) $value) . "'";
+    }
+
     private function resolveDumpCommand(): ?string
     {
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -343,3 +402,4 @@ final class ToolsService extends BaseService
         return $resolved ? trim((string) $resolved) : null;
     }
 }
+

@@ -17,7 +17,7 @@ final class DemoDataManager extends BaseService
 
     private array $references = [];
 
-    public function __construct(private readonly PDO $connection, private readonly string $rootPath, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, private readonly string $rootPath, protected readonly int $companyId)
     {
     }
 
@@ -241,3 +241,4 @@ final class DemoDataManager extends BaseService
         return (int) $query->fetchColumn();
     }
 }
+

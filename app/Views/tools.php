@@ -38,6 +38,11 @@ $updateAvailable = (bool) ($toolsStatus['can_update'] ?? false);
         .version-label { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0 22px 22px; }
         .toolbar-actions form, .table-action-form { margin: 0; }
+        .step-list { display: grid; gap: 12px; margin: 0; padding: 18px 22px; }
+        .step-card { display: grid; gap: 10px; padding: 18px; border: 1px solid #d9e1da; border-radius: 16px; background: #fbfdfb; }
+        .step-card strong { display: block; font-size: 14px; }
+        .step-card span { color: #6c7c74; font-size: 12px; }
+        .step-card .step-status { font-weight: 700; color: #3c8269; }
         .simple-list { display: grid; gap: 8px; margin: 0; padding: 12px 22px 20px 40px; color: #26332d; font-size: 12px; }
         .table-scroll { width: 100%; overflow: auto; }
         .admin-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: auto; }
@@ -54,6 +59,37 @@ $updateAvailable = (bool) ($toolsStatus['can_update'] ?? false);
             <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <section class="admin-columns">
+                <article class="admin-panel">
+                    <header class="panel-header"><div><h2>Guía paso a paso</h2><p>Ejecuta estas tareas en orden para aplicar el cambio de esquema con seguridad.</p></div></header>
+                    <div class="step-list">
+                        <div class="step-card">
+                            <strong>Paso 1: Crear respaldo</strong>
+                            <span>Genera una copia de seguridad de la base de datos y la configuración antes de realizar cambios.</span>
+                            <span class="step-status"><?= $backupCount > 0 ? 'OK: Ya existe al menos un respaldo' : 'Pendiente: crea un respaldo primero' ?></span>
+                            <div class="toolbar-actions">
+                                <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="backup"><button class="primary-button" type="submit">Crear respaldo</button></form>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <strong>Paso 2: Sincronizar esquema</strong>
+                            <span>Aplica las migraciones pendientes para actualizar la estructura de la base de datos.</span>
+                            <span class="step-status"><?= ($missingTables === [] && $missingColumns === 0) ? 'OK: La estructura está sincronizada' : 'Pendiente: sincroniza la estructura ahora' ?></span>
+                            <div class="toolbar-actions">
+                                <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="sync_schema"><button class="secondary-link" type="submit">Sincronizar esquema</button></form>
+                            </div>
+                        </div>
+                        <?php if ($updateAvailable): ?>
+                        <div class="step-card">
+                            <strong>Paso 3: Actualizar ERP</strong>
+                            <span>Realiza un respaldo automático y aplica todas las migraciones adicionales en un solo paso.</span>
+                            <span class="step-status">Pendiente: hay una actualización disponible</span>
+                            <div class="toolbar-actions">
+                                <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="update"><button class="primary-button" type="submit">Actualizar ERP</button></form>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </article>
                 <article class="admin-panel">
                     <header class="panel-header"><div><h2>Estado del sistema</h2><p>Versión instalada, actualización disponible y Estado de sincronización.</p></div></header>
                     <div class="stats-grid">

@@ -55,6 +55,15 @@ function csrf_token(): string
     return $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 }
 
+function module_url(string $module, array $params = []): string
+{
+    $path = $module === '' || $module === '/' ? '/' : '/' . ltrim($module, '/');
+    if ($params === []) {
+        return $path;
+    }
+    return $path . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+}
+
 function verify_csrf(): void
 {
     if (!hash_equals(csrf_token(), (string) ($_POST['csrf'] ?? ''))) {
@@ -65,7 +74,9 @@ function verify_csrf(): void
 
 function authorize(string $permission): void
 {
-    if (!(new \CampoSur\Services\Auth(database()->connection()))->can((int) $_SESSION['role_id'], $permission)) {
+    $roleId = (int) ($_SESSION['role_id'] ?? 0);
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    if (!(new \CampoSur\Services\Auth(database()->connection()))->can($roleId, $permission, $userId)) {
         http_response_code(403);
         exit('No tienes permisos para acceder a este módulo.');
     }
@@ -74,8 +85,10 @@ function authorize(string $permission): void
 function authorize_any(array $permissions): void
 {
     $auth = new \CampoSur\Services\Auth(database()->connection());
+    $roleId = (int) ($_SESSION['role_id'] ?? 0);
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     foreach ($permissions as $permission) {
-        if ($auth->can((int) $_SESSION['role_id'], $permission)) {
+        if ($auth->can($roleId, $permission, $userId)) {
             return;
         }
     }

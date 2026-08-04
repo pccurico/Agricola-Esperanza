@@ -10,8 +10,8 @@ use RuntimeException;
 final class CatalogManagement extends BaseService
 {
     public function __construct(
-        private readonly PDO $connection,
-        private readonly int $companyId,
+        protected readonly PDO $connection,
+        protected readonly int $companyId,
         private readonly AuditLog $audit
     ) {
     }
@@ -71,3 +71,4 @@ final class CatalogManagement extends BaseService
         return $catalog ?: null;
     }
 }
+

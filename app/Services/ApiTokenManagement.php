@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class ApiTokenManagement extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $companyId, private readonly int $userId)
+    public function __construct(protected readonly PDO $connection, protected readonly int $companyId, private readonly int $userId)
     {
     }
 
@@ -43,3 +43,4 @@ final class ApiTokenManagement extends BaseService
         (new AuditLog($this->connection, $this->companyId))->record($this->userId, 'REVOKE', 'api_tokens', $tokenId);
     }
 }
+

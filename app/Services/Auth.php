@@ -8,7 +8,7 @@ use PDO;
 
 final class Auth extends BaseService
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(protected readonly PDO $connection)
     {
     }
 
@@ -73,10 +73,22 @@ final class Auth extends BaseService
         return 'general';
     }
 
-    public function can(int $roleId, string $permission): bool
+    public function can(int $roleId, string $permission, ?int $userId = null): bool
     {
-        $query = $this->connection->prepare('SELECT 1 FROM role_permissions rp INNER JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = ? AND p.code = ? LIMIT 1');
-        $query->execute([$roleId, $permission]);
+        $sql = 'SELECT 1 FROM role_permissions rp INNER JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = ? AND p.code = ?';
+        $params = [$roleId, $permission];
+
+        if ($userId !== null) {
+            $sql = 'SELECT 1 FROM (' . $sql . ' UNION ALL SELECT 1 FROM user_permissions up INNER JOIN permissions p2 ON p2.id = up.permission_id WHERE up.user_id = ? AND p2.code = ?) AS effective_permissions LIMIT 1';
+            $params[] = $userId;
+            $params[] = $permission;
+        } else {
+            $sql .= ' LIMIT 1';
+        }
+
+        $query = $this->connection->prepare($sql);
+        $query->execute($params);
+
         return (bool) $query->fetchColumn();
     }
 
@@ -97,3 +109,4 @@ final class Auth extends BaseService
         session_destroy();
     }
 }
+

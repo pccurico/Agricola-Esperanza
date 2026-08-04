@@ -8,7 +8,7 @@ use PDO;
 
 final class MigrationRunner extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly string $rootPath)
+    public function __construct(protected readonly PDO $connection, private readonly string $rootPath)
     {
     }
 
@@ -64,3 +64,4 @@ final class MigrationRunner extends BaseService
         $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)')->execute([$version]);
     }
 }
+

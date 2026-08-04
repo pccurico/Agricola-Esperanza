@@ -9,7 +9,7 @@ use RuntimeException;
 
 final class ProfileService extends BaseService
 {
-    public function __construct(private readonly PDO $connection, private readonly int $userId, private readonly int $companyId)
+    public function __construct(protected readonly PDO $connection, private readonly int $userId, protected readonly int $companyId)
     {
     }
 
@@ -36,3 +36,4 @@ final class ProfileService extends BaseService
         }
     }
 }
+
