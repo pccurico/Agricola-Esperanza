@@ -18,7 +18,7 @@ final class ToolsController extends BaseController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $action = (string) ($_POST['action'] ?? '');
                 $supportedAction = match ($action) {
-                    'backup', 'sync_schema', 'repair', 'restore', 'update' => true,
+                    'backup', 'sync_schema', 'repair', 'restore', 'update', 'remote_update' => true,
                     default => false,
                 };
 
@@ -31,6 +31,7 @@ final class ToolsController extends BaseController
                         'repair' => $service->repairApplication(),
                         'restore' => $service->restoreBackup((int) ($_POST['backup_id'] ?? 0)),
                         'update' => $service->runUpdate(),
+                        'remote_update' => $service->downloadAndInstallRemoteUpdate(),
                         default => null,
                     };
 
@@ -40,6 +41,7 @@ final class ToolsController extends BaseController
                         'repair' => 'Reparación ejecutada correctamente.',
                         'restore' => 'Restauración ejecutada correctamente.',
                         'update' => 'Actualización ejecutada correctamente.',
+                        'remote_update' => 'Actualización remota descargada e instalada correctamente.',
                         default => null,
                     };
                 }

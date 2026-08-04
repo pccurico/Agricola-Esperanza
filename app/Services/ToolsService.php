@@ -230,6 +230,48 @@ final class ToolsService extends BaseService
         $this->logSystemEvent('tools.update', 'INFO', 'Actualización finalizada', ['backup_id' => $backup['id']]);
     }
 
+    public function downloadAndInstallRemoteUpdate(): void
+    {
+        $backup = $this->createBackup();
+        $this->logSystemEvent('tools.remote_update', 'INFO', 'Actualización remota iniciada', ['backup_id' => $backup['id']]);
+
+        $release = $this->remoteReleaseStatus();
+        if (!empty($release['error'])) {
+            throw new RuntimeException('No fue posible obtener la actualización remota: ' . $release['error']);
+        }
+
+        $zipUrl = (string) ($release['zipball_url'] ?? '');
+        if ($zipUrl === '') {
+            throw new RuntimeException('La release remota no contiene URL de descarga de archivo ZIP.');
+        }
+
+        $tempDir = $this->createTemporaryDirectory();
+        $zipFile = $tempDir . '/release.zip';
+        $this->downloadToFile($zipUrl, $zipFile);
+
+        $extractDir = $tempDir . '/extract';
+        $this->extractZipArchive($zipFile, $extractDir);
+
+        $sourceRoot = $this->findFirstSubdirectory($extractDir);
+        if ($sourceRoot === null) {
+            throw new RuntimeException('No se encontró el contenido extraído del release.');
+        }
+
+        $this->mergeReleaseFiles($sourceRoot, $this->rootPath, [
+            '.git',
+            'storage',
+            'config/config.php',
+            '.env',
+            'vendor',
+            'node_modules',
+        ]);
+
+        $this->installComposerDependencies();
+        $this->syncSchema();
+
+        $this->logSystemEvent('tools.remote_update', 'INFO', 'Actualización remota completada', ['backup_id' => $backup['id'], 'release' => $release['tag_name'] ?? '']);
+    }
+
     public function backups(): array
     {
         $query = $this->connection->prepare(
@@ -294,7 +336,9 @@ final class ToolsService extends BaseService
 
     private function remoteReleaseStatus(): array
     {
-        $apiUrl = (string) app_config('updates.github_api', 'https://api.github.com/repos/jcares/Agricola-Esperanza/releases/latest');
+        $repo = (string) app_config('updates.github_repo', 'pccurico/Agricola-Esperanza');
+        $defaultApi = 'https://api.github.com/repos/' . trim($repo, '/') . '/releases/latest';
+        $apiUrl = (string) app_config('updates.github_api', $defaultApi);
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
@@ -305,7 +349,7 @@ final class ToolsService extends BaseService
 
         $response = @file_get_contents($apiUrl, false, $context);
         if ($response === false) {
-            return ['error' => 'No fue posible acceder a GitHub.'];
+            return ['error' => 'No fue posible acceder a GitHub: ' . $apiUrl];
         }
 
         $payload = json_decode($response, true);
@@ -320,9 +364,128 @@ final class ToolsService extends BaseService
         return [
             'tag_name' => (string) ($payload['tag_name'] ?? ''),
             'html_url' => (string) ($payload['html_url'] ?? ''),
+            'zipball_url' => (string) ($payload['zipball_url'] ?? ''),
             'name' => (string) ($payload['name'] ?? ''),
             'body' => (string) ($payload['body'] ?? ''),
         ];
+    }
+
+    private function createTemporaryDirectory(): string
+    {
+        $tempRoot = sys_get_temp_dir();
+        $tempDir = $tempRoot . DIRECTORY_SEPARATOR . 'pccurico_update_' . bin2hex(random_bytes(8));
+        if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
+            throw new RuntimeException('No se pudo crear el directorio temporal para la actualización.');
+        }
+
+        return $tempDir;
+    }
+
+    private function downloadToFile(string $url, string $destination): void
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "User-Agent: PCCURICO-Update-Checker\r\nAccept: application/octet-stream\r\n",
+                'timeout' => 60,
+            ],
+        ]);
+
+        $data = @file_get_contents($url, false, $context);
+        if ($data === false || file_put_contents($destination, $data) === false) {
+            throw new RuntimeException('No fue posible descargar la actualización remota.');
+        }
+    }
+
+    private function extractZipArchive(string $zipFile, string $destination): void
+    {
+        if (!class_exists('\ZipArchive')) {
+            throw new RuntimeException('ZipArchive no está disponible en el entorno para extraer la actualización.');
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFile) !== true) {
+            throw new RuntimeException('No se pudo abrir el archivo ZIP de la actualización.');
+        }
+
+        if (!is_dir($destination) && !mkdir($destination, 0755, true) && !is_dir($destination)) {
+            throw new RuntimeException('No se pudo crear el directorio de extracción.');
+        }
+
+        if (!$zip->extractTo($destination)) {
+            $zip->close();
+            throw new RuntimeException('No fue posible extraer la actualización remota.');
+        }
+
+        $zip->close();
+    }
+
+    private function findFirstSubdirectory(string $directory): ?string
+    {
+        $items = scandir($directory);
+        if ($items === false) {
+            return null;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $directory . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    private function mergeReleaseFiles(string $source, string $destination, array $excludes): void
+    {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $item) {
+            $relativePath = ltrim(str_replace($source, '', $item->getPathname()), DIRECTORY_SEPARATOR);
+            foreach ($excludes as $exclude) {
+                if ($relativePath === $exclude || str_starts_with($relativePath, rtrim($exclude, '/')) || str_starts_with($relativePath, trim($exclude, '/') . DIRECTORY_SEPARATOR)) {
+                    continue 2;
+                }
+            }
+
+            $target = $destination . DIRECTORY_SEPARATOR . $relativePath;
+            if ($item->isDir()) {
+                if (!is_dir($target) && !mkdir($target, 0755, true) && !is_dir($target)) {
+                    throw new RuntimeException('No fue posible crear el directorio de actualización: ' . $target);
+                }
+                continue;
+            }
+
+            $targetDirectory = dirname($target);
+            if (!is_dir($targetDirectory) && !mkdir($targetDirectory, 0755, true) && !is_dir($targetDirectory)) {
+                throw new RuntimeException('No fue posible crear el directorio de destino: ' . $targetDirectory);
+            }
+
+            if (!copy($item->getPathname(), $target)) {
+                throw new RuntimeException('No fue posible copiar el archivo de actualización: ' . $relativePath);
+            }
+        }
+    }
+
+    private function installComposerDependencies(): void
+    {
+        $composerCommand = $this->resolveExecutablePath('composer');
+        if ($composerCommand === null) {
+            return;
+        }
+
+        $command = sprintf(
+            '%s install --no-dev --prefer-dist --optimize-autoloader --no-interaction',
+            escapeshellarg($composerCommand)
+        );
+
+        $result = $this->runExternalCommand($command);
+        if ($result === null) {
+            throw new RuntimeException('No fue posible ejecutar Composer para instalar dependencias después de la actualización.');
+        }
     }
 
     private function expectedSchemaTables(string $schemaSql): array

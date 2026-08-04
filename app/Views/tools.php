@@ -105,11 +105,14 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
                         <div class="stat-card"><span>Respaldos disponibles</span><strong><?= $backupCount ?></strong></div>
                         <div class="stat-card"><span>Drift de esquema</span><strong><?= count($missingTables) + $missingColumns ?></strong></div>
                     </div>
+                    <?php if (!empty($remoteError)): ?><div class="panel-header"><p class="setup-copy">Aviso: <?= htmlspecialchars($remoteError, ENT_QUOTES, 'UTF-8') ?></p></div><?php endif; ?>
+                    <?php if ($remoteUpdateAvailable): ?><div class="panel-header"><p class="setup-copy">Nueva versión disponible en GitHub. Esta actualización se descargará y aplicará automáticamente.</p></div><?php endif; ?>
+                    </div>
                     <div class="toolbar-actions">
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="backup"><button class="primary-button" type="submit">Crear respaldo</button></form>
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="sync_schema"><button class="secondary-link" type="submit">Sincronizar esquema</button></form>
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="repair"><button class="secondary-link" type="submit">Reparar sistema</button></form>
-                        <?php if ($updateAvailable): ?><form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="update"><button class="primary-button" type="submit">Actualizar ERP</button></form><?php endif; ?>
+                        <?php if ($remoteUpdateAvailable): ?><form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="remote_update"><button class="primary-button" type="submit">Descargar y aplicar actualización</button></form><?php endif; ?>
                     </div>
                 </article>
                 <article class="admin-panel">
