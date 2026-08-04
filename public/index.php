@@ -90,7 +90,7 @@ if (($_GET['asset'] ?? '') === 'attachment') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.view', 'roles' => 'roles.manage', 'role' => 'roles.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage', 'dashboard_data' => 'dashboard.view'];
+$modulePermissions = ['users' => 'users.view', 'roles' => 'roles.manage', 'role' => 'roles.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage', 'backups' => 'setup.manage', 'dashboard_data' => 'dashboard.view'];
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
 $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
@@ -183,6 +183,19 @@ if ($module === 'tools') {
     $tools = (new AgroPCC\Controllers\ToolsController())->handle();
     extract($tools, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/tools.php';
+    exit;
+}
+
+if ($module === 'backups') {
+    authorize('setup.manage');
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        authorize('setup.manage');
+    }
+    $backups = (new AgroPCC\Controllers\BackupController())->handle();
+    if (is_array($backups)) {
+        extract($backups, EXTR_SKIP);
+        require dirname(__DIR__) . '/app/Views/backups.php';
+    }
     exit;
 }
 

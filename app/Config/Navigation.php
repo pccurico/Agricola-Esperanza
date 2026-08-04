@@ -53,6 +53,7 @@ return [
             ['id' => 'catalogs-system', 'module' => 'catalogs', 'label' => 'Catálogos', 'route' => '/catalogs', 'permission' => 'setup.manage', 'icon' => 'boxes', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'api-module', 'module' => 'api', 'label' => 'API e Integraciones', 'route' => '/api', 'permission' => 'api_tokens.manage', 'icon' => 'chart', 'order' => 50, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'tools-center', 'module' => 'tools', 'label' => 'Centro de Herramientas', 'route' => '/tools', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 60, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'backups-module', 'module' => 'backups', 'label' => 'Respaldos', 'route' => '/backups', 'permission' => 'setup.manage', 'icon' => 'boxes', 'order' => 65, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'demo-tools', 'module' => 'demo', 'label' => 'Demo Data Manager', 'route' => '/demo', 'permission' => 'demo.manage', 'icon' => 'wrench', 'order' => 70, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'profile-system', 'module' => 'profile', 'label' => 'Mi perfil', 'route' => '/profile', 'permission' => 'dashboard.view', 'icon' => 'users', 'order' => 80, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
