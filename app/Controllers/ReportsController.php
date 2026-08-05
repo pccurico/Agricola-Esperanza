@@ -8,6 +8,23 @@ final class ReportsController extends BaseController
 {
     public function handle(): array
     {
+        $reportConfig = $this->loadReportConfig();
+        $reportKey = $this->normalizeReportKey((string) ($_GET['report_key'] ?? ''));
+        $reportKey = $reportKey !== '' ? $reportKey : $this->normalizeReportKey((string) ($_GET['report'] ?? ''));
+
+        if ($reportKey !== '') {
+            $_GET['report'] = $reportKey;
+        }
+
+        if ($reportKey === '' && !isset($_GET['report'])) {
+            return [
+                'view' => 'reports/index.php',
+                'reports' => $reportConfig,
+                'metrics' => $this->centerMetrics($reportConfig),
+                'permissions' => $this->permissionMap($reportConfig),
+            ];
+        }
+
         $reportType = $this->normalizeReportType((string) ($_GET['report'] ?? 'executive'));
         $report = new \AgroPCC\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
         $summary = $report->summary([
@@ -21,7 +38,17 @@ final class ReportsController extends BaseController
             'supervisor_id' => (int) ($_GET['supervisor_id'] ?? 0),
             'process' => (string) ($_GET['process'] ?? ''),
         ]);
-        $summary['report_type'] = $reportType;
+        $response = [
+            'summary' => $summary,
+            'report_type' => $reportType,
+            'report_config' => $reportConfig,
+            'permissions' => $this->permissionMap($reportConfig),
+        ];
+
+        if ($this->isJsonRequest()) {
+            $this->json($response);
+            exit;
+        }
 
         if (($_GET['export'] ?? '') === 'csv') {
             (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'csv', 'report' => $reportType]);
@@ -35,14 +62,229 @@ final class ReportsController extends BaseController
             (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'pdf', 'report' => $reportType]);
             $this->exportPdf($summary, $reportType);
         }
-        return $summary;
+
+        return $response;
     }
 
     private function normalizeReportType(string $reportType): string
     {
-        $allowed = ['executive', 'costs', 'production', 'labor', 'documents'];
+        $allowed = array_merge(array_keys($this->loadReportConfig()), ['executive', 'costs', 'production', 'labor', 'documents']);
         $value = strtolower(trim($reportType));
         return in_array($value, $allowed, true) ? $value : 'executive';
+    }
+
+    private function isJsonRequest(): bool
+    {
+        if (isset($_GET['ajax']) && (string) $_GET['ajax'] === '1') {
+            return true;
+        }
+        $acceptHeader = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+        if (str_contains($acceptHeader, 'application/json')) {
+            return true;
+        }
+        return strtoupper((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'XMLHTTPREQUEST';
+    }
+
+    private function normalizeReportKey(string $reportKey): string
+    {
+        $value = strtolower(trim($reportKey));
+        $config = $this->loadReportConfig();
+        return isset($config[$value]) ? $value : '';
+    }
+
+    private function loadReportConfig(): array
+    {
+        $configFile = dirname(__DIR__, 2) . '/config/reports.php';
+        if (!is_file($configFile)) {
+            return [];
+        }
+        return require $configFile;
+    }
+
+    private function permissionMap(array $reports): array
+    {
+        $permissionMap = [];
+        foreach ($reports as $key => $report) {
+            $permissionMap[$key] = isset($report['permission']) && (new \AgroPCC\Services\Auth(database()->connection()))->can((int) ($_SESSION['role_id'] ?? 0), (string) $report['permission'], (int) ($_SESSION['user_id'] ?? 0));
+        }
+        return $permissionMap;
+    }
+
+    private function centerMetrics(array $reports): array
+    {
+        $metrics = [];
+        $service = new \AgroPCC\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
+        $now = new \DateTimeImmutable('today');
+        $filters = ['date_from' => $now->format('Y-m-01'), 'date_to' => $now->format('Y-m-d')];
+        foreach (array_keys($reports) as $reportKey) {
+            $metrics[$reportKey] = $this->centerMetricForReport($reportKey, $service, $filters);
+        }
+        return $metrics;
+    }
+
+    private function centerMetricForReport(string $reportKey, \AgroPCC\Services\ReportService $service, array $filters): array
+    {
+        $default = ['label' => 'Indicador clave', 'value' => 0, 'change' => 0, 'updated_at' => '—'];
+        $report = $service->summary($filters);
+        $summary = (array) ($report['summary'] ?? []);
+        $previousPeriod = $this->previousMonthRange($filters['date_from']);
+        $previousReport = $service->summary(['date_from' => $previousPeriod['from'], 'date_to' => $previousPeriod['to']]);
+        $previousSummary = (array) ($previousReport['summary'] ?? []);
+        $value = 0;
+        $label = 'Indicador clave';
+        switch ($reportKey) {
+            case 'executive':
+                $value = (float) ($summary['total'] ?? 0);
+                $label = 'Costo total';
+                break;
+            case 'production':
+                $value = (float) ($summary['production'] ?? 0);
+                $label = 'Producción';
+                break;
+            case 'costs':
+                $value = (float) ($summary['total'] ?? 0);
+                $label = 'Costo total';
+                break;
+            case 'profitability':
+                $value = (float) ($summary['total'] ?? 0) > 0 ? (float) ($summary['production'] ?? 0) / (float) $summary['total'] : 0;
+                $label = 'Rentabilidad';
+                break;
+            case 'labor':
+                $value = (float) ($report['labor_summary']['total'] ?? 0);
+                $label = 'Costo laboral';
+                break;
+            case 'inventory':
+                $value = $this->countCriticalInventory();
+                $label = 'Alertas críticas';
+                break;
+            case 'procurement':
+                $value = $this->countPendingPurchases();
+                $label = 'Órdenes abiertas';
+                break;
+            case 'finance':
+                $value = $this->sumExpenses($filters);
+                $label = 'Gastos totales';
+                break;
+            case 'budgets':
+                $value = (float) ($report['budget']['execution'] ?? 0);
+                $label = 'Ejecución %';
+                break;
+            case 'machinery':
+                $value = $this->sumMachineryHours($filters);
+                $label = 'Horas máquina';
+                break;
+            case 'productivity':
+                $value = ($summary['production'] ?? 0) > 0 && ($report['labor_summary']['quantity'] ?? 0) > 0 ? (float) ($summary['production'] ?? 0) / (float) ($report['labor_summary']['quantity'] ?? 0) : 0;
+                $label = 'Kg por jornada';
+                break;
+            case 'comparatives':
+                $value = abs((float) ($summary['total'] ?? 0) - (float) ($previousSummary['total'] ?? 0));
+                $label = 'Comparativo';
+                break;
+            case 'trends':
+                $value = $this->countTrendRows($filters);
+                $label = 'Puntos de tendencia';
+                break;
+            case 'kpis':
+                $value = $this->countAvailableKpis();
+                $label = 'KPIs activos';
+                break;
+            default:
+                return $default;
+        }
+        $change = $this->computeChange($value, $previousSummary, $reportKey);
+        $updatedAt = $this->latestUpdate($filters);
+        return ['label' => $label, 'value' => $value, 'change' => $change, 'updated_at' => $updatedAt];
+    }
+
+    private function computeChange(float $value, array $previousSummary, string $reportKey): float
+    {
+        $summary = (array) ($previousSummary['summary'] ?? $previousSummary);
+        $previous = 0;
+        switch ($reportKey) {
+            case 'executive':
+            case 'costs':
+                $previous = (float) ($summary['total'] ?? 0);
+                break;
+            case 'production':
+                $previous = (float) ($summary['production'] ?? 0);
+                break;
+            case 'labor':
+                $previous = (float) ($previousSummary['labor_summary']['total'] ?? 0);
+                break;
+            case 'productivity':
+                $prevProd = (float) ($summary['production'] ?? 0);
+                $prevLabor = (float) ($previousSummary['labor_summary']['quantity'] ?? 0);
+                $previous = $prevLabor > 0 ? $prevProd / $prevLabor : 0;
+                break;
+            default:
+                $previous = $value;
+                break;
+        }
+        $denominator = abs((float) $previous);
+        if ($denominator <= 0.0 || !is_finite($denominator)) {
+            return 0;
+        }
+        return ($value - $previous) / $denominator * 100;
+    }
+
+    private function previousMonthRange(string $fromDate): array
+    {
+        $start = new \DateTimeImmutable($fromDate);
+        $previousEnd = $start->modify('-1 day');
+        $previousStart = $previousEnd->modify('first day of last month');
+        return ['from' => $previousStart->format('Y-m-d'), 'to' => $previousEnd->format('Y-m-d')];
+    }
+
+    private function latestUpdate(array $filters): string
+    {
+        $query = database()->connection()->prepare('SELECT GREATEST(COALESCE(MAX(entry_date), "0000-00-00"), COALESCE(MAX(labor_date), "0000-00-00"), COALESCE(MAX(production_date), "0000-00-00")) AS latest FROM (SELECT entry_date, NULL AS labor_date, NULL AS production_date FROM expense_entries WHERE company_id = ? UNION ALL SELECT NULL AS entry_date, labor_date, NULL AS production_date FROM labor_entries WHERE company_id = ? UNION ALL SELECT NULL AS entry_date, NULL AS labor_date, production_date FROM production_entries WHERE company_id = ?) source');
+        $query->execute([(int) $_SESSION['company_id'], (int) $_SESSION['company_id'], (int) $_SESSION['company_id']]);
+        $latest = (string) $query->fetchColumn();
+        if ($latest === '' || $latest === '0000-00-00') {
+            return '—';
+        }
+        return (new \DateTimeImmutable($latest))->format('Y-m-d');
+    }
+
+    private function countCriticalInventory(): int
+    {
+        $query = database()->connection()->prepare('SELECT COUNT(*) FROM inventory_items i WHERE i.company_id = ? AND i.active = 1 AND EXISTS (SELECT 1 FROM inventory_movements m WHERE m.company_id = i.company_id AND m.item_id = i.id AND m.movement_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY))');
+        $query->execute([(int) $_SESSION['company_id']]);
+        return (int) $query->fetchColumn();
+    }
+
+    private function countPendingPurchases(): int
+    {
+        $query = database()->connection()->prepare('SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("OPEN", "PENDING")');
+        $query->execute([(int) $_SESSION['company_id']]);
+        return (int) $query->fetchColumn();
+    }
+
+    private function sumExpenses(array $filters): float
+    {
+        $query = database()->connection()->prepare('SELECT COALESCE(SUM(amount), 0) FROM expense_entries WHERE company_id = ? AND entry_date BETWEEN ? AND ?');
+        $query->execute([(int) $_SESSION['company_id'], $filters['date_from'], $filters['date_to']]);
+        return (float) $query->fetchColumn();
+    }
+
+    private function sumMachineryHours(array $filters): float
+    {
+        $query = database()->connection()->prepare('SELECT COALESCE(SUM(meter), 0) FROM machinery WHERE company_id = ?');
+        $query->execute([(int) $_SESSION['company_id']]);
+        return (float) $query->fetchColumn();
+    }
+
+    private function countTrendRows(array $filters): int
+    {
+        $query = database()->connection()->prepare('SELECT COUNT(*) FROM production_entries WHERE company_id = ? AND production_date BETWEEN ? AND ?');
+        $query->execute([(int) $_SESSION['company_id'], $filters['date_from'], $filters['date_to']]);
+        return (int) $query->fetchColumn();
+    }
+
+    private function countAvailableKpis(): int
+    {
+        return 12;
     }
 
     private function exportCsv(array $summary, string $reportType): never

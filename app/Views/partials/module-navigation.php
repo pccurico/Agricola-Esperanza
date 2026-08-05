@@ -88,5 +88,5 @@ foreach ($navigationConfig['groups'] as $group) {
     <label class="erp-global-search"><span><?= $navigationIcon('search') ?></span><input type="search" placeholder="Buscar en el sistema" aria-label="Buscar en el sistema" data-navigation-global-search autocomplete="off"></label>
     <div class="erp-topbar-actions"><a class="erp-topbar-action" href="<?= htmlspecialchars(module_url('requests'), ENT_QUOTES, 'UTF-8') ?>" title="Solicitudes internas">+</a><a class="erp-topbar-action" href="<?= htmlspecialchars(module_url('notifications'), ENT_QUOTES, 'UTF-8') ?>" title="Notificaciones" aria-label="Notificaciones">●</a><details class="erp-user-menu"><summary><span class="dashboard-avatar"><?= htmlspecialchars(strtoupper(substr($navigationUser, 0, 2)), ENT_QUOTES, 'UTF-8') ?></span><strong><?= htmlspecialchars($navigationUser, ENT_QUOTES, 'UTF-8') ?></strong></summary><div class="erp-user-dropdown"><a href="<?= htmlspecialchars(module_url('profile'), ENT_QUOTES, 'UTF-8') ?>">Mi Perfil</a><a href="<?= htmlspecialchars(module_url('', ['logout' => 1]), ENT_QUOTES, 'UTF-8') ?>">Salir</a></div></details></div>
 </header>
-<script src="assets/js/navigation.js" defer></script>
-<script src="assets/js/table-layout.js" defer></script>
+<script src="/assets/js/navigation.js" defer></script>
+<script src="/assets/js/table-layout.js" defer></script>

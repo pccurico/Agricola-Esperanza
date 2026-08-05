@@ -103,6 +103,13 @@ if ($path === 'index.php') {
     $path = '';
 }
 $module = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
+if (str_starts_with($module, 'reports/')) {
+    $parts = explode('/', $module);
+    if (isset($parts[1]) && $parts[1] !== '') {
+        $_GET['report_key'] = $parts[1];
+    }
+    $module = 'reports';
+}
 if ($module === 'users') {
     authorize_any(['users.view', 'users.manage']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -335,6 +342,13 @@ if ($module === 'inventory') {
 
 if ($module === 'reports') {
     $report = (new AgroPCC\Controllers\ReportsController())->handle();
+    if (($report['view'] ?? '') === 'reports/index.php') {
+        $reports = $report['reports'] ?? [];
+        $metrics = $report['metrics'] ?? [];
+        $permissions = $report['permissions'] ?? [];
+        require dirname(__DIR__) . '/app/Views/reports/index.php';
+        exit;
+    }
     extract($report, EXTR_SKIP);
     require dirname(__DIR__) . '/app/Views/reports.php';
     exit;

@@ -25,7 +25,7 @@ $show_role_form = $show_role_form ?? ($selected_role || isset($_GET['new_role'])
             <section class="section-card">
                 <div class="section-head">
                     <div>
-                        <h2>Roles definidos</h2>
+                        <h2>Roles</h2>
                         <p class="lead-text">Gestiona roles y permisos del sistema</p>
                     </div>
                     <div class="header-actions">
@@ -42,9 +42,6 @@ $show_role_form = $show_role_form ?? ($selected_role || isset($_GET['new_role'])
                         <?php endif; ?>
                         <label>Nombre del rol
                             <input name="name" required value="<?= htmlspecialchars((string) ($selected_role['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                        </label>
-                        <label>Descripción
-                            <input name="description" value="<?= htmlspecialchars((string) ($selected_role['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         </label>
                         <?php if ($permissions !== []): ?>
                             <div class="permission-grid">
@@ -71,7 +68,6 @@ $show_role_form = $show_role_form ?? ($selected_role || isset($_GET['new_role'])
                                     <th>Nombre</th>
                                     <th>Descripción</th>
                                     <th>Usuarios</th>
-                                    <th>Permisos</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -82,7 +78,6 @@ $show_role_form = $show_role_form ?? ($selected_role || isset($_GET['new_role'])
                                         <td class="truncate"><?= htmlspecialchars((string) ($role['name'] ?? 'Rol sin nombre'), ENT_QUOTES, 'UTF-8') ?></td>
                                         <td class="truncate" data-label="Descripción"><?= htmlspecialchars((string) ($role['description'] ?? 'Sin descripción'), ENT_QUOTES, 'UTF-8') ?></td>
                                         <td><?= (int) ($role['users_count'] ?? 0) ?></td>
-                                        <td><?= (int) ($role['permissions_count'] ?? 0) ?></td>
                                         <td class="table-action-cell">
                                             <?php if ($can_manage_roles): ?>
                                                 <a class="table-action" href="<?= htmlspecialchars(module_url('roles', ['edit_role_id' => (int) $role['id']]), ENT_QUOTES, 'UTF-8') ?>">Editar</a>

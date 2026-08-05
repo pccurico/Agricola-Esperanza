@@ -218,7 +218,43 @@ final class ReportService extends BaseService
         $workers->execute([$this->companyId]);
         $supervisors = $this->connection->prepare('SELECT DISTINCT w.id, w.full_name FROM crews cr INNER JOIN workers w ON w.id = cr.supervisor_id WHERE cr.company_id = ? AND cr.active = 1 AND cr.supervisor_id IS NOT NULL ORDER BY w.full_name');
         $supervisors->execute([$this->companyId]);
-        return ['processes' => $processes->fetchAll(), 'farms' => $farms->fetchAll(), 'blocks' => $blocks->fetchAll(), 'seasons' => $seasons->fetchAll(), 'centers' => $centers->fetchAll(), 'workers' => $workers->fetchAll(), 'supervisors' => $supervisors->fetchAll()];
+        $suppliers = $this->connection->prepare('SELECT id, business_name FROM suppliers WHERE company_id = ? AND active = 1 ORDER BY business_name');
+        $suppliers->execute([$this->companyId]);
+        $warehouses = $this->connection->prepare('SELECT id, name FROM warehouses WHERE company_id = ? ORDER BY name');
+        $warehouses->execute([$this->companyId]);
+        $products = $this->connection->prepare('SELECT id, name, sku FROM inventory_items WHERE company_id = ? AND active = 1 ORDER BY name');
+        $products->execute([$this->companyId]);
+        $inventoryCategories = $this->connection->prepare('SELECT DISTINCT category FROM inventory_items WHERE company_id = ? AND category <> "" ORDER BY category');
+        $inventoryCategories->execute([$this->companyId]);
+        $families = $this->connection->prepare('SELECT DISTINCT category AS family FROM inventory_items WHERE company_id = ? AND category <> "" ORDER BY category');
+        $families->execute([$this->companyId]);
+        $crops = $this->connection->prepare('SELECT DISTINCT name FROM species WHERE company_id = ? ORDER BY name');
+        $crops->execute([$this->companyId]);
+        $varieties = $this->connection->prepare('SELECT DISTINCT variety FROM species WHERE company_id = ? AND variety <> "" ORDER BY variety');
+        $varieties->execute([$this->companyId]);
+        $machineTypes = $this->connection->prepare('SELECT DISTINCT machinery_type FROM machinery WHERE company_id = ? AND machinery_type <> "" ORDER BY machinery_type');
+        $machineTypes->execute([$this->companyId]);
+        $crews = $this->connection->prepare('SELECT id, name FROM crews WHERE company_id = ? AND active = 1 ORDER BY name');
+        $crews->execute([$this->companyId]);
+
+        return [
+            'processes' => $processes->fetchAll(),
+            'farms' => $farms->fetchAll(),
+            'blocks' => $blocks->fetchAll(),
+            'seasons' => $seasons->fetchAll(),
+            'centers' => $centers->fetchAll(),
+            'workers' => $workers->fetchAll(),
+            'supervisors' => $supervisors->fetchAll(),
+            'suppliers' => $suppliers->fetchAll(),
+            'warehouses' => $warehouses->fetchAll(),
+            'products' => $products->fetchAll(),
+            'inventory_categories' => $inventoryCategories->fetchAll(PDO::FETCH_COLUMN),
+            'families' => $families->fetchAll(PDO::FETCH_COLUMN),
+            'crops' => $crops->fetchAll(PDO::FETCH_COLUMN),
+            'varieties' => $varieties->fetchAll(PDO::FETCH_COLUMN),
+            'machine_types' => $machineTypes->fetchAll(PDO::FETCH_COLUMN),
+            'crews' => $crews->fetchAll(),
+        ];
     }
 
     private function comparisons(string $dateFrom, string $dateTo, string $process, array $filters): array
