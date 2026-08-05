@@ -78,28 +78,22 @@ final class ToolsService extends BaseService
         $backupId = (int) $this->connection->lastInsertId();
 
         $stamp = (new DateTimeImmutable('now'))->format('Ymd_His');
-        $backupFile = $backupDirectory . '/backup_' . $stamp . '.sql';
+        $filenameBase = 'backup_' . $stamp;
+        $sqlFile = $backupDirectory . '/' . $filenameBase . '.sql';
         $configCopy = $backupDirectory . '/config_' . $stamp . '.php';
-        $dbConfig = app_config('database');
-        $dumpCommand = $this->resolveDumpCommand();
-        if ($dumpCommand === null) {
-            $this->logSystemEvent('tools.backup', 'WARNING', 'No se encontró mysqldump; usando respaldo PHP interno', []);
-            $this->dumpDatabaseWithPdo($backupFile);
-        } else {
-            $command = sprintf(
-                '%s --defaults-extra-file=/dev/null --host=%s --port=%s --user=%s --password=%s --single-transaction --routines --events --skip-comments %s > %s',
-                escapeshellarg($dumpCommand),
-                escapeshellarg((string) ($dbConfig['host'] ?? '127.0.0.1')),
-                escapeshellarg((string) ($dbConfig['port'] ?? '3306')),
-                escapeshellarg((string) ($dbConfig['username'] ?? 'root')),
-                escapeshellarg((string) ($dbConfig['password'] ?? '')),
-                escapeshellarg((string) ($dbConfig['database'] ?? '')),
-                escapeshellarg($backupFile)
-            );
-            $this->runExternalCommand($command);
+
+        $this->logSystemEvent('tools.backup', 'INFO', 'Generando respaldo con exportador PHP interno', []);
+
+        try {
+            $exporter = new SqlExporter($this->connection, $backupDirectory);
+            $exporter->setProgressCallback([$this, 'progressCallback']);
+            $archiveFile = $exporter->export($sqlFile, $filenameBase, $this->userId, (string) app_config('database.name', ''));
+        } catch (\Throwable $exception) {
+            $this->markBackupStatus($backupId, 'FAILED', 'El respaldo de base de datos no pudo generarse.');
+            throw new RuntimeException('El respaldo de base de datos no pudo generarse: ' . $exception->getMessage());
         }
 
-        if (!is_file($backupFile) || filesize($backupFile) < 100) {
+        if (!is_file($archiveFile) || filesize($archiveFile) < 100) {
             $this->markBackupStatus($backupId, 'FAILED', 'El respaldo de base de datos no pudo generarse.');
             throw new RuntimeException('El respaldo de base de datos no pudo generarse.');
         }
@@ -110,12 +104,13 @@ final class ToolsService extends BaseService
             throw new RuntimeException('El respaldo de configuración no pudo copiarse.');
         }
 
-        $fileSize = (int) filesize($backupFile);
-        $checksum = hash_file('sha256', $backupFile);
+        $fileSize = (int) filesize($archiveFile);
+        $checksum = hash_file('sha256', $archiveFile);
+        $relativePath = str_replace($this->rootPath . '/', '', $archiveFile);
         $this->connection->prepare(
             'UPDATE backup_records SET file_path = ?, file_size = ?, checksum = ?, status = ? WHERE id = ?'
         )->execute([
-            str_replace($this->rootPath . '/', '', $backupFile),
+            $relativePath,
             $fileSize,
             $checksum,
             'COMPLETED',
@@ -124,13 +119,13 @@ final class ToolsService extends BaseService
 
         $this->logSystemEvent('tools.backup', 'INFO', 'Respaldo creado', [
             'backup_id' => $backupId,
-            'file_path' => str_replace($this->rootPath . '/', '', $backupFile),
+            'file_path' => $relativePath,
             'file_size' => $fileSize,
         ]);
 
         return [
             'id' => $backupId,
-            'path' => str_replace($this->rootPath . '/', '', $backupFile),
+            'path' => $relativePath,
             'checksum' => $checksum,
             'file_size' => $fileSize,
         ];
@@ -148,11 +143,12 @@ final class ToolsService extends BaseService
             throw new RuntimeException('El respaldo solicitado no existe para esta empresa.');
         }
 
-        $backupFile = $this->rootPath . '/' . ltrim((string) $backup['file_path'], '/');
+        $backupFile = $this->resolveBackupFilePath((string) $backup['file_path']);
         if (!is_file($backupFile)) {
             throw new RuntimeException('El archivo de respaldo ya no está disponible en el servidor.');
         }
 
+        $backupDirectory = $this->rootPath . '/storage/backups';
         $restoreId = $this->connection->prepare(
             'INSERT INTO restore_records (company_id, backup_id, status, created_by) VALUES (?, ?, ?, ?)'
         )->execute([
@@ -163,35 +159,17 @@ final class ToolsService extends BaseService
         ]);
         $restoreId = (int) $this->connection->lastInsertId();
 
-        $dbConfig = app_config('database');
-        $restoreCommand = $this->resolveRestoreCommand();
-        if ($restoreCommand === null) {
+        try {
+            $restorer = new SqlExporter($this->connection, $backupDirectory);
+            $restorer->setProgressCallback([$this, 'progressCallback']);
+            $restorer->restore($backupFile);
+        } catch (\Throwable $exception) {
             $this->connection->prepare('UPDATE restore_records SET status = ?, error_message = ? WHERE id = ?')->execute([
                 'FAILED',
-                'No se encontró mysql en el entorno para restaurar el respaldo.',
+                $exception->getMessage(),
                 $restoreId,
             ]);
-            throw new RuntimeException('No se encontró mysql en el entorno para restaurar el respaldo.');
-        }
-
-        $command = sprintf(
-            '%s --host=%s --port=%s --user=%s --password=%s %s < %s',
-            escapeshellarg($restoreCommand),
-            escapeshellarg((string) ($dbConfig['host'] ?? '127.0.0.1')),
-            escapeshellarg((string) ($dbConfig['port'] ?? '3306')),
-            escapeshellarg((string) ($dbConfig['username'] ?? 'root')),
-            escapeshellarg((string) ($dbConfig['password'] ?? '')),
-            escapeshellarg((string) ($dbConfig['database'] ?? '')),
-            escapeshellarg($backupFile)
-        );
-        $restoreOutput = $this->runExternalCommand($command);
-        if ($restoreOutput === null) {
-            $this->connection->prepare('UPDATE restore_records SET status = ?, error_message = ? WHERE id = ?')->execute([
-                'FAILED',
-                'La restauración del respaldo falló en el entorno.',
-                $restoreId,
-            ]);
-            throw new RuntimeException('La restauración del respaldo falló en el entorno.');
+            throw new RuntimeException('La restauración del respaldo falló en el entorno: ' . $exception->getMessage());
         }
 
         $this->connection->prepare('UPDATE restore_records SET status = ? WHERE id = ?')->execute([
@@ -519,116 +497,6 @@ final class ToolsService extends BaseService
         }
     }
 
-    private function expectedSchemaTables(string $schemaSql): array
-    {
-        preg_match_all('/CREATE TABLE IF NOT EXISTS\s+`?([a-z_]+)`?\s*\(/i', $schemaSql, $matches);
-        return array_values(array_unique(array_filter($matches[1], 'is_string')));
-    }
-
-    private function expectedSchemaColumns(string $schemaSql, string $table): array
-    {
-        preg_match('/CREATE TABLE IF NOT EXISTS\s+`?' . preg_quote($table, '/') . '`?\s*\((.*?)\)\s*ENGINE=/is', $schemaSql, $match);
-        if (!isset($match[1])) {
-            return [];
-        }
-
-        $columns = [];
-        foreach (preg_split('/\r?\n/', $match[1]) as $line) {
-            $line = trim($line);
-            if ($line === '' || str_starts_with($line, 'CONSTRAINT') || str_starts_with($line, 'KEY ') || str_starts_with($line, 'UNIQUE KEY') || str_starts_with($line, 'PRIMARY KEY') || str_starts_with($line, 'FOREIGN KEY')) {
-                continue;
-            }
-
-            if (preg_match('/^`?([a-z_]+)`?\s+(?:tinyint|bigint|int|decimal|varchar|char|text|date|datetime|json|enum|timestamp|double|float|blob|boolean)/i', $line, $matches)) {
-                $columns[] = $matches[1];
-            }
-        }
-
-        return array_values(array_unique(array_filter($columns, 'is_string')));
-    }
-
-    private function installedTables(): array
-    {
-        $query = $this->connection->prepare('SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() ORDER BY table_name');
-        $query->execute();
-        return array_values(array_map(static fn ($row): string => (string) $row, $query->fetchAll(PDO::FETCH_COLUMN)));
-    }
-
-    private function installedColumns(string $table): array
-    {
-        $query = $this->connection->prepare('SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? ORDER BY ordinal_position');
-        $query->execute([$table]);
-        return array_values(array_map(static fn ($row): string => (string) $row, $query->fetchAll(PDO::FETCH_COLUMN)));
-    }
-
-    private function dumpDatabaseWithPdo(string $backupFile): void
-    {
-        $handle = fopen($backupFile, 'wb');
-        if ($handle === false) {
-            throw new RuntimeException('No se pudo abrir el archivo de respaldo para escritura.');
-        }
-
-        fwrite($handle, "-- Respaldo de base de datos generado por PHP\n");
-        fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n");
-        fwrite($handle, "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n");
-        fwrite($handle, "SET NAMES utf8mb4;\n\n");
-
-        $tables = $this->connection->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
-        foreach ($tables as $table) {
-            $table = (string) $table;
-            $create = $this->connection->query('SHOW CREATE TABLE `' . str_replace('`', '', $table) . '`')->fetch(PDO::FETCH_ASSOC);
-            if (!isset($create['Create Table'])) {
-                continue;
-            }
-
-            fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
-            fwrite($handle, $create['Create Table'] . ";\n\n");
-
-            $stmt = $this->connection->query('SELECT * FROM `' . str_replace('`', '', $table) . '`');
-            $rowCount = 0;
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                if ($rowCount === 0) {
-                    fwrite($handle, "LOCK TABLES `{$table}` WRITE;\n");
-                }
-
-                $columns = array_map(static fn ($column): string => '`' . str_replace('`', '``', $column) . '`', array_keys($row));
-                $values = array_map([$this, 'quoteValue'], array_values($row));
-                fwrite($handle, 'INSERT INTO `' . $table . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ");\n");
-                $rowCount++;
-            }
-
-            if ($rowCount > 0) {
-                fwrite($handle, "UNLOCK TABLES;\n\n");
-            }
-        }
-
-        fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
-        fclose($handle);
-    }
-
-    private function quoteValue(mixed $value): string
-    {
-        if ($value === null) {
-            return 'NULL';
-        }
-
-        if (is_bool($value)) {
-            return $value ? '1' : '0';
-        }
-
-        return "'" . str_replace(["\\", "'", "\n", "\r", "\t", "\0"], ["\\\\", "\\'", "\\n", "\\r", "\\t", "\\0"], (string) $value) . "'";
-    }
-
-    private function resolveDumpCommand(): ?string
-    {
-        return $this->resolveExecutablePath('mysqldump');
-    }
-
-    private function resolveRestoreCommand(): ?string
-    {
-        return $this->resolveExecutablePath('mysql');
-    }
-
     private function resolveExecutablePath(string $binary): ?string
     {
         $command = DIRECTORY_SEPARATOR === '\\'
@@ -673,5 +541,59 @@ final class ToolsService extends BaseService
         $stderrValue = trim((string) $stderr);
         return $stderrValue !== '' ? $stderrValue : null;
     }
+
+    private function progressCallback(int $current, int $total, string $status): void
+    {
+        $_SESSION['backup_progress_current'] = $current;
+        $_SESSION['backup_progress_total'] = $total;
+        if ($total > 0 && $current >= $total) {
+            $_SESSION['backup_progress_status'] = 'COMPLETED';
+        } else {
+            $_SESSION['backup_progress_status'] = $status;
+        }
+    }
+
+    private function expectedSchemaTables(string $schemaSql): array
+    {
+        preg_match_all('/CREATE TABLE IF NOT EXISTS\s+`?([a-z_]+)`?\s*\(/i', $schemaSql, $matches);
+        return array_values(array_unique(array_filter($matches[1], 'is_string')));
+    }
+
+    private function expectedSchemaColumns(string $schemaSql, string $table): array
+    {
+        preg_match('/CREATE TABLE IF NOT EXISTS\s+`?' . preg_quote($table, '/') . '`?\s*\((.*?)\)\s*ENGINE=/is', $schemaSql, $match);
+        if (!isset($match[1])) {
+            return [];
+        }
+
+        $columns = [];
+        foreach (preg_split('/\r?\n/', $match[1]) as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, 'CONSTRAINT') || str_starts_with($line, 'KEY ') || str_starts_with($line, 'UNIQUE KEY') || str_starts_with($line, 'PRIMARY KEY') || str_starts_with($line, 'FOREIGN KEY')) {
+                continue;
+            }
+
+            if (preg_match('/^`?([a-z_]+)`?\s+(?:tinyint|bigint|int|decimal|varchar|char|text|date|datetime|json|enum|timestamp|double|float|blob|boolean)/i', $line, $matches)) {
+                $columns[] = $matches[1];
+            }
+        }
+
+        return array_values(array_unique(array_filter($columns, 'is_string')));
+    }
+
+    private function installedTables(): array
+    {
+        $query = $this->connection->prepare('SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() ORDER BY table_name');
+        $query->execute();
+        return array_values(array_map(static fn ($row): string => (string) $row, $query->fetchAll(PDO::FETCH_COLUMN)));
+    }
+
+    private function installedColumns(string $table): array
+    {
+        $query = $this->connection->prepare('SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? ORDER BY ordinal_position');
+        $query->execute([$table]);
+        return array_values(array_map(static fn ($row): string => (string) $row, $query->fetchAll(PDO::FETCH_COLUMN)));
+    }
+
 }
 

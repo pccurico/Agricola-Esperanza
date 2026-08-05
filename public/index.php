@@ -191,9 +191,13 @@ if ($module === 'backups') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         authorize('setup.manage');
     }
-    $backups = (new AgroPCC\Controllers\BackupController())->handle();
-    if (is_array($backups)) {
-        extract($backups, EXTR_SKIP);
+    $data = (new AgroPCC\Controllers\BackupController())->handle();
+    if (is_array($data)) {
+        extract($data, EXTR_SKIP);
+        $backups = $data['backups'] ?? [];
+        $progress = $data['progress'] ?? ($progress ?? ['current' => 0, 'total' => 0, 'status' => 'idle']);
+        $error = $data['error'] ?? ($error ?? null);
+        $success = $data['success'] ?? ($success ?? null);
         require dirname(__DIR__) . '/app/Views/backups.php';
     }
     exit;

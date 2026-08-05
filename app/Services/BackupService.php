@@ -161,7 +161,12 @@ final class BackupService extends BaseService
     {
         $_SESSION['backup_progress_current'] = $current;
         $_SESSION['backup_progress_total'] = $total;
-        $_SESSION['backup_progress_status'] = $status;
+        // Normalize final state: if we've reached or exceeded total, mark completed
+        if ($total > 0 && $current >= $total) {
+            $_SESSION['backup_progress_status'] = 'COMPLETED';
+        } else {
+            $_SESSION['backup_progress_status'] = $status;
+        }
     }
 
     private function ensureBackupDirectory(): void
