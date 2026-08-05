@@ -8,7 +8,7 @@ return [
         'url' => '',
         'timezone' => 'America/Santiago',
         'environment' => 'production',
-        'version' => '',
+        'version' => 'v2.8.1',
     ],
 
     'updates' => [

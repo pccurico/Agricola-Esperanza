@@ -163,7 +163,9 @@ final class ToolsService extends BaseService
 
         try {
             $restorer = new SqlExporter($this->connection, $backupDirectory);
-            $restorer->setProgressCallback([$this, 'progressCallback']);
+            $restorer->setProgressCallback(function (int $current, int $total, string $status): void {
+                $this->progressCallback($current, $total, $status);
+            });
             $restorer->restore($backupFile);
         } catch (\Throwable $exception) {
             $this->connection->prepare('UPDATE restore_records SET status = ?, error_message = ? WHERE id = ?')->execute([

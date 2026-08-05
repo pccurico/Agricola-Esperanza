@@ -58,7 +58,9 @@ final class BackupService extends BaseService
 
         try {
             $exporter = new SqlExporter($this->connection, $this->backupDirectory);
-            $exporter->setProgressCallback([$this, 'progressCallback']);
+            $exporter->setProgressCallback(function (int $current, int $total, string $status): void {
+                $this->progressCallback($current, $total, $status);
+            });
             $archiveFile = $exporter->export($sqlFile, $filenameBase, $this->userId, $this->databaseName);
 
             $fileSize = (int) filesize($archiveFile);
@@ -100,7 +102,9 @@ final class BackupService extends BaseService
 
         try {
             $restorer = new SqlExporter($this->connection, $this->backupDirectory);
-            $restorer->setProgressCallback([$this, 'progressCallback']);
+            $restorer->setProgressCallback(function (int $current, int $total, string $status): void {
+                $this->progressCallback($current, $total, $status);
+            });
             $restorer->restore($fullPath);
 
             $this->updateRestoreStatus($restoreId, 'COMPLETED', null);
