@@ -361,12 +361,20 @@ final class ToolsService extends BaseService
                 'method' => 'GET',
                 'header' => "User-Agent: PCCURICO-Update-Checker\r\nAccept: application/vnd.github.v3+json\r\n",
                 'timeout' => 10,
+                'follow_location' => 1,
+                'max_redirects' => 5,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
             ],
         ]);
 
         $response = @file_get_contents($apiUrl, false, $context);
         if ($response === false) {
-            return ['error' => 'No fue posible acceder a GitHub: ' . $apiUrl];
+            $lastError = error_get_last();
+            $errorMessage = isset($lastError['message']) ? ' (' . $lastError['message'] . ')' : '';
+            return ['error' => 'No fue posible acceder a GitHub: ' . $apiUrl . $errorMessage];
         }
 
         $payload = json_decode($response, true);
@@ -403,15 +411,95 @@ final class ToolsService extends BaseService
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'header' => "User-Agent: PCCURICO-Update-Checker\r\nAccept: application/octet-stream\r\n",
+                'header' => "User-Agent: PCCURICO-Update-Checker\r\n",
                 'timeout' => 60,
+                'follow_location' => 1,
+                'max_redirects' => 5,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
             ],
         ]);
 
         $data = @file_get_contents($url, false, $context);
-        if ($data === false || file_put_contents($destination, $data) === false) {
-            throw new RuntimeException('No fue posible descargar la actualización remota.');
+        if ($data !== false && file_put_contents($destination, $data) !== false) {
+            return;
         }
+
+        $lastError = error_get_last();
+        $errorMessage = isset($lastError['message']) ? trim($lastError['message']) : '';
+        $statusMessage = $this->parseHttpStatus($http_response_header ?? []);
+        if ($statusMessage !== '') {
+            $errorMessage = trim(($statusMessage !== '' ? $statusMessage . '. ' : '') . $errorMessage);
+        }
+
+        if (extension_loaded('curl')) {
+            $fp = @fopen($destination, 'wb');
+            if ($fp !== false) {
+                $curl = curl_init($url);
+                $curlOptions = [
+                    CURLOPT_FILE => $fp,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 5,
+                    CURLOPT_TIMEOUT => 120,
+                    CURLOPT_USERAGENT => 'PCCURICO-Update-Checker',
+                    CURLOPT_SSL_VERIFYHOST => 2,
+                    CURLOPT_HTTPHEADER => ['User-Agent: PCCURICO-Update-Checker'],
+                ];
+
+                $curlCaInfo = $this->getSslCaInfo();
+                if ($curlCaInfo !== null) {
+                    $curlOptions[CURLOPT_CAINFO] = $curlCaInfo;
+                    $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+                } else {
+                    $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+                    $errorMessage = trim($errorMessage . ' cURL SSL certificate verification disabled because no CA bundle was found.');
+                }
+
+                curl_setopt_array($curl, $curlOptions);
+                $success = curl_exec($curl);
+                $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($curl);
+                curl_close($curl);
+                fclose($fp);
+
+                if ($success !== false && $statusCode >= 200 && $statusCode < 300 && is_file($destination)) {
+                    return;
+                }
+
+                @unlink($destination);
+                $errorMessage = trim(($curlError !== '' ? 'cURL error: ' . $curlError . '. ' : '') . 'HTTP status: ' . $statusCode . '. ' . $errorMessage);
+            } else {
+                $errorMessage = trim('No se pudo crear el archivo de destino. ' . $errorMessage);
+            }
+        }
+
+        throw new RuntimeException('No fue posible descargar la actualización remota.' . ($errorMessage !== '' ? ' ' . $errorMessage : ''));
+    }
+
+    private function parseHttpStatus(array $headers): string
+    {
+        foreach ($headers as $header) {
+            if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)(?:\s+(.*))?#i', $header, $matches)) {
+                return 'HTTP status: ' . $matches[1] . ($matches[2] ? ' ' . $matches[2] : '');
+            }
+        }
+        return '';
+    }
+
+    private function getSslCaInfo(): ?string
+    {
+        $paths = [ini_get('curl.cainfo'), ini_get('openssl.cafile')];
+        foreach ($paths as $path) {
+            if (!is_string($path) || $path === '') {
+                continue;
+            }
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+        return null;
     }
 
     private function extractZipArchive(string $zipFile, string $destination): void

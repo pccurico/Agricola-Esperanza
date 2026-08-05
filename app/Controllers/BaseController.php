@@ -8,7 +8,13 @@ abstract class BaseController
 {
     protected function json(array $payload, int $statusCode = 200): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Clear any accidental output to ensure a clean JSON response
+        if (function_exists('ob_get_level') && ob_get_level() > 0) {
+            @ob_clean();
+        }
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
         if ($statusCode !== 200) {
             http_response_code($statusCode);
         }
