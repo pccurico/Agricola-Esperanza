@@ -126,7 +126,7 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="backup"><button class="primary-button" type="submit">Crear respaldo</button></form>
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="sync_schema"><button class="secondary-link" type="submit">Sincronizar esquema</button></form>
                         <form method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="repair"><button class="secondary-link" type="submit">Reparar sistema</button></form>
-                        <?php if ($remoteUpdateAvailable): ?><form id="remote-update-form" method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="remote_update"><button id="remote-update-button" class="primary-button" type="submit">Descargar y aplicar actualización</button></form><?php endif; ?>
+                        <?php if ($remoteUpdateAvailable): ?><form id="remote-update-form" action="?module=tools" method="post" class="table-action-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="remote_update"><button id="remote-update-button" class="primary-button" type="submit">Descargar y aplicar actualización</button></form><?php endif; ?>
                     </div>
                 </article>
                 <article class="admin-panel">
@@ -278,7 +278,7 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
 
                     var formData = new FormData(remoteUpdateForm);
                     formData.append('ajax', '1');
-                    fetch('', {
+                    fetch('?module=tools', {
                         method: 'POST',
                         headers: { Accept: 'application/json' },
                         body: formData,
