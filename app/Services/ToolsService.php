@@ -573,15 +573,12 @@ final class ToolsService extends BaseService
             session_start();
         }
 
-        $progress = [
+        return [
             'current' => $_SESSION['remote_update_progress_current'] ?? 0,
             'total' => $_SESSION['remote_update_progress_total'] ?? 0,
             'status' => $_SESSION['remote_update_progress_status'] ?? 'idle',
             'message' => $_SESSION['remote_update_progress_message'] ?? '',
         ];
-
-        session_write_close();
-        return $progress;
     }
 
     private function setRemoteUpdateProgress(int $current, int $total, string $status, bool $completed = false): void

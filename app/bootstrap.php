@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AgroPCC\Core\Database;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
+if (!headers_sent()) {
+    ob_start();
+}
 
 $configPath = dirname(__DIR__) . '/config/config.php';
 $config = file_exists($configPath)
@@ -23,6 +26,12 @@ if (($config['app']['environment'] ?? 'production') === 'production') {
         ini_set('session.cookie_secure', '1');
     }
 }
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name((string) ($config['security']['session_name'] ?? 'pccurico_session'));
+    session_start();
+}
+
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -44,6 +53,7 @@ function app_config(string $key, mixed $default = null): mixed
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name((string) ($config['security']['session_name'] ?? 'pccurico_session'));
+    session_start();
 }
 
 function database(): Database

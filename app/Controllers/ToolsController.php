@@ -61,6 +61,10 @@ final class ToolsController extends BaseController
             }
         }
 
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
         if ($isAjaxUpdate) {
             $this->json([
                 'success' => $success,
