@@ -13,6 +13,12 @@ final class ToolsController extends BaseController
         $service = new ToolsService(database()->connection(), dirname(__DIR__, 2), (int) ($_SESSION['company_id'] ?? 0), (int) ($_SESSION['user_id'] ?? 0));
         $error = null;
         $success = null;
+        $isAjaxUpdate = $_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'remote_update' && (isset($_POST['ajax']) || str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json'));
+
+        if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['remote_progress'])) {
+            $this->json($service->remoteProgressStatus());
+            exit;
+        }
 
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -55,12 +61,22 @@ final class ToolsController extends BaseController
             }
         }
 
+        if ($isAjaxUpdate) {
+            $this->json([
+                'success' => $success,
+                'error' => $error,
+                'progress' => $service->remoteProgressStatus(),
+            ]);
+            exit;
+        }
+
         $status = $service->status();
 
         return [
             'status' => $status,
             'backups' => $service->backups(),
             'logs' => $service->recentLogs(),
+            'remote_progress' => $service->remoteProgressStatus(),
             'error' => $error,
             'success' => $success,
         ];

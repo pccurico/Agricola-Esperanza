@@ -210,8 +210,11 @@ final class ToolsService extends BaseService
 
     public function downloadAndInstallRemoteUpdate(): void
     {
+        $this->setRemoteUpdateProgress(1, 6, 'Iniciando actualización remota');
+
         $backup = $this->createBackup();
         $this->logSystemEvent('tools.remote_update', 'INFO', 'Actualización remota iniciada', ['backup_id' => $backup['id']]);
+        $this->setRemoteUpdateProgress(2, 6, 'Backup inicial creado');
 
         $release = $this->remoteReleaseStatus();
         if (!empty($release['error'])) {
@@ -225,8 +228,10 @@ final class ToolsService extends BaseService
 
         $tempDir = $this->createTemporaryDirectory();
         $zipFile = $tempDir . '/release.zip';
+        $this->setRemoteUpdateProgress(3, 6, 'Descargando release remota');
         $this->downloadToFile($zipUrl, $zipFile);
 
+        $this->setRemoteUpdateProgress(4, 6, 'Extrayendo release');
         $extractDir = $tempDir . '/extract';
         $this->extractZipArchive($zipFile, $extractDir);
 
@@ -235,6 +240,7 @@ final class ToolsService extends BaseService
             throw new RuntimeException('No se encontró el contenido extraído del release.');
         }
 
+        $this->setRemoteUpdateProgress(5, 6, 'Aplicando archivos de actualización');
         $this->mergeReleaseFiles($sourceRoot, $this->rootPath, [
             '.git',
             'storage',
@@ -244,9 +250,11 @@ final class ToolsService extends BaseService
             'node_modules',
         ]);
 
+        $this->setRemoteUpdateProgress(6, 6, 'Instalando dependencias y aplicando migraciones');
         $this->installComposerDependencies();
         $this->syncSchema();
 
+        $this->setRemoteUpdateProgress(6, 6, 'Actualización remota completada', true);
         $this->logSystemEvent('tools.remote_update', 'INFO', 'Actualización remota completada', ['backup_id' => $backup['id'], 'release' => $release['tag_name'] ?? '']);
     }
 
@@ -542,8 +550,12 @@ final class ToolsService extends BaseService
         return $stderrValue !== '' ? $stderrValue : null;
     }
 
-    private function progressCallback(int $current, int $total, string $status): void
+    public function progressCallback(int $current, int $total, string $status): void
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
         $_SESSION['backup_progress_current'] = $current;
         $_SESSION['backup_progress_total'] = $total;
         if ($total > 0 && $current >= $total) {
@@ -551,6 +563,39 @@ final class ToolsService extends BaseService
         } else {
             $_SESSION['backup_progress_status'] = $status;
         }
+
+        session_write_close();
+    }
+
+    public function remoteProgressStatus(): array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $progress = [
+            'current' => $_SESSION['remote_update_progress_current'] ?? 0,
+            'total' => $_SESSION['remote_update_progress_total'] ?? 0,
+            'status' => $_SESSION['remote_update_progress_status'] ?? 'idle',
+            'message' => $_SESSION['remote_update_progress_message'] ?? '',
+        ];
+
+        session_write_close();
+        return $progress;
+    }
+
+    private function setRemoteUpdateProgress(int $current, int $total, string $status, bool $completed = false): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $_SESSION['remote_update_progress_current'] = $current;
+        $_SESSION['remote_update_progress_total'] = $total;
+        $_SESSION['remote_update_progress_status'] = $completed ? 'COMPLETED' : $status;
+        $_SESSION['remote_update_progress_message'] = $status;
+
+        session_write_close();
     }
 
     private function expectedSchemaTables(string $schemaSql): array
