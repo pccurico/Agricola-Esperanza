@@ -8,12 +8,12 @@ return [
         'url' => '',
         'timezone' => 'America/Santiago',
         'environment' => 'production',
-        'version' => 'v1.8.04',
+        'version' => '',
     ],
 
     'updates' => [
-        'github_repo' => 'pccurico/Agricola-Esperanza',
-        'github_api' => 'https://api.github.com/repos/pccurico/Agricola-Esperanza/releases/latest',
+        'github_repo' => 'pccurico/AgroPCC-Web',
+        'github_api' => 'https://api.github.com/repos/pccurico/AgroPCC-Web/releases/latest',
     ],
 
     'database' => [

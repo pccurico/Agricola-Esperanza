@@ -86,7 +86,9 @@ final class ToolsService extends BaseService
 
         try {
             $exporter = new SqlExporter($this->connection, $backupDirectory);
-            $exporter->setProgressCallback([$this, 'progressCallback']);
+            $exporter->setProgressCallback(function (int $current, int $total, string $status): void {
+                $this->progressCallback($current, $total, $status);
+            });
             $archiveFile = $exporter->export($sqlFile, $filenameBase, $this->userId, (string) app_config('database.name', ''));
         } catch (\Throwable $exception) {
             $this->markBackupStatus($backupId, 'FAILED', 'El respaldo de base de datos no pudo generarse.');

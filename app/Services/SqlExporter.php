@@ -19,8 +19,11 @@ final class SqlExporter
         $this->backupDirectory = $backupDirectory;
     }
 
-    public function setProgressCallback(callable $callback): void
+    public function setProgressCallback($callback): void
     {
+        if (!is_callable($callback)) {
+            throw new RuntimeException('El callback de progreso proporcionado no es callable.');
+        }
         $this->progressCallback = $callback;
     }
 

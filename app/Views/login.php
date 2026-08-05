@@ -32,6 +32,6 @@
             </form>
         </section>
     </main>
-    <footer class="login-footer"><a href="https://www.pccurico.cl" target="_blank" rel="noopener noreferrer">www.pccurico.cl</a> · JCares · 2026 · v1.7.01</footer>
+    <footer class="login-footer"><a href="https://www.pccurico.cl" target="_blank" rel="noopener noreferrer">www.pccurico.cl</a> · JCares · 2026 · <?= htmlspecialchars((string) app_config('app.version', 'v1.0.0'), ENT_QUOTES, 'UTF-8') ?></footer>
 </body>
 </html>
