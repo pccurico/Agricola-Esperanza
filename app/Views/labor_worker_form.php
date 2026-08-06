@@ -29,7 +29,7 @@
                     <p>Datos de identidad, laborales y perfil profesional.</p>
                 </header>
                 <?php $isReadOnly = !empty($show_mode); $readonly = $isReadOnly ? 'readonly' : ''; $disabled = $isReadOnly ? 'disabled' : ''; ?>
-                <form method="post" class="admin-form" style="padding: 22px;">
+                <form method="post" class="admin-form">
                     <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <?php if (!$isReadOnly): ?>
                         <input type="hidden" name="action" value="<?= !empty($worker_form['worker']['id'] ?? null) ? 'update_worker' : 'create_worker' ?>">

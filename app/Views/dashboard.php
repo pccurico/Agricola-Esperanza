@@ -64,249 +64,113 @@ $dashboardJson = json_encode([
 <body class="admin-page">
 <main class="admin-shell">
     <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
-    <section class="module-content dashboard-content">
-        <header class="admin-header">
-            <div>
-                <p class="eyebrow">Panel de control</p>
-                <h1>Resumen operativo</h1>
-                <p class="setup-copy">Indicadores y alertas reales del ERP PCCURICO para operar sin datos simulados.</p>
+    <section class="module-content dashboard-v2">
+        <div class="page-hero">
+            <div class="hero-meta">
+                <div class="hero-title">
+                    <p class="eyebrow">Panel de control</p>
+                    <h1>Resumen operativo — <?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></h1>
+                    <p class="lead-text">Indicadores clave y accesos rápidos del ERP PCCURICO.</p>
+                </div>
+                <div class="hero-actions">
+                    <nav class="hero-nav">
+                        <a class="btn" href="/reports">Informes</a>
+                        <a class="btn btn-outline" href="?module=settings">Configuración</a>
+                    </nav>
+                </div>
             </div>
-            <div class="header-actions">
-                <a class="secondary-link" href="?module=reports">Informes</a>
-                <a class="secondary-link" href="?module=settings">Configuración</a>
+
+            <div class="hero-kpis">
+                <div class="kpi-grid v2">
+                    <article class="stat-card">
+                        <span>Producción</span>
+                        <strong id="kpi-production-total"><?= htmlspecialchars(number_format((float) ($productionKpi['value'] ?? $metrics['production'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($productionKpi['unit'] ?? 'kg', ENT_QUOTES, 'UTF-8') ?></strong>
+                        <small>Volumen total</small>
+                    </article>
+                    <article class="stat-card">
+                        <span>Costos</span>
+                        <strong id="kpi-total-cost"><?= htmlspecialchars(number_format((float) ($totals['total_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
+                        <small>Costo operativo</small>
+                    </article>
+                    <article class="stat-card">
+                        <span>Presupuesto</span>
+                        <strong id="kpi-budget-executed"><?= htmlspecialchars(number_format((float) ($budgetKpi['value'] ?? 0), 1, ',', '.'), ENT_QUOTES, 'UTF-8') ?>%</strong>
+                        <small>Ejecución</small>
+                    </article>
+                    <article class="stat-card">
+                        <span>Alertas</span>
+                        <strong><?= htmlspecialchars(number_format((int) ($alerts[0]['count'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <small>Críticas</small>
+                    </article>
+                </div>
             </div>
-        </header>
-
-        <?php if (!empty($error)): ?>
-            <div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
-        <?php endif; ?>
-        <?php if (!empty($success)): ?>
-            <div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
-        <?php endif; ?>
-
-        <section class="dashboard-filter-bar admin-panel">
-            <div class="dashboard-filter-brand">
-                <span>Empresa</span>
-                <strong><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-            <form id="dashboard-filter-form" class="dashboard-filter-grid" method="get">
-                <div class="dashboard-filter-item">
-                    <label>Periodo</label>
-                    <div class="dashboard-filter-range">
-                        <input type="date" name="date_from" value="<?= htmlspecialchars($selectedFilters['date_from'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                        <span>–</span>
-                        <input type="date" name="date_to" value="<?= htmlspecialchars($selectedFilters['date_to'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                    </div>
-                </div>
-                <div class="dashboard-filter-item">
-                    <label>Fundo</label>
-                    <select name="farm_id">
-                        <option value="0">Todos</option>
-                        <?php foreach (($filterOptions['farms'] ?? []) as $farm): ?>
-                            <option value="<?= (int) $farm['id'] ?>" <?= (int) $selectedFilters['farm_id'] === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="dashboard-filter-item">
-                    <label>Cuartel</label>
-                    <select name="block_id">
-                        <option value="0">Todos</option>
-                        <?php foreach (($filterOptions['blocks'] ?? []) as $block): ?>
-                            <option value="<?= (int) $block['id'] ?>" <?= (int) $selectedFilters['block_id'] === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="dashboard-filter-item">
-                    <label>Proceso</label>
-                    <select name="process">
-                        <option value="">Todos</option>
-                        <?php foreach (($filterOptions['processes'] ?? []) as $p): $pv = (string) ($p['process'] ?? ''); ?>
-                            <option value="<?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?>" <?= $pv === ($selectedFilters['process'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($pv, ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <input type="hidden" name="season_id" value="<?= (int) ($selectedFilters['season_id'] ?? 0) ?>">
-                <input type="hidden" name="cost_center_id" value="<?= (int) ($selectedFilters['cost_center_id'] ?? 0) ?>">
-                <div class="dashboard-filter-status">
-                    <span class="dashboard-loading" id="dashboard-loading" hidden>Cargando...</span>
-                    <button class="secondary-button" type="submit">Actualizar</button>
-                </div>
-            </form>
-        </section>
-
-        <div class="stats-row">
-            <article class="stat-card">
-                <span class="stat-label">Producción total</span>
-                <strong id="kpi-production-total"><?= htmlspecialchars(number_format((float) ($productionKpi['value'] ?? $metrics['production'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($productionKpi['unit'] ?? 'kg', ENT_QUOTES, 'UTF-8') ?></strong>
-                <small>Volumen total registrado en el periodo</small>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Costo operativo</span>
-                <strong id="kpi-total-cost"><?= htmlspecialchars(number_format((float) ($totals['total_cost'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
-                <small>Costos directos y de mano de obra</small>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Presupuesto ejecutado</span>
-                <strong id="kpi-budget-executed"><?= htmlspecialchars(number_format((float) ($budgetKpi['value'] ?? 0), 1, ',', '.'), ENT_QUOTES, 'UTF-8') ?>%</strong>
-                <small>Avance del presupuesto planificado</small>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Alertas críticas</span>
-                <strong><?= htmlspecialchars(number_format((int) ($alerts[0]['count'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                <small>Incidentes activos en el ERP</small>
-            </article>
         </div>
 
-        <div class="page-grid">
+        <div class="page-grid v2">
             <main class="main-column">
-                <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Producción vs presupuesto</h2>
-                            <p>Comparativa del periodo con ejecución real del plan.</p>
-                        </div>
-                        <span class="badge badge-neutral">Comparativo</span>
-                    </div>
-                    <div class="dashboard-chart-body">
-                        <canvas id="productionBudgetChart" aria-label="Costos vs Presupuesto" role="img"></canvas>
-                        <?php if ($costSeries === []): ?>
-                            <p class="empty-state">Sin información para el período seleccionado</p>
-                        <?php endif; ?>
-                    </div>
-                </section>
+                <div class="grid-2-columns">
+                    <section class="section-card report-visual">
+                        <div class="panel-header"><div><h2>Producción vs presupuesto</h2><small>Comparativa del periodo</small></div><span class="badge">Comparativo</span></div>
+                        <div class="panel-body"><canvas id="productionBudgetChart" aria-label="Costos vs Presupuesto"></canvas></div>
+                    </section>
+
+                    <section class="section-card report-visual">
+                        <div class="panel-header"><div><h2>Evolución temporal</h2><small>Tendencias</small></div><span class="badge">Tendencia</span></div>
+                        <div class="panel-body"><canvas id="trendChart" aria-label="Evolución temporal"></canvas></div>
+                    </section>
+                </div>
 
                 <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Evolución temporal</h2>
-                            <p>Tendencias de producción y costos en el periodo actual.</p>
-                        </div>
-                        <span class="badge badge-neutral">Tendencia</span>
-                    </div>
-                    <div class="dashboard-chart-body">
-                        <canvas id="trendChart" aria-label="Evolución temporal de producción y costos" role="img"></canvas>
-                        <?php if ($productionSeries === [] && $costSeries === []): ?>
-                            <p class="empty-state">Sin información para el período seleccionado</p>
-                        <?php endif; ?>
-                    </div>
-                </section>
-
-                <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Costos por proceso</h2>
-                            <p>Distribución de costos por unidad de proceso.</p>
-                        </div>
-                        <span class="badge badge-neutral">Detalle</span>
-                    </div>
-                    <div class="dashboard-chart-body">
-                        <canvas id="costProcessChart" aria-label="Costos por proceso" role="img"></canvas>
-                        <?php if ($costProcesses === []): ?>
-                            <p class="empty-state">Sin información para el período seleccionado</p>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($costProcesses !== []): ?>
+                    <div class="panel-header"><div><h2>Costos por proceso</h2><p>Distribución por unidad de proceso</p></div></div>
+                    <div class="panel-body">
+                        <div class="dashboard-chart-body"><canvas id="costProcessChart" aria-label="Costos por proceso"></canvas></div>
                         <div class="card-list">
-                            <?php foreach (array_slice($costProcesses, 0, 6) as $row): ?>
-                                <article class="item-card">
-                                    <div class="item-card-head">
-                                        <div>
-                                            <h3><?= htmlspecialchars((string) ($row['process'] ?? $row['category'] ?? 'Sin dato'), ENT_QUOTES, 'UTF-8') ?></h3>
-                                            <p>Costos asociados</p>
-                                        </div>
-                                        <span class="badge badge-secondary">CLP</span>
-                                    </div>
-                                    <div class="item-card-meta">
-                                        <strong><?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</strong>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
+                        <?php foreach (array_slice($costProcesses, 0, 6) as $row): ?>
+                            <article class="stat-card">
+                                <strong><?= htmlspecialchars((string) ($row['process'] ?? $row['category'] ?? 'Sin dato'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <small><?= htmlspecialchars(number_format((float) ($row['total'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?> CLP</small>
+                            </article>
+                        <?php endforeach; ?>
                         </div>
-                    <?php endif; ?>
+                    </div>
                 </section>
             </main>
 
-            <aside class="sidebar-column">
-                <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Contexto del periodo</h2>
-                            <p>Filtros seleccionados y estado del período.</p>
+                <aside class="sidebar-column v2">
+                    <section class="section-card">
+                        <div class="panel-header"><h3>Filtros activos</h3></div>
+                        <div class="panel-body">
+                            <div class="card-list compact">
+                                <div class="item-card"><small>Período</small><strong><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Fundo</small><strong><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Cuartel</small><strong><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Proceso</small><strong><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-list">
-                        <article class="item-card">
-                            <span class="stat-label">Período</span>
-                            <strong id="selected-period"><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Fundo</span>
-                            <strong id="selected-farm"><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Cuartel</span>
-                            <strong id="selected-block"><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Proceso</span>
-                            <strong id="selected-process"><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                    </div>
-                </section>
+                    </section>
 
-                <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Alertas críticas</h2>
-                            <p>Incidencias que requieren atención inmediata.</p>
-                        </div>
-                    </div>
-                    <div class="dashboard-section-list">
-                        <?php if ($alerts !== []): ?>
-                            <?php foreach ($alerts as $alert): ?>
-                                <article class="item-card">
-                                    <div class="item-card-head">
-                                        <div>
-                                            <h3><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></h3>
-                                            <p><?= htmlspecialchars((string) (($alert['count'] ?? 0)) . ' items', ENT_QUOTES, 'UTF-8') ?></p>
-                                        </div>
-                                        <span class="badge <?= htmlspecialchars($alert['severity'] === 'warning' ? 'badge-secondary' : ($alert['severity'] === 'critical' ? 'badge-danger' : 'badge-neutral'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper((string) ($alert['severity'] ?? 'NORMAL')), ENT_QUOTES, 'UTF-8') ?></span>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="empty-state">No hay alertas críticas en este periodo.</p>
+                    <section class="section-card">
+                        <div class="panel-header"><h3>Alertas críticas</h3></div>
+                        <div class="panel-body">
+                        <?php if ($alerts !== []): foreach ($alerts as $alert): ?>
+                            <article class="item-card"><strong><?= htmlspecialchars($alert['title'] ?? 'Alerta', ENT_QUOTES, 'UTF-8') ?></strong><small><?= htmlspecialchars((string) ($alert['count'] ?? 0) . ' items', ENT_QUOTES, 'UTF-8') ?></small></article>
+                        <?php endforeach; else: ?>
+                            <p class="empty-state">No hay alertas críticas.</p>
                         <?php endif; ?>
-                    </div>
-                </section>
-
-                <section class="section-card">
-                    <div class="section-head">
-                        <div>
-                            <h2>Indicadores operacionales</h2>
-                            <p>Estado de recursos y tareas en el periodo.</p>
                         </div>
-                    </div>
-                    <div class="card-list">
-                        <article class="item-card">
-                            <span class="stat-label">Fincas activas</span>
-                            <strong><?= htmlspecialchars(number_format((int) ($metrics['farms'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Cuarteles activos</span>
-                            <strong><?= htmlspecialchars(number_format((int) ($metrics['blocks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Trabajadores activos</span>
-                            <strong><?= htmlspecialchars(number_format((int) ($metrics['workers'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                        <article class="item-card">
-                            <span class="stat-label">Órdenes pendientes</span>
-                            <strong><?= htmlspecialchars(number_format((int) ($operational['pending_orders'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        </article>
-                    </div>
-                </section>
-            </aside>
+                    </section>
+
+                    <section class="section-card">
+                        <div class="panel-header"><h3>Indicadores</h3></div>
+                        <div class="panel-body">
+                            <div class="card-list compact">
+                                <div class="item-card"><small>Fincas</small><strong><?= htmlspecialchars(number_format((int) ($metrics['farms'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Cuarteles</small><strong><?= htmlspecialchars(number_format((int) ($metrics['blocks'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Trabajadores</small><strong><?= htmlspecialchars(number_format((int) ($metrics['workers'] ?? 0), 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></strong></div>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
         </div>
     </section>
 </main>

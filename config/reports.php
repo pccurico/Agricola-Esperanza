@@ -9,7 +9,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/executive',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'season'],
+        'filters' => ['farm', 'block', 'season'],
     ],
     'production' => [
         'title' => 'Producción',
@@ -17,7 +17,7 @@ return [
         'icon' => 'plant',
         'permission' => 'reports.view',
         'route' => '/reports/production',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'crop', 'process', 'variety'],
+        'filters' => ['farm', 'block', 'crop', 'variety', 'process'],
     ],
     'costs' => [
         'title' => 'Costos',
@@ -25,7 +25,7 @@ return [
         'icon' => 'dollar',
         'permission' => 'reports.view',
         'route' => '/reports/costs',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'cost_center', 'category', 'type', 'supplier'],
+        'filters' => ['cost_center', 'category', 'supplier', 'farm', 'process'],
     ],
     'profitability' => [
         'title' => 'Rentabilidad',
@@ -33,7 +33,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/profitability',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'season', 'farm', 'cost_center', 'crop'],
+        'filters' => ['season', 'farm', 'cost_center', 'crop'],
     ],
     'labor' => [
         'title' => 'Mano de obra',
@@ -41,7 +41,7 @@ return [
         'icon' => 'users',
         'permission' => 'reports.view',
         'route' => '/reports/labor',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'worker', 'crew', 'supervisor', 'process'],
+        'filters' => ['farm', 'block', 'supervisor', 'worker', 'crew', 'process'],
     ],
     'inventory' => [
         'title' => 'Inventario',
@@ -49,7 +49,7 @@ return [
         'icon' => 'boxes',
         'permission' => 'reports.view',
         'route' => '/reports/inventory',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'warehouse', 'category', 'product', 'family'],
+        'filters' => ['warehouse', 'category', 'family', 'product', 'stock_status'],
     ],
     'procurement' => [
         'title' => 'Compras',
@@ -57,7 +57,7 @@ return [
         'icon' => 'cart',
         'permission' => 'reports.view',
         'route' => '/reports/procurement',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'supplier', 'farm', 'cost_center', 'category'],
+        'filters' => ['supplier', 'farm', 'cost_center', 'category'],
     ],
     'finance' => [
         'title' => 'Finanzas',
@@ -65,7 +65,7 @@ return [
         'icon' => 'dollar',
         'permission' => 'reports.view',
         'route' => '/reports/finance',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'season', 'cost_center'],
+        'filters' => ['farm', 'season', 'cost_center'],
     ],
     'budgets' => [
         'title' => 'Presupuestos',
@@ -73,7 +73,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/budgets',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'season', 'cost_center'],
+        'filters' => ['farm', 'season', 'cost_center'],
     ],
     'machinery' => [
         'title' => 'Maquinaria',
@@ -81,7 +81,7 @@ return [
         'icon' => 'wrench',
         'permission' => 'reports.view',
         'route' => '/reports/machinery',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'machine_type', 'cost_center'],
+        'filters' => ['farm', 'block', 'machine_type', 'cost_center'],
     ],
     'productivity' => [
         'title' => 'Productividad',
@@ -89,7 +89,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/productivity',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'block', 'crop', 'process'],
+        'filters' => ['farm', 'block', 'crop', 'process'],
     ],
     'comparatives' => [
         'title' => 'Comparativos',
@@ -97,7 +97,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/comparatives',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'season', 'cost_center'],
+        'filters' => ['farm', 'season', 'cost_center'],
     ],
     'trends' => [
         'title' => 'Tendencias',
@@ -105,7 +105,7 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/trends',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'cost_center', 'process'],
+        'filters' => ['farm', 'cost_center', 'process'],
     ],
     'kpis' => [
         'title' => 'KPIs',
@@ -113,6 +113,6 @@ return [
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/kpis',
-        'filters' => ['year', 'month', 'week', 'day', 'date_range', 'farm', 'season', 'cost_center'],
+        'filters' => ['farm', 'season', 'cost_center'],
     ],
 ];

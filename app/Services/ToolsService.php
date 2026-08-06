@@ -357,7 +357,7 @@ final class ToolsService extends BaseService
 
     private function remoteReleaseStatus(): array
     {
-        $repo = (string) app_config('updates.github_repo', 'pccurico/Agricola-Esperanza');
+        $repo = (string) app_config('updates.github_repo', 'pccurico/sistema-gestion-agricola');
         $defaultApi = 'https://api.github.com/repos/' . trim($repo, '/') . '/releases/latest';
         $apiUrl = (string) app_config('updates.github_api', $defaultApi);
         $context = stream_context_create([

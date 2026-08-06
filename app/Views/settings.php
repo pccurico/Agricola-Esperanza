@@ -9,23 +9,75 @@
 </head>
 
 <body class="admin-page">
-    <main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?><section class="module-content">
-            <header class="admin-header">
-                <div>
-                    <p class="eyebrow">Datos de la empresa</p>
-                    <h1>Configuración de la empresa</h1>
-                    <p class="setup-copy">Actualiza aquí los datos que verás en el sistema y en tus informes.</p>
-                </div><a class="secondary-link" href="./">Volver al dashboard</a>
-            </header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?><article class="admin-panel settings-panel">
-                <form method="post" enctype="multipart/form-data" class="admin-form settings-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                    <fieldset>
-                        <legend>Identidad</legend><label>Razón social<input name="legal_name" required value="<?= htmlspecialchars($company['legal_name'] ?? '') ?>"></label><label>Nombre visible<input name="trade_name" required value="<?= htmlspecialchars($company['trade_name'] ?? '') ?>"></label><label>RUT<input name="tax_id" value="<?= htmlspecialchars($company['tax_id'] ?? '') ?>"></label><label>Logo<input type="file" name="logo" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WEBP · máximo 2 MB</small></label>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Contacto y ubicación</legend><label>Correo<input type="email" name="email" value="<?= htmlspecialchars($company['email'] ?? '') ?>"></label><label>Teléfono<input name="phone" value="<?= htmlspecialchars($company['phone'] ?? '') ?>"></label><label>Dirección<input name="address" value="<?= htmlspecialchars($company['address'] ?? '') ?>"></label><label>Comuna<input name="commune" value="<?= htmlspecialchars($company['commune'] ?? '') ?>"></label><label>Región<input name="region" value="<?= htmlspecialchars($company['region'] ?? '') ?>"></label>
-                    </fieldset><button class="primary-button" type="submit">Guardar configuración</button>
-                </form>
-            </article>
+    <main class="admin-shell"><?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
+        <section class="module-content settings-v2 module-v2">
+            <header class="page-hero">
+                <div class="hero-meta">
+                    <div class="hero-title">
+                        <p class="eyebrow">Datos de la empresa</p>
+                        <h1>Configuración de la empresa</h1>
+                        <p class="lead-text">Actualiza aquí los datos que verás en el sistema y en tus informes.</p>
+                    </div>
+                    <div class="hero-actions"><a class="btn btn-outline" href="./">Volver al dashboard</a></div>
+                </div>
+            </header>
+
+            <div class="page-grid v2">
+                <main class="main-column">
+                    <section class="section-card settings-panel">
+                        <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
+                        <form method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                            <div class="form-group">
+                                <label>Razón social</label>
+                                <input name="legal_name" required value="<?= htmlspecialchars($company['legal_name'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre visible</label>
+                                <input name="trade_name" required value="<?= htmlspecialchars($company['trade_name'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>RUT</label>
+                                <input name="tax_id" value="<?= htmlspecialchars($company['tax_id'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Logo</label>
+                                <input type="file" name="logo" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WEBP · máximo 2 MB</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Correo</label>
+                                <input type="email" name="email" value="<?= htmlspecialchars($company['email'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input name="phone" value="<?= htmlspecialchars($company['phone'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Dirección</label>
+                                <input name="address" value="<?= htmlspecialchars($company['address'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Comuna</label>
+                                <input name="commune" value="<?= htmlspecialchars($company['commune'] ?? '') ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Región</label>
+                                <input name="region" value="<?= htmlspecialchars($company['region'] ?? '') ?>">
+                            </div>
+                            <div class="form-actions"><button class="primary-button" type="submit">Guardar configuración</button></div>
+                        </form>
+                    </section>
+                </main>
+
+                <aside class="sidebar-column v2">
+                    <section class="section-card compact">
+                        <div class="panel-header"><h4>Información</h4></div>
+                        <div class="panel-body">
+                        <p class="muted">Los datos de identidad se usarán en cabeceras de informes y documentos.</p>
+                        </div>
+                    </section>
+                </aside>
+            </div>
         </section>
     </main>
 </body>

@@ -24,38 +24,6 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Herramientas | Sistema de Gestión Agrícola PCCURICO</title>
     <link rel="stylesheet" href="assets/css/app.css">
-    <style>
-        .admin-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
-        .module-content { grid-column: 2; width: min(100%, 1560px); min-width: 0; margin: 0 auto; padding: 104px clamp(20px, 3vw, 52px) 48px; }
-        .admin-header { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-bottom: 24px; }
-        .admin-header h1 { margin: 0; font-size: clamp(28px, 3vw, 42px); letter-spacing: -.04em; }
-        .eyebrow { margin: 0 0 5px; color: #3c8269; font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
-        .setup-copy { margin: 5px 0 0; color: #6c7c74; font-size: 13px; }
-        .secondary-link, .primary-button, .table-action { display: inline-flex; justify-content: center; align-items: center; min-height: 36px; padding: 8px 12px; border: 1px solid #d9e1da; border-radius: 8px; color: #3c8269; background: #fff; font-size: 12px; font-weight: 800; text-decoration: none; }
-        .primary-button { border-color: #3c8269; color: #fff; background: #3c8269; }
-        .admin-columns { display: flex; flex-direction: column; gap: 20px; width: 100%; margin: 0 0 20px; }
-        .admin-panel { width: 100%; overflow: hidden; border: 1px solid #d9e1da; border-radius: 16px; background: #fff; box-shadow: 0 9px 24px rgb(24 54 46 / 6%); }
-        .panel-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 17px 22px; border-bottom: 1px solid #d9e1da; }
-        .panel-header h2 { margin: 0; font-size: 16px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 18px; padding: 18px 22px 0; }
-        .stat-card { display: grid; gap: 5px; padding: 16px; border: 1px solid #d9e1da; border-radius: 12px; background: #fff; box-shadow: 0 5px 16px rgb(24 54 46 / 4%); }
-        .stat-card span { color: #6c7c74; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-        .stat-card strong { color: #3c8269; font-size: clamp(17px, 2vw, 24px); line-height: 1.15; max-width: 100%; word-break: break-word; overflow-wrap: anywhere; }
-        .version-label { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0 22px 22px; }
-        .toolbar-actions form, .table-action-form { margin: 0; }
-        .step-list { display: grid; gap: 12px; margin: 0; padding: 18px 22px; }
-        .step-card { display: grid; gap: 10px; padding: 18px; border: 1px solid #d9e1da; border-radius: 16px; background: #fbfdfb; }
-        .step-card strong { display: block; font-size: 14px; }
-        .step-card span { color: #6c7c74; font-size: 12px; }
-        .step-card .step-status { font-weight: 700; color: #3c8269; }
-        .simple-list { display: grid; gap: 8px; margin: 0; padding: 12px 22px 20px 40px; color: #26332d; font-size: 12px; }
-        .table-scroll { width: 100%; overflow: auto; }
-        .admin-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: auto; }
-        .admin-table th { padding: 11px 16px; background: #f7f9f6; color: #6c7c74; font-size: 10px; text-align: left; text-transform: uppercase; }
-        .admin-table td { padding: 13px 16px; border-top: 1px solid #d9e1da; overflow-wrap: anywhere; vertical-align: top; white-space: normal; }
-        @media (max-width: 780px) { .admin-shell { display: block; } .module-content { padding: 24px 16px 32px; } .admin-header { align-items: flex-start; flex-direction: column; } .stats-grid { grid-template-columns: 1fr; } }
-    </style>
 </head>
 <body class="admin-page">
     <main class="admin-shell">
@@ -115,9 +83,9 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
                                 <p class="setup-copy">Progreso: <?= (int) ($remoteProgress['current'] ?? 0) ?> / <?= (int) ($remoteProgress['total'] ?? 0) ?></p>
                             </div>
                         </div>
-                        <div style="padding: 0 22px 22px;">
-                            <div style="width:100%; background:#f2f7f2; border-radius:999px; overflow:hidden; height:14px;">
-                                <div id="remote-update-progress-bar-summary" style="width: <?= $remoteProgress['total'] > 0 ? min(100, (int) (($remoteProgress['current'] / $remoteProgress['total']) * 100)) : 0 ?>%; height:100%; background:#3c8269; transition: width .2s ease;"></div>
+                        <div class="progress-panel">
+                            <div class="progress-meter">
+                                <div id="remote-update-progress-bar-summary" class="progress-meter-inner" data-progress-current="<?= (int) ($remoteProgress['current'] ?? 0) ?>" data-progress-total="<?= (int) ($remoteProgress['total'] ?? 0) ?>"></div>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -131,15 +99,15 @@ $localAppVersion = (string) ($toolsStatus['local_app_version'] ?? 'no definido')
                 </article>
                 <article class="admin-panel">
                     <header class="panel-header"><div><h2>Progreso de actualización remota</h2><p>Seguimiento del proceso de descarga e instalación.</p></div></header>
-                    <div style="padding: 18px 22px;">
-                        <div class="step-card" style="margin-bottom: 0;">
+                    <div class="progress-panel">
+                        <div class="step-card step-card--flush">
                             <strong>Estado actual</strong>
                             <span id="remote-update-status-message"><?= htmlspecialchars($remoteProgress['message'] ?: 'idle', ENT_QUOTES, 'UTF-8') ?></span>
                             <span id="remote-update-status-values">Progreso: <?= (int) ($remoteProgress['current'] ?? 0) ?> / <?= (int) ($remoteProgress['total'] ?? 0) ?></span>
-                            <div style="width:100%; background:#f2f7f2; border-radius:999px; overflow:hidden; height:14px; margin-top: 10px;">
-                                <div id="remote-update-progress-bar" style="width: <?= $remoteProgress['total'] > 0 ? min(100, (int) (($remoteProgress['current'] / $remoteProgress['total']) * 100)) : 0 ?>%; height:100%; background:#3c8269; transition: width .2s ease;"></div>
+                            <div class="progress-meter">
+                                <div id="remote-update-progress-bar" class="progress-meter-inner" data-progress-current="<?= (int) ($remoteProgress['current'] ?? 0) ?>" data-progress-total="<?= (int) ($remoteProgress['total'] ?? 0) ?>"></div>
                             </div>
-                            <div id="remote-update-feedback" class="setup-copy" style="margin-top: 12px; color: #3c8269;"></div>
+                            <div id="remote-update-feedback" class="setup-copy remote-update-feedback"></div>
                         </div>
                     </div>
                 </article>

@@ -360,6 +360,30 @@
         });
     }
 
+    function initializeReportVisuals() {
+        document.querySelectorAll('.report-visual-bar[data-bar-height]').forEach(function (bar) {
+            var height = Number(bar.dataset.barHeight || 0);
+            if (!Number.isFinite(height)) {
+                return;
+            }
+            bar.style.setProperty('--bar-height', Math.min(100, Math.max(0, height)) + '%');
+        });
+
+        document.querySelectorAll('.report-trend-row i[data-trend]').forEach(function (bar) {
+            var value = Number(bar.dataset.trend || 0);
+            if (!Number.isFinite(value)) {
+                return;
+            }
+            bar.style.setProperty('--trend', Math.min(100, Math.max(0, value)) + '%');
+        });
+    }
+
+    function destroyChart(chart) {
+        if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+        }
+    }
+
     function renderChart() {
         const canvas = getCanvas();
         if (!canvas) {
@@ -385,14 +409,245 @@
         };
 
         const handler = handlers[reportType] || renderEmptyChart;
-        handler(data, canvas);
+        destroyChart(window.currentReportChart);
+        window.currentReportChart = handler(data, canvas);
+    }
+
+    function formatCurrency(value) {
+        return currencyFormatter.format(Number(value ?? 0));
+    }
+
+    function formatNumber(value, digits = 2) {
+        return numberFormatter.format(Number(value ?? 0));
+    }
+
+    function updateSummaryCards() {
+        const data = window.reportData || {};
+        const summary = data.summary || {};
+        const labor = data.labor_summary || {};
+        const budget = data.budget || {};
+        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+        const processes = Array.isArray(data.processes) ? data.processes : [];
+        const centers = Array.isArray(data.centers) ? data.centers : [];
+
+        document.querySelectorAll('[data-summary-key]').forEach(node => {
+            const key = node.getAttribute('data-summary-key');
+            let value = '';
+            switch (key) {
+                case 'production':
+                    value = formatNumber(summary.production, 2);
+                    break;
+                case 'cost_per_unit':
+                    value = formatCurrency(summary.cost_per_unit);
+                    break;
+                case 'production_per_hectare':
+                    value = formatNumber(summary.production_per_hectare, 2);
+                    break;
+                case 'jornadas':
+                    value = formatNumber(labor.quantity, 2);
+                    break;
+                case 'total_cost':
+                    value = formatCurrency(summary.total);
+                    break;
+                case 'centers':
+                    value = centers.length;
+                    break;
+                case 'labor_cost':
+                    value = formatCurrency(labor.total);
+                    break;
+                case 'workers':
+                    value = Number(labor.workers ?? 0);
+                    break;
+                case 'productivity':
+                    value = formatNumber(summary.labor_productivity, 2);
+                    break;
+                case 'alerts_critical':
+                    value = Number(summary.alert_count ?? 0);
+                    break;
+                case 'stock_minimum':
+                    value = alerts.length;
+                    break;
+                case 'total_value':
+                    value = formatCurrency(summary.total);
+                    break;
+                case 'orders_open':
+                    value = Number(summary.orders_open ?? 0);
+                    break;
+                case 'suppliers':
+                    value = processes.length;
+                    break;
+                case 'budget':
+                    value = formatCurrency(budget.planned ?? summary.total ?? 0);
+                    break;
+                case 'execution':
+                    value = `${formatNumber(budget.execution, 1)}%`;
+                    break;
+                case 'profitability':
+                    value = formatNumber(summary.profitability, 2);
+                    break;
+                default:
+                    value = formatCurrency(summary[key] ?? 0);
+                    break;
+            }
+            const valueEl = node.querySelector('strong');
+            if (valueEl) {
+                valueEl.textContent = value;
+            }
+        });
+    }
+
+    function updateActiveFilters(form) {
+        const pillsContainer = document.querySelector('[data-active-filters]');
+        if (!pillsContainer) {
+            return;
+        }
+        const active = [];
+        const fields = Array.from(form.querySelectorAll('select, input[type="date"]'));
+        fields.forEach(field => {
+            const value = String(field.value ?? '').trim();
+            if (value === '' || value === '0') {
+                return;
+            }
+            const label = field.closest('label')?.querySelector('span')?.textContent || field.name.replace(/_id$/, '').replace(/_/g, ' ');
+            active.push(`${label}: ${value}`);
+        });
+        pillsContainer.innerHTML = active.map(text => `<span class="report-filter-pill">${text}</span>`).join('');
+    }
+
+    function queryFromForm(form) {
+        const params = [];
+        const formData = new FormData(form);
+        formData.forEach((value, key) => {
+            if (key === 'ajax') {
+                return;
+            }
+            const normalized = String(value ?? '').trim();
+            if (normalized === '' || normalized === '0') {
+                return;
+            }
+            params.push([key, normalized]);
+        });
+        params.push(['ajax', '1']);
+        return new URLSearchParams(params).toString();
+    }
+
+    function fetchReportData(form) {
+        const url = `${window.location.pathname}?${queryFromForm(form)}`;
+        return fetch(url, {headers: {'Accept': 'application/json'}}).then(response => {
+            if (!response.ok) {
+                throw new Error('No fue posible cargar los datos del informe');
+            }
+            return response.json();
+        });
+    }
+
+    function applyDateShortcut(shortcut, form) {
+        const now = new Date();
+        let from = new Date();
+        let to = new Date();
+        switch (shortcut) {
+            case 'last_7':
+                from.setDate(now.getDate() - 6);
+                break;
+            case 'this_month':
+                from = new Date(now.getFullYear(), now.getMonth(), 1);
+                to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                break;
+            case 'last_month':
+                from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                to = new Date(now.getFullYear(), now.getMonth(), 0);
+                break;
+            case 'ytd':
+                from = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                return;
+        }
+        const pad = n => String(n).padStart(2, '0');
+        const fromInput = form.querySelector('input[name="from"]');
+        const toInput = form.querySelector('input[name="to"]');
+        if (fromInput) {
+            fromInput.value = `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`;
+        }
+        if (toInput) {
+            toInput.value = `${to.getFullYear()}-${pad(to.getMonth() + 1)}-${pad(to.getDate())}`;
+        }
+    }
+
+    function enableFilterBar() {
+        const form = document.querySelector('[data-report-form]');
+        if (!form) {
+            return;
+        }
+        const shortcuts = form.querySelectorAll('[data-shortcut]');
+        const resetButton = form.querySelector('[data-filter-reset]');
+
+        const refresh = () => {
+            updateActiveFilters(form);
+            fetchReportData(form).then(data => {
+                window.reportData = data;
+                updateSummaryCards();
+                renderChart();
+                const query = queryFromForm(form).replace(/&?ajax=1/, '');
+                window.history.replaceState({}, '', `${window.location.pathname}?${query}`);
+            }).catch(() => {
+                // fail silently to keep UX smooth
+            });
+        };
+
+        const debouncedRefresh = (() => {
+            let timer = null;
+            return () => {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(refresh, 400);
+            };
+        })();
+
+        form.addEventListener('change', event => {
+            const target = event.target;
+            if (target && (target.tagName === 'SELECT' || target.type === 'date')) {
+                debouncedRefresh();
+            }
+        });
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            refresh();
+        });
+
+        shortcuts.forEach(button => {
+            button.addEventListener('click', () => {
+                shortcuts.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                applyDateShortcut(button.getAttribute('data-shortcut'), form);
+                debouncedRefresh();
+            });
+        });
+
+        if (resetButton) {
+            resetButton.addEventListener('click', () => {
+                form.querySelectorAll('select').forEach(select => {
+                    select.value = select.querySelector('option[value="0"]') ? '0' : '';
+                });
+                form.querySelectorAll('input[type="date"]').forEach(input => {
+                    input.value = '';
+                });
+                shortcuts.forEach(btn => btn.classList.remove('active'));
+                refresh();
+            });
+        }
+
+        updateActiveFilters(form);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof Chart === 'undefined') {
             console.warn('Chart.js no está disponible en esta página.');
+            initializeReportVisuals();
             return;
         }
+        initializeReportVisuals();
         renderChart();
+        enableFilterBar();
     });
 })();

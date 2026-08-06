@@ -28,3 +28,4 @@ scripts/*
 
 # Versiones de archivos generadas automáticamente
 dist/*
+template/*

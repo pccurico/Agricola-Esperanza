@@ -1,0 +1,169 @@
+.admin-shell,
+.dashboard-shell {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+    background: var(--bg);
+}
+
+.module-sidebar {
+    position: fixed;
+    inset: 70px 0 0 0;
+    width: 300px;
+    padding: 22px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(180deg, #162c21 0%, #1d422f 100%);
+    color: #e7f0e7;
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-brand {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 70px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, rgba(31,107,70,0.95), rgba(26,91,60,0.9));
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 20;
+}
+
+.sidebar-brand-logo,
+.dashboard-brand-logo {
+    max-height: 42px;
+    max-width: 170px;
+    object-fit: contain;
+}
+
+.dashboard-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    color: var(--text);
+    background: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+
+.module-content,
+.dashboard-content {
+    grid-column: 2;
+    width: min(100%, var(--max-width));
+    margin: 0 auto;
+    min-width: 0;
+    padding: 104px clamp(24px, 3vw, 48px) 48px;
+}
+
+.erp-topbar {
+    position: fixed;
+    top: 0;
+    left: 300px;
+    right: 0;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 0 24px;
+    background: hsla(159, 25%, 11%, 0.96);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #eef5ec;
+    z-index: 18;
+}
+
+.admin-header,
+.dashboard-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.admin-header h1,
+.dashboard-topbar h1,
+.module-content h1 {
+    margin: 0;
+    font-size: clamp(32px, 3vw, 42px);
+    letter-spacing: -0.04em;
+}
+
+.admin-shell.sidebar-collapsed,
+.dashboard-shell.sidebar-collapsed {
+    grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.sidebar-collapsed .module-sidebar,
+.sidebar-collapsed .sidebar-brand {
+    width: 72px;
+}
+
+.sidebar-collapsed .erp-topbar {
+    left: 72px;
+}
+
+.sidebar-collapsed .dashboard-workspace,
+.sidebar-collapsed .farm-select,
+.sidebar-collapsed .navigation-search,
+.sidebar-collapsed .navigation-group-label,
+.sidebar-collapsed .navigation-chevron,
+.sidebar-collapsed .navigation-item-label,
+.sidebar-collapsed .navigation-badge,
+.sidebar-collapsed .navigation-count {
+    display: none;
+}
+
+.sidebar-collapsed .navigation-group-toggle,
+.sidebar-collapsed .dashboard-nav-item {
+    justify-content: center;
+    padding-inline: 8px;
+}
+
+@media (max-width: 980px) {
+    .admin-shell,
+    .dashboard-shell,
+    .sidebar-collapsed.admin-shell,
+    .sidebar-collapsed.dashboard-shell {
+        display: block;
+    }
+
+    .module-sidebar,
+    .sidebar-collapsed .module-sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        padding-top: 88px;
+    }
+
+    .sidebar-brand,
+    .sidebar-collapsed .sidebar-brand {
+        width: 100%;
+        position: static;
+    }
+
+    .erp-topbar,
+    .sidebar-collapsed .erp-topbar {
+        left: 0;
+        height: 62px;
+        padding: 0 18px;
+    }
+
+    .module-content,
+    .dashboard-content {
+        padding: 82px 18px 28px;
+    }
+
+    .admin-header,
+    .dashboard-topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

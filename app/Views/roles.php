@@ -34,7 +34,7 @@ $show_role_form = $show_role_form ?? ($selected_role || isset($_GET['new_role'])
                     </div>
                 </div>
                 <?php if (!empty($show_role_form)): ?>
-                    <form method="post" class="admin-form" style="margin-bottom:16px;">
+                    <form method="post" class="admin-form">
                         <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="<?= $selected_role ? 'update_role' : 'create_role' ?>">
                         <?php if ($selected_role): ?>

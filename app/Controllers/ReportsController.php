@@ -27,48 +27,90 @@ final class ReportsController extends BaseController
 
         $reportType = $this->normalizeReportType((string) ($_GET['report'] ?? 'executive'));
         $report = new \AgroPCC\Services\ReportService(database()->connection(), (int) $_SESSION['company_id']);
-        $summary = $report->summary([
-            'date_from' => (string) ($_GET['date_from'] ?? ''),
-            'date_to' => (string) ($_GET['date_to'] ?? ''),
-            'farm_id' => (int) ($_GET['farm_id'] ?? 0),
-            'block_id' => (int) ($_GET['block_id'] ?? 0),
-            'season_id' => (int) ($_GET['season_id'] ?? 0),
-            'cost_center_id' => (int) ($_GET['cost_center_id'] ?? 0),
-            'worker_id' => (int) ($_GET['worker_id'] ?? 0),
-            'supervisor_id' => (int) ($_GET['supervisor_id'] ?? 0),
-            'process' => (string) ($_GET['process'] ?? ''),
-        ]);
-        $response = [
-            'summary' => $summary,
-            'report_type' => $reportType,
-            'report_config' => $reportConfig,
-            'permissions' => $this->permissionMap($reportConfig),
-        ];
+        $response = $report->summary($this->buildFilters(), $reportType);
+        $response['report_type'] = $reportType;
+        $response['report_config'] = $reportConfig;
+        $response['permissions'] = $this->permissionMap($reportConfig);
 
         if ($this->isJsonRequest()) {
             $this->json($response);
             exit;
         }
 
-        if (($_GET['export'] ?? '') === 'csv') {
+        $exportFormat = (string) ($_GET['export'] ?? '');
+        if ($exportFormat === 'csv') {
             (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'csv', 'report' => $reportType]);
-            $this->exportCsv($summary, $reportType);
+            $this->exportCsv($response, $reportType);
         }
-        if (($_GET['export'] ?? '') === 'xlsx') {
-            (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'xlsx', 'report' => $reportType]);
-            $this->exportXlsx($summary, $reportType);
+        if ($exportFormat === 'xlsx') {
+            (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['user_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'xlsx', 'report' => $reportType]);
+            $this->exportXlsx($response, $reportType);
         }
-        if (($_GET['export'] ?? '') === 'pdf') {
+        if ($exportFormat === 'pdf') {
             (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'EXPORT', 'reports', null, ['format' => 'pdf', 'report' => $reportType]);
-            $this->exportPdf($summary, $reportType);
+            $this->exportPdf($response, $reportType);
         }
 
         return $response;
     }
 
+    private function buildFilters(): array
+    {
+        $filters = [];
+        $mapping = [
+            'from' => 'date_from',
+            'to' => 'date_to',
+            'farm' => 'farm_id',
+            'block' => 'block_id',
+            'season' => 'season_id',
+            'cost_center' => 'cost_center_id',
+            'worker' => 'worker_id',
+            'supervisor' => 'supervisor_id',
+            'warehouse' => 'warehouse_id',
+            'supplier' => 'supplier_id',
+            'process' => 'process',
+        ];
+
+        foreach ($mapping as $fromKey => $toKey) {
+            $value = $_GET[$fromKey] ?? null;
+            if ($value === null || $value === '' || $value === '0' || $value === 0) {
+                continue;
+            }
+            if ($toKey === 'date_from' || $toKey === 'date_to') {
+                $filters[$toKey] = (string) $value;
+            } elseif ($toKey === 'process') {
+                $filters[$toKey] = (string) $value;
+            } else {
+                $filters[$toKey] = (int) $value;
+            }
+        }
+
+        foreach (['date_from' => 'from', 'date_to' => 'to', 'farm_id' => 'farm', 'block_id' => 'block', 'season_id' => 'season', 'cost_center_id' => 'cost_center', 'worker_id' => 'worker', 'supervisor_id' => 'supervisor', 'warehouse_id' => 'warehouse', 'supplier_id' => 'supplier', 'process' => 'process'] as $legacyKey => $newKey) {
+            if (array_key_exists($legacyKey, $_GET) && !array_key_exists($newKey, $_GET) && !array_key_exists($legacyKey, $filters)) {
+                $value = $_GET[$legacyKey] ?? null;
+                if ($value === null || $value === '' || $value === '0' || $value === 0) {
+                    continue;
+                }
+                $filters[$legacyKey] = $legacyKey === 'process' ? (string) $value : (int) $value;
+            }
+        }
+
+        $filters['date_from'] = isset($filters['date_from']) ? (string) $filters['date_from'] : (string) ($_GET['date_from'] ?? '');
+        $filters['date_to'] = isset($filters['date_to']) ? (string) $filters['date_to'] : (string) ($_GET['date_to'] ?? '');
+        $filters['farm_id'] = isset($filters['farm_id']) ? (int) $filters['farm_id'] : (int) ($_GET['farm_id'] ?? 0);
+        $filters['block_id'] = isset($filters['block_id']) ? (int) $filters['block_id'] : (int) ($_GET['block_id'] ?? 0);
+        $filters['season_id'] = isset($filters['season_id']) ? (int) $filters['season_id'] : (int) ($_GET['season_id'] ?? 0);
+        $filters['cost_center_id'] = isset($filters['cost_center_id']) ? (int) $filters['cost_center_id'] : (int) ($_GET['cost_center_id'] ?? 0);
+        $filters['worker_id'] = isset($filters['worker_id']) ? (int) $filters['worker_id'] : (int) ($_GET['worker_id'] ?? 0);
+        $filters['supervisor_id'] = isset($filters['supervisor_id']) ? (int) $filters['supervisor_id'] : (int) ($_GET['supervisor_id'] ?? 0);
+        $filters['process'] = isset($filters['process']) ? (string) $filters['process'] : (string) ($_GET['process'] ?? '');
+
+        return $filters;
+    }
+
     private function normalizeReportType(string $reportType): string
     {
-        $allowed = array_merge(array_keys($this->loadReportConfig()), ['executive', 'costs', 'production', 'labor', 'documents']);
+        $allowed = array_merge(array_keys($this->loadReportConfig()), ['executive', 'costs', 'production', 'labor', 'inventory', 'procurement', 'finance', 'budgets', 'machinery', 'productivity', 'comparatives', 'trends', 'kpis']);
         $value = strtolower(trim($reportType));
         return in_array($value, $allowed, true) ? $value : 'executive';
     }

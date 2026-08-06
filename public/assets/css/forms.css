@@ -1,0 +1,126 @@
+.admin-form,
+.compact-form,
+.inline-form form,
+.dashboard-filter-grid,
+.report-filter-grid {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+}
+
+.admin-form label,
+.compact-form label,
+.inline-form label,
+.dashboard-filter-grid label,
+.report-filter-grid label {
+    display: grid;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.compact-form input,
+.compact-form select,
+.compact-form textarea,
+.inline-form input,
+.inline-form select,
+.inline-form textarea,
+.dashboard-filter-grid input,
+.dashboard-filter-grid select,
+.report-filter-grid input,
+.report-filter-grid select,
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: var(--surface-strong);
+    color: var(--text);
+}
+
+.admin-form {
+    margin-bottom: 24px;
+}
+
+.table-action-form,
+.inline-form {
+    margin: 0;
+}
+
+.admin-form button,
+.compact-form button,
+.inline-form button {
+    align-self: end;
+}
+
+.form-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.form-grid label {
+    display: grid;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.form-grid input,
+.form-grid select {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: var(--surface-strong);
+}
+
+.login-card,
+.setup-card {
+    width: min(100%, 520px);
+    padding: 34px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.login-page,
+.setup-page {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 24px;
+    background: linear-gradient(180deg, rgba(31,107,70,0.15), rgba(245,247,242,0.95));
+}
+
+.login-brand,
+.setup-brand {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.login-company-name {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 36px);
+    color: var(--text);
+}
+
+.login-footer {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: rgba(15, 24, 15, 0.68);
+    color: #f6faf2;
+    font-size: 12px;
+    font-weight: 700;
+}

@@ -12,8 +12,8 @@ return [
     ],
 
     'updates' => [
-        'github_repo' => 'pccurico/AgroPCC-Web',
-        'github_api' => 'https://api.github.com/repos/pccurico/AgroPCC-Web/releases/latest',
+        'github_repo' => 'pccurico/sistema-gestion-agricola',
+        'github_api' => 'https://api.github.com/repos/pccurico/sistema-gestion-agricola/releases/latest',
     ],
 
     'database' => [

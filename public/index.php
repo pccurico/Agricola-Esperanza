@@ -102,13 +102,21 @@ $path = trim($path, '/');
 if ($path === 'index.php') {
     $path = '';
 }
-$module = $path !== '' ? $path : (string) ($_GET['module'] ?? '');
-if (str_starts_with($module, 'reports/')) {
-    $parts = explode('/', $module);
-    if (isset($parts[1]) && $parts[1] !== '') {
-        $_GET['report_key'] = $parts[1];
+$pathParts = array_values(array_filter(explode('/', $path), static fn (string $segment): bool => $segment !== ''));
+$module = $pathParts !== [] ? $pathParts[0] : (string) ($_GET['module'] ?? '');
+if ($module === 'reports') {
+    if (isset($pathParts[1]) && $pathParts[1] !== '') {
+        $_GET['report_key'] = $pathParts[1];
     }
-    $module = 'reports';
+    if (isset($pathParts[2]) && $pathParts[2] === 'export') {
+        $_GET['export'] = (string) ($_GET['format'] ?? $_GET['export'] ?? '');
+    }
+    if (isset($_GET['report']) && (string) ($_GET['report_key'] ?? '') === '') {
+        $_GET['report_key'] = (string) $_GET['report'];
+    }
+}
+if ($module === 'reports' && isset($_GET['report_key']) && (string) $_GET['report_key'] !== '') {
+    $_GET['report_key'] = strtolower(trim((string) $_GET['report_key']));
 }
 if ($module === 'users') {
     authorize_any(['users.view', 'users.manage']);
