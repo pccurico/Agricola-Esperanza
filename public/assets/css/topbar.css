@@ -14,7 +14,7 @@
 }
 
 .erp-topbar-context span {
-    color: rgba(255,255,255,0.7);
+    color: var(--text-inverse);
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -34,14 +34,14 @@
     border-radius: 14px;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.08);
-    color: #eaf4e7;
+    color: var(--text-inverse);
 }
 
 .erp-global-search input {
     width: 100%;
     border: 0;
     background: transparent;
-    color: #f4faf3;
+    color: var(--text-inverse);
 }
 
 .erp-topbar-actions {
@@ -63,5 +63,5 @@
 
 .erp-user-menu strong {
     font-size: 13px;
-    color: #f2f9ef;
+    color: var(--text-inverse);
 }

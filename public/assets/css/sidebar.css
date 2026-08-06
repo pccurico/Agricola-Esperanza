@@ -5,7 +5,7 @@
     padding: 12px 14px;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.12);
-    color: rgba(235,245,238,0.9);
+    color: var(--text-inverse);
     background: rgba(255,255,255,0.06);
 }
 
@@ -37,7 +37,7 @@
     width: 100%;
     padding: 12px 14px;
     border-radius: 14px;
-    color: #d6e8db;
+    color: var(--text-inverse);
     background: rgba(255,255,255,0.04);
     border: 1px solid transparent;
     transition: background var(--transition), border-color var(--transition), color var(--transition);
@@ -47,7 +47,7 @@
 .navigation-group.is-open > .navigation-group-toggle {
     background: rgba(255,255,255,0.1);
     border-color: rgba(255,255,255,0.14);
-    color: #f9fcf7;
+    color: var(--text-inverse);
 }
 
 .navigation-group-heading {
@@ -89,7 +89,7 @@
     gap: 10px;
     padding: 12px 12px;
     border-radius: 13px;
-    color: rgba(234,244,236,0.95);
+    color: var(--text-inverse);
     background: rgba(255,255,255,0.04);
     transition: background var(--transition), color var(--transition);
 }
@@ -97,7 +97,7 @@
 .dashboard-nav-item:hover,
 .dashboard-nav-item.active {
     background: rgba(255,255,255,0.12);
-    color: #fff;
+    color: var(--text-inverse);
 }
 
 .nav-icon,
@@ -112,7 +112,7 @@
 }
 
 .dashboard-nav-item.active .nav-icon {
-    color: var(--text);
+    color: var(--text-inverse);
     background: var(--accent);
 }
 
@@ -141,7 +141,7 @@
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(255,255,255,0.06);
-    color: #e7f0e7;
+    color: var(--text-inverse);
     transition: background var(--transition), transform var(--transition);
 }
 

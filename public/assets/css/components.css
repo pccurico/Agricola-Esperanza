@@ -84,7 +84,7 @@
 }
 
 .badge-neutral {
-    background: #f6f7f3;
+    background: var(--surface-strong);
     color: var(--text-muted);
 }
 
@@ -214,8 +214,8 @@
 
 .status-inactive {
     color: var(--text-muted);
-    background: rgba(82, 96, 84, 0.12);
-    border: 1px solid rgba(82, 96, 84, 0.16);
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
 }
 
 .btn {
