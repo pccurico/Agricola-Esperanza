@@ -22,6 +22,9 @@
                 </div>
             </header>
 
+            <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+            <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+
             <div class="page-grid v2">
                 <main class="main-column">
                     <section class="section-card">
@@ -57,7 +60,7 @@
                     <section class="section-card compact">
                         <div class="panel-header"><h4>Acciones</h4></div>
                         <div class="panel-body">
-                        <nav class="stack-nav"><a class="link" href="?module=budgets&view=import">Importar</a><a class="link" href="?module=budgets&view=export">Exportar</a></nav>
+                        <nav class="stack-nav"><a class="link" href="/reports/budgets">Ver informe presupuestario</a><a class="link" href="/reports/budgets/export?format=xlsx">Exportar informe</a></nav>
                         </div>
                     </section>
                 </aside>

@@ -38,7 +38,7 @@ final class MachineryController extends BaseController
 
         $permissions = $this->permissionsSnapshot((int) ($_SESSION['role_id'] ?? 0));
 
-        return ['machinery' => $service->machinery(), 'maintenance' => $service->maintenance(), 'fuel' => $service->fuel(), 'farms' => $service->farms(), 'dashboard' => $service->dashboard(), 'permissions' => $permissions, 'error' => $error, 'success' => $success];
+        return [...$service->options(), 'machinery' => $service->machinery(), 'maintenance' => $service->maintenance(), 'fuel' => $service->fuel(), 'farms' => $service->farms(), 'dashboard' => $service->dashboard(), 'permissions' => $permissions, 'error' => $error, 'success' => $success];
     }
 
     private function permissionsSnapshot(int $roleId): array

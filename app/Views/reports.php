@@ -91,7 +91,7 @@ switch ($reportType) {
             ['key' => 'total_cost', 'label' => 'Gastos totales', 'value' => $money($reportSummary['total'] ?? 0), 'detail' => 'Costos y compras'],
             ['key' => 'budget', 'label' => 'Presupuesto ejecutado', 'value' => $money($budgetData['actual'] ?? 0), 'detail' => 'Saldo real'],
             ['key' => 'execution', 'label' => 'Ejecución', 'value' => $number($budgetData['execution'] ?? 0, 1) . '%', 'detail' => 'Porcentaje'],
-            ['key' => 'centers', 'label' => 'Centros', 'value' => count($centers ?? []), 'detail' => 'Cuentas activas'],
+            ['key' => 'cash_balance', 'label' => 'Saldo de caja', 'value' => $money((float) ($reportSummary['cash']['income'] ?? 0) - (float) ($reportSummary['cash']['expense'] ?? 0)), 'detail' => 'Movimientos contabilizados'],
         ];
         break;
     default:
@@ -142,7 +142,7 @@ $reportHighlightCards = match ($reportType) {
         ['key' => 'total_cost', 'label' => 'Gastos totales', 'value' => $money($reportSummary['total'] ?? 0), 'detail' => 'Costos y compras', 'bar_value' => 80],
         ['key' => 'budget', 'label' => 'Presupuesto', 'value' => $money($budgetData['planned'] ?? 0), 'detail' => 'Planificado', 'bar_value' => 74],
         ['key' => 'execution', 'label' => 'Ejecución', 'value' => $number($budgetData['execution'] ?? 0, 1) . '%', 'detail' => 'Porcentaje del plan', 'bar_value' => 70],
-        ['key' => 'labor_cost', 'label' => 'Mano de obra', 'value' => $money($laborData['total'] ?? 0), 'detail' => 'Costos directos', 'bar_value' => 66],
+        ['key' => 'cash_balance', 'label' => 'Saldo de caja', 'value' => $money((float) ($reportSummary['cash']['income'] ?? 0) - (float) ($reportSummary['cash']['expense'] ?? 0)), 'detail' => 'Ingresos menos egresos', 'bar_value' => 66],
     ],
     default => [
         ['key' => 'production_per_hectare', 'label' => 'Producción por hectárea', 'value' => $number($reportSummary['production_per_hectare'] ?? 0, 2), 'detail' => 'Indicador agrícola efectivo', 'bar_value' => 72],

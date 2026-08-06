@@ -22,7 +22,7 @@ final class InventoryManagement extends BaseService
 
     public function movements(): array
     {
-        $query = $this->connection->prepare('SELECT m.id, m.movement_date, m.movement_type, m.quantity, m.unit_cost, i.name AS item_name, i.unit FROM inventory_movements m INNER JOIN inventory_items i ON i.id = m.item_id WHERE m.company_id = ? ORDER BY m.movement_date DESC, m.id DESC LIMIT 40');
+        $query = $this->connection->prepare('SELECT m.id, m.movement_date, m.movement_type, m.quantity, m.unit_cost, m.reference, i.name AS item_name, i.unit, w.name AS warehouse_name FROM inventory_movements m INNER JOIN inventory_items i ON i.id = m.item_id LEFT JOIN warehouses w ON w.id = m.warehouse_id WHERE m.company_id = ? ORDER BY m.movement_date DESC, m.id DESC LIMIT 40');
         $query->execute([$this->companyId]);
         return $query->fetchAll();
     }
@@ -50,10 +50,13 @@ final class InventoryManagement extends BaseService
             throw new RuntimeException('La cantidad debe ser mayor que cero.');
         }
         $this->belongs('inventory_items', $input['item_id']);
+        if (!empty($input['warehouse_id'])) {
+            $this->belongs('warehouses', $input['warehouse_id']);
+        }
         if (!(new CatalogLookup($this->connection, $this->companyId))->exists('INVENTORY_MOVEMENT_TYPE', (string) $input['movement_type'])) {
             throw new RuntimeException('El tipo de movimiento no está habilitado.');
         }
-        $this->execute('INSERT INTO inventory_movements (company_id, item_id, movement_type, quantity, unit_cost, movement_date, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$this->companyId, (int) $input['item_id'], $input['movement_type'], $input['quantity'], $input['unit_cost'] ?: 0, $input['movement_date'], trim($input['reference']) ?: null, $userId]);
+        $this->execute('INSERT INTO inventory_movements (company_id, item_id, warehouse_id, movement_type, quantity, unit_cost, movement_date, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [$this->companyId, (int) $input['item_id'], $input['warehouse_id'] ?: null, $input['movement_type'], $input['quantity'], $input['unit_cost'] ?: 0, $input['movement_date'], trim($input['reference']) ?: null, $userId]);
     }
 
     public function itemOptions(): array
@@ -63,12 +66,34 @@ final class InventoryManagement extends BaseService
         return $query->fetchAll();
     }
 
+    public function options(): array
+    {
+        return [
+            'categories' => $this->catalogValues('INVENTORY_CATEGORY'),
+            'units' => $this->catalogValues('MEASUREMENT_UNIT'),
+            'warehouses' => $this->fetch('SELECT id, name FROM warehouses WHERE company_id = ? AND active = 1 ORDER BY name'),
+        ];
+    }
+
+    private function catalogValues(string $catalogCode): array
+    {
+        return $this->fetchRows(
+            'SELECT v.code, v.label
+             FROM system_catalog_values v
+             INNER JOIN system_catalogs c ON c.id = v.catalog_id
+             WHERE c.code = ? AND c.active = 1 AND v.active = 1
+               AND (v.company_id IS NULL OR v.company_id = ?)
+             ORDER BY v.sort_order, v.label',
+            [$catalogCode, $this->companyId],
+        );
+    }
+
     private function belongs(string $table, mixed $id): void
     {
-        if ($table !== 'inventory_items') {
+        if (!in_array($table, ['inventory_items', 'warehouses'], true)) {
             throw new RuntimeException('Referencia no válida.');
         }
-        $query = $this->connection->prepare('SELECT id FROM inventory_items WHERE id = ? AND company_id = ?',);
+        $query = $this->connection->prepare('SELECT id FROM ' . $table . ' WHERE id = ? AND company_id = ?' . ($table === 'warehouses' ? ' AND active = 1' : ''));
         $query->execute([(int) $id, $this->companyId]);
         if (!$query->fetchColumn()) {
             throw new RuntimeException('El insumo seleccionado no pertenece a esta agrícola.');

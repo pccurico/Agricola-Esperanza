@@ -48,10 +48,10 @@
                                 <label>Fecha<input type="date" name="production_date" value="<?= date('Y-m-d') ?>" required></label>
                                 <label>Actividad<input name="activity" required placeholder="Cosecha, poda, raleo"></label>
                                 <label>Cantidad<input type="number" name="quantity" min="0.001" step="0.001" required></label>
-                                <label>Unidad<input name="unit" required placeholder="kg, bins, cajas"></label>
+                                <label>Unidad<select name="unit" required><option value="">Selecciona una unidad</option><?php foreach ($units as $unit): ?><option value="<?= htmlspecialchars($unit['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($unit['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                             </div>
                             <div class="form-row">
-                                <label>Calidad<input name="quality" placeholder="Exportación, mercado interno"></label>
+                                <label>Calidad<select name="quality"><option value="">Sin especificar</option><?php foreach ($qualities as $quality): ?><option value="<?= htmlspecialchars($quality['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($quality['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                                 <label>Observaciones<input name="notes"></label>
                             </div>
                             <div class="form-actions"><button class="btn" type="submit">Registrar producción</button></div>
@@ -78,7 +78,7 @@
                 <aside class="sidebar-column v2">
                     <section class="card compact">
                         <h4>Acciones rápidas</h4>
-                        <nav class="stack-nav"><a class="link" href="?module=production&view=import">Importar</a><a class="link" href="?module=production&view=export">Exportar</a></nav>
+                        <nav class="stack-nav"><a class="link" href="/reports/production">Ver informe de producción</a><a class="link" href="/reports/production/export?format=xlsx">Exportar informe</a></nav>
                     </section>
                 </aside>
             </div>

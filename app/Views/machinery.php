@@ -81,11 +81,10 @@ $dashboardKpis = is_array($dashboardMetrics['kpis'] ?? null) ? $dashboardMetrics
                     <label>Nombre<input name="name" required placeholder="Tractor 4x4"></label>
                     <label>Tipo
                         <select name="machinery_type" required>
-                            <option value="TRACTOR">TRACTOR</option>
-                            <option value="PULVERIZADOR">PULVERIZADOR</option>
-                            <option value="CAMIÓN">CAMIÓN</option>
-                            <option value="MOTOCULTOR">MOTOCULTOR</option>
-                            <option value="IMPLEMENTO">IMPLEMENTO</option>
+                            <option value="">Selecciona un tipo</option>
+                            <?php foreach ($machinery_types as $machineryType): ?>
+                                <option value="<?= htmlspecialchars($machineryType['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($machineryType['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </label>
                     <label>Marca<input name="brand" placeholder="John Deere"></label>
@@ -122,9 +121,10 @@ $dashboardKpis = is_array($dashboardMetrics['kpis'] ?? null) ? $dashboardMetrics
                     <label>Fecha<input type="date" name="maintenance_date" required></label>
                     <label>Tipo
                         <select name="maintenance_type" required>
-                            <option value="PREVENTIVE">Preventiva</option>
-                            <option value="CORRECTIVE">Correctiva</option>
-                            <option value="INSPECTION">Inspección</option>
+                            <option value="">Selecciona un tipo</option>
+                            <?php foreach ($maintenance_types as $maintenanceType): ?>
+                                <option value="<?= htmlspecialchars($maintenanceType['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($maintenanceType['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </label>
                     <label>Descripción<textarea name="description" required rows="3"></textarea></label>

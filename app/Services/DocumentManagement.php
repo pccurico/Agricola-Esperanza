@@ -13,12 +13,26 @@ final class DocumentManagement extends BaseService
     {
     }
 
-    public function documents(): array
+    public function documents(array $filters = []): array
     {
+        $where = ['d.company_id = ?'];
+        $params = [$this->companyId];
+        if (!empty($filters['supplier_id'])) {
+            $where[] = 'd.supplier_id = ?';
+            $params[] = (int) $filters['supplier_id'];
+        }
+        if (!empty($filters['client_id'])) {
+            $where[] = 'd.client_id = ?';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (trim((string) ($filters['document_type'] ?? '')) !== '') {
+            $where[] = 'd.document_type = ?';
+            $params[] = strtoupper(trim((string) $filters['document_type']));
+        }
         $query = $this->connection->prepare(
-            'SELECT d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name AS supplier_name, c.business_name AS client_name, COUNT(a.id) AS attachment_count FROM documents d LEFT JOIN suppliers s ON s.id = d.supplier_id LEFT JOIN clients c ON c.id = d.client_id LEFT JOIN attachments a ON a.company_id = d.company_id AND a.document_id = d.id WHERE d.company_id = ? GROUP BY d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name, c.business_name ORDER BY d.issue_date DESC, d.document_type ASC, d.id DESC'
+            'SELECT d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name AS supplier_name, c.business_name AS client_name, COUNT(a.id) AS attachment_count, MAX(a.id) AS attachment_id FROM documents d LEFT JOIN suppliers s ON s.id = d.supplier_id LEFT JOIN clients c ON c.id = d.client_id LEFT JOIN attachments a ON a.company_id = d.company_id AND a.document_id = d.id WHERE ' . implode(' AND ', $where) . ' GROUP BY d.id, d.document_type, d.document_number, d.issue_date, d.status, d.created_at, s.business_name, c.business_name ORDER BY d.issue_date DESC, d.document_type ASC, d.id DESC'
         );
-        $query->execute([$this->companyId]);
+        $query->execute($params);
         return $query->fetchAll();
     }
 
@@ -129,4 +143,3 @@ final class DocumentManagement extends BaseService
         }
     }
 }
-

@@ -1,4 +1,5 @@
 <!doctype html>
+<?php $assignments = $assignments ?? []; $leave_requests = $leave_requests ?? []; ?>
 <html lang="es">
 
 <head>
@@ -46,7 +47,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Fundo</label>
-                                    <select name="farm_id"><option value="">Sin fondo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name']) ?></option><?php endforeach; ?></select>
+                                    <select name="farm_id"><option value="">Sin fundo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name']) ?></option><?php endforeach; ?></select>
                                 </div>
                                 <div class="form-group">
                                     <label>Cuartel</label>
@@ -58,7 +59,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Labor</label>
-                                    <input name="labor_type" required placeholder="Poda, raleo, cosecha">
+                                    <select name="labor_type" required><option value="">Selecciona una labor</option><?php foreach ($labor_types as $laborType): ?><option value="<?= htmlspecialchars($laborType['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($laborType['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select>
                                 </div>
                                 <div class="form-group">
                                     <label>Cantidad</label>
@@ -114,12 +115,21 @@
                             </div>
                         </div>
                     </section>
+                    <section class="section-card">
+                        <div class="panel-header"><div><h2>Asignaciones</h2><p>Ubicación y cargo vigente de cada trabajador.</p></div></div>
+                        <div class="panel-body"><form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_assignment"><div class="form-row"><label>Trabajador<select name="worker_id" required><?php foreach ($workers as $worker): ?><option value="<?= (int) $worker['id'] ?>"><?= htmlspecialchars($worker['full_name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label><label>Fundo<select name="farm_id"><option value="">Sin fundo</option><?php foreach ($farms as $farm): ?><option value="<?= (int) $farm['id'] ?>"><?= htmlspecialchars($farm['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label><label>Cuartel<select name="block_id"><option value="">Sin cuartel</option><?php foreach ($blocks as $block): ?><option value="<?= (int) $block['id'] ?>"><?= htmlspecialchars($block['code'] . ' · ' . $block['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label></div><div class="form-row"><label>Departamento<input name="department" maxlength="80"></label><label>Cargo<input name="position" maxlength="120"></label><label>Inicio<input type="date" name="start_date" value="<?= date('Y-m-d') ?>" required></label><label>Término<input type="date" name="end_date"></label></div><div class="form-actions"><button class="primary-button" type="submit">Guardar asignación</button></div></form><div class="table-wrap"><table class="data-table"><thead><tr><th>Trabajador</th><th>Ubicación</th><th>Cargo</th><th>Vigencia</th></tr></thead><tbody><?php foreach ($assignments as $assignment): ?><tr><td><?= htmlspecialchars($assignment['full_name'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($assignment['farm_name'] ?: 'Sin fundo', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($assignment['position'] ?: 'Sin cargo', ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($assignment['start_date'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars($assignment['end_date'] ?: 'Vigente', ENT_QUOTES, 'UTF-8') ?></td></tr><?php endforeach; ?></tbody></table></div></div>
+                    </section>
+
+                    <section class="section-card">
+                        <div class="panel-header"><div><h2>Ausencias y permisos</h2><p>Registra solicitudes para organizar la disponibilidad.</p></div></div>
+                        <div class="panel-body"><form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_leave_request"><div class="form-row"><label>Trabajador<select name="worker_id" required><?php foreach ($workers as $worker): ?><option value="<?= (int) $worker['id'] ?>"><?= htmlspecialchars($worker['full_name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label><label>Tipo<input name="leave_type" maxlength="60" required placeholder="Vacaciones, permiso"></label><label>Inicio<input type="date" name="start_date" required></label><label>Término<input type="date" name="end_date" required></label></div><label>Notas<input name="notes" maxlength="255"></label><div class="form-actions"><button class="primary-button" type="submit">Registrar solicitud</button></div></form><div class="table-wrap"><table class="data-table"><thead><tr><th>Trabajador</th><th>Tipo</th><th>Período</th><th>Días</th><th>Estado</th></tr></thead><tbody><?php foreach ($leave_requests as $leave): ?><tr><td><?= htmlspecialchars($leave['full_name'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($leave['leave_type'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($leave['start_date'], ENT_QUOTES, 'UTF-8') ?> al <?= htmlspecialchars($leave['end_date'], ENT_QUOTES, 'UTF-8') ?></td><td><?= number_format((float) $leave['days_count'], 0, ',', '.') ?></td><td><span class="status-pill status-active"><?= htmlspecialchars($leave['status'], ENT_QUOTES, 'UTF-8') ?></span></td></tr><?php endforeach; ?></tbody></table></div></div>
+                    </section>
                 </main>
 
                 <aside class="admin-panel sidebar-column">
                     <div class="panel-header"><h4>Acciones</h4></div>
                     <div class="panel-body">
-                        <nav class="module-links"><a href="?module=labor&view=import">Importar</a><a href="?module=labor&view=workers">Gestionar</a></nav>
+                        <nav class="module-links"><a href="?module=labor&view=worker-form">Agregar trabajador</a><a href="/planning">Ver asistencia</a></nav>
                     </div>
                 </aside>
             </div>

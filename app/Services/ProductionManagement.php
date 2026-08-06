@@ -29,7 +29,27 @@ final class ProductionManagement extends BaseService
 
     public function options(): array
     {
-        return ['seasons' => $this->fetch('SELECT id, name FROM seasons WHERE company_id = ? AND active = 1 ORDER BY starts_on DESC'), 'farms' => $this->fetch('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name'), 'blocks' => $this->fetch('SELECT id, code, name FROM blocks WHERE company_id = ? AND active = 1 ORDER BY code'), 'species' => $this->fetch('SELECT id, name, variety FROM species WHERE company_id = ? AND active = 1 ORDER BY name')];
+        return [
+            'seasons' => $this->fetch('SELECT id, name FROM seasons WHERE company_id = ? AND active = 1 ORDER BY starts_on DESC'),
+            'farms' => $this->fetch('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name'),
+            'blocks' => $this->fetch('SELECT id, code, name FROM blocks WHERE company_id = ? AND active = 1 ORDER BY code'),
+            'species' => $this->fetch('SELECT id, name, variety FROM species WHERE company_id = ? AND active = 1 ORDER BY name'),
+            'units' => $this->catalogValues('MEASUREMENT_UNIT'),
+            'qualities' => $this->catalogValues('PRODUCTION_QUALITY'),
+        ];
+    }
+
+    private function catalogValues(string $catalogCode): array
+    {
+        return $this->fetchRows(
+            'SELECT v.code, v.label
+             FROM system_catalog_values v
+             INNER JOIN system_catalogs c ON c.id = v.catalog_id
+             WHERE c.code = ? AND c.active = 1 AND v.active = 1
+               AND (v.company_id IS NULL OR v.company_id = ?)
+             ORDER BY v.sort_order, v.label',
+            [$catalogCode, $this->companyId],
+        );
     }
 
     public function create(array $input, int $userId): void

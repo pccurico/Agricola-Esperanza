@@ -106,6 +106,22 @@ $dashboardJson = json_encode([
             </div>
         </div>
 
+        <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+        <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+
+        <section class="section-card dashboard-filter-bar">
+            <div class="panel-header"><div><h2>Filtros de análisis</h2><p>Actualiza los indicadores y gráficos del período seleccionado.</p></div></div>
+            <form method="get" class="dashboard-filter-grid">
+                <label>Desde<input type="date" name="date_from" value="<?= htmlspecialchars((string) ($selectedFilters['date_from'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+                <label>Hasta<input type="date" name="date_to" value="<?= htmlspecialchars((string) ($selectedFilters['date_to'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+                <label>Temporada<select name="season_id"><option value="">Todas</option><?php foreach ($filterOptions['seasons'] ?? [] as $season): ?><option value="<?= (int) $season['id'] ?>" <?= (int) ($selectedFilters['season_id'] ?? 0) === (int) $season['id'] ? 'selected' : '' ?>><?= htmlspecialchars($season['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                <label>Fundo<select name="farm_id"><option value="">Todos</option><?php foreach ($filterOptions['farms'] ?? [] as $farm): ?><option value="<?= (int) $farm['id'] ?>" <?= (int) ($selectedFilters['farm_id'] ?? 0) === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                <label>Cuartel<select name="block_id"><option value="">Todos</option><?php foreach ($filterOptions['blocks'] ?? [] as $block): ?><option value="<?= (int) $block['id'] ?>" <?= (int) ($selectedFilters['block_id'] ?? 0) === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['code'] . ' · ' . $block['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                <label>Proceso<select name="process"><option value="">Todos</option><?php foreach ($filterOptions['processes'] ?? [] as $process): ?><option value="<?= htmlspecialchars($process['process'], ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($selectedFilters['process'] ?? '') === (string) $process['process'] ? 'selected' : '' ?>><?= htmlspecialchars($process['process'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                <div class="form-actions"><button class="primary-button" type="submit">Aplicar filtros</button><a class="secondary-link" href="./">Restablecer</a></div>
+            </form>
+        </section>
+
         <div class="page-grid v2">
             <main class="main-column">
                 <div class="grid-2-columns">

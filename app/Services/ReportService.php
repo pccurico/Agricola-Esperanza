@@ -54,6 +54,7 @@ final class ReportService extends BaseService
         $laborData = $laborSummary->fetch() ?: ['quantity' => 0, 'total' => 0, 'workers' => 0];
 
         $budget = $this->budgetSummary($dateFrom, $dateTo, $farmId, $process, $seasonId, $centerId);
+        $cash = $this->cashSummary($dateFrom, $dateTo);
         $comparisons = $this->comparisons($dateFrom, $dateTo, $process, $scopeFilters);
         $trends = $this->trends($dateFrom, $dateTo, $process, $scopeFilters);
         $alerts = $this->inventoryAlerts($farmId, $blockId, $dateFrom, $dateTo);
@@ -66,6 +67,7 @@ final class ReportService extends BaseService
             'summary' => $summary,
             'labor_summary' => $laborData,
             'budget' => $budget,
+            'cash' => $cash,
             'categories' => $this->fetchRows('SELECT c.category, COALESCE(SUM(e.amount), 0) AS total FROM expense_entries e INNER JOIN cost_centers c ON c.id = e.cost_center_id WHERE ' . $expense['where'] . ' GROUP BY c.category ORDER BY total DESC', $expense['params']),
             'seasons' => $this->fetchRows('SELECT s.name, COALESCE(SUM(e.amount), 0) AS total FROM expense_entries e INNER JOIN seasons s ON s.id = e.season_id WHERE ' . $expense['where'] . ' GROUP BY s.id ORDER BY s.starts_on DESC', $expense['params']),
             'farms' => $this->costByFarm($expense, $labor),
@@ -212,7 +214,13 @@ final class ReportService extends BaseService
             'by_category' => $this->tryFetchRows('SELECT c.category AS label, COALESCE(SUM(e.amount), 0) AS value FROM expense_entries e INNER JOIN cost_centers c ON c.id = e.cost_center_id WHERE ' . $expenseScope['where'] . ' GROUP BY c.category ORDER BY value DESC LIMIT 8', $expenseScope['params']),
             'budget' => $this->tryFetchRows('SELECT COALESCE(b.amount, 0) AS value, b.period_start AS date FROM budgets b WHERE b.company_id = ? AND b.period_start <= ? AND b.period_end >= ? ORDER BY b.period_start DESC LIMIT 8', [$this->companyId, $dateTo, $dateFrom]),
             'labor' => $this->tryFetchRows('SELECT COALESCE(SUM(l.total_amount), 0) AS value FROM labor_entries l WHERE ' . $laborScope['where'], $laborScope['params']),
+            'cash' => $this->tryFetchRows('SELECT transaction_type AS label, COALESCE(SUM(amount), 0) AS value FROM cash_transactions WHERE company_id = ? AND transaction_date BETWEEN ? AND ? AND status = \'POSTED\' GROUP BY transaction_type', [$this->companyId, $dateFrom, $dateTo]),
         ];
+    }
+
+    private function cashSummary(string $dateFrom, string $dateTo): array
+    {
+        return $this->fetchRows('SELECT COALESCE(SUM(CASE WHEN transaction_type = \'INCOME\' AND status = \'POSTED\' THEN amount ELSE 0 END), 0) AS income, COALESCE(SUM(CASE WHEN transaction_type = \'EXPENSE\' AND status = \'POSTED\' THEN amount ELSE 0 END), 0) AS expense FROM cash_transactions WHERE company_id = ? AND transaction_date BETWEEN ? AND ?', [$this->companyId, $dateFrom, $dateTo])[0] ?? ['income' => 0, 'expense' => 0];
     }
 
     private function dateRange(array $filters): array
@@ -504,4 +512,3 @@ final class ReportService extends BaseService
         return $query->fetchAll();
     }
 }
-

@@ -19,7 +19,7 @@ final class WarehouseController extends BaseController
                     $success = 'Bodega creada correctamente.';
                 } elseif ($action === 'create_location') {
                     $service->createLocation($_POST, (int) $_SESSION['user_id']);
-                    $success = 'UbicaciÃ³n creada correctamente.';
+                    $success = 'Ubicación creada correctamente.';
                 } elseif ($action === 'create_lot') {
                     $service->createLot($_POST, (int) $_SESSION['user_id']);
                     $success = 'Lote creado correctamente.';

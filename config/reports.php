@@ -61,7 +61,7 @@ return [
     ],
     'finance' => [
         'title' => 'Finanzas',
-        'description' => 'Ingresos, gastos, flujo de caja y ejecución presupuestaria.',
+        'description' => 'Gastos, costos y ejecución presupuestaria.',
         'icon' => 'dollar',
         'permission' => 'reports.view',
         'route' => '/reports/finance',

@@ -298,7 +298,7 @@ final class ReportsController extends BaseController
 
     private function countPendingPurchases(): int
     {
-        $query = database()->connection()->prepare('SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("OPEN", "PENDING")');
+        $query = database()->connection()->prepare('SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("SENT", "PARTIAL")');
         $query->execute([(int) $_SESSION['company_id']]);
         return (int) $query->fetchColumn();
     }

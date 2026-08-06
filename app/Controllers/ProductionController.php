@@ -15,7 +15,7 @@ final class ProductionController extends BaseController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $service->create($_POST, (int) $_SESSION['user_id']);
                 (new \AgroPCC\Services\AuditLog(database()->connection(), (int) $_SESSION['company_id']))->record((int) $_SESSION['user_id'], 'CREATE', 'production_entry');
-                $success = 'ProducciÃ³n registrada correctamente.';
+                $success = 'Producción registrada correctamente.';
             }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();

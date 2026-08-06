@@ -33,6 +33,8 @@
                     <section class="section-card">
                         <div class="panel-header"><div><h2>Nuevo artículo</h2></div></div>
                         <div class="panel-body">
+                        <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+                        <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                         <form method="post">
                             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="action" value="create_item">
@@ -41,8 +43,8 @@
                                 <label>Nombre<input name="name" required placeholder="Fertilizante granulado"></label>
                             </div>
                             <div class="form-row">
-                                <label>Categoría<select name="category"><option value="INSUMO">Insumo</option><option value="FERRETERIA">Ferretería</option><option value="MAQUINARIA">Maquinaria</option><option value="HERRAMIENTA">Herramienta</option><option value="OTRO">Otro</option></select></label>
-                                <label>Unidad<input name="unit" required placeholder="kg, lt, un"></label>
+                                <label>Categoría<select name="category" required><option value="">Selecciona una categoría</option><?php foreach ($categories as $category): ?><option value="<?= htmlspecialchars($category['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($category['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                                <label>Unidad<select name="unit" required><option value="">Selecciona una unidad</option><?php foreach ($units as $unit): ?><option value="<?= htmlspecialchars($unit['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($unit['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                                 <label>Stock mínimo<input type="number" name="minimum_stock" min="0" step="0.001"></label>
                             </div>
                             <div class="form-actions"><button class="btn" type="submit">Crear artículo</button></div>
@@ -70,7 +72,7 @@
                         <div class="panel-body">
                         <div class="activity-list">
                             <?php foreach ($movements as $movement): ?><div class="activity-row">
-                                <div><b><?= htmlspecialchars($movement['item_name']) ?></b><small><?= htmlspecialchars($movement['movement_date']) ?> · <?= htmlspecialchars($movement['reference'] ?? '') ?></small></div>
+                                <div><b><?= htmlspecialchars($movement['item_name'], ENT_QUOTES, 'UTF-8') ?></b><small><?= htmlspecialchars($movement['movement_date'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars($movement['warehouse_name'] ?: 'Sin bodega', ENT_QUOTES, 'UTF-8') ?><?= !empty($movement['reference']) ? ' · ' . htmlspecialchars($movement['reference'], ENT_QUOTES, 'UTF-8') : '' ?></small></div>
                                 <div class="meta"><?= htmlspecialchars($movement['movement_type']) ?> · <?= number_format((float) $movement['quantity'], 3, ',', '.') ?> <?= htmlspecialchars($movement['unit']) ?></div>
                             </div><?php endforeach; ?>
                         </div>
@@ -84,9 +86,12 @@
                             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="action" value="create_movement">
                             <label>Artículo<select name="item_id" required><?php foreach ($item_options as $item): ?><option value="<?= (int) $item['id'] ?>"><?= htmlspecialchars($item['sku'] . ' · ' . $item['name']) ?></option><?php endforeach; ?></select></label>
+                            <label>Bodega<select name="warehouse_id"><option value="">Sin bodega</option><?php foreach ($warehouses as $warehouse): ?><option value="<?= (int) $warehouse['id'] ?>"><?= htmlspecialchars($warehouse['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                             <label>Tipo<select name="movement_type"><option value="IN">Entrada</option><option value="OUT">Salida</option><option value="ADJUSTMENT">Ajuste</option></select></label>
                             <label>Cantidad<input type="number" name="quantity" min="0.001" step="0.001" required></label>
+                            <label>Costo unitario<input type="number" name="unit_cost" min="0" step="0.01"></label>
                             <label>Fecha<input type="date" name="movement_date" required value="<?= date('Y-m-d') ?>"></label>
+                            <label>Referencia<input name="reference" maxlength="120"></label>
                             <div class="form-actions"><button class="btn" type="submit">Registrar</button></div>
                         </form>
                     </section>
