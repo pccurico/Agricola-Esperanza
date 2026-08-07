@@ -21,9 +21,6 @@ return [
             'bell' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0"/></svg>',
     ],
     'groups' => [
-        ['id' => 'ejecutivo', 'label' => 'Dashboard Ejecutivo', 'description' => 'Visión consolidada y análisis estratégico.', 'icon' => 'home', 'order' => 10, 'visible' => true, 'department' => 'gerencia', 'badge' => null, 'count' => null, 'items' => [
-            ['id' => 'dashboard-home', 'module' => '', 'label' => 'Resumen ejecutivo', 'route' => '/', 'permission' => 'dashboard.view', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
-        ]],
         ['id' => 'produccion', 'label' => 'Producción', 'description' => 'Predios, cuarteles, labores y cosecha.', 'icon' => 'plant', 'order' => 20, 'visible' => true, 'department' => 'produccion', 'badge' => null, 'count' => null, 'items' => [
             ['id' => 'production-dashboard', 'module' => 'production', 'label' => 'Producción', 'route' => '/production', 'permission' => 'production.view', 'icon' => 'chart', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'master-farms', 'module' => 'masters', 'label' => 'Predios', 'route' => '/masters', 'permission' => 'masters.view', 'icon' => 'plant', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
@@ -58,9 +55,11 @@ return [
             ['id' => 'settings-system', 'module' => 'settings', 'label' => 'Configuración', 'route' => '/settings', 'permission' => 'setup.manage', 'icon' => 'wrench', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
             ['id' => 'documents-module', 'module' => 'documents', 'label' => 'Documentos', 'route' => '/documents', 'permission' => 'documents.view', 'icon' => 'boxes', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
-        ['id' => 'gerencia', 'label' => 'Gerencia', 'description' => 'Centro ejecutivo y BI Analytics.', 'icon' => 'chart', 'order' => 80, 'visible' => true, 'department' => 'gerencia', 'badge' => null, 'count' => null, 'items' => [
-            ['id' => 'executive-center', 'module' => 'reports', 'label' => 'Centro Ejecutivo', 'route' => '/reports', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
-            ['id' => 'audit-module', 'module' => 'audit', 'label' => 'BI Analytics', 'route' => '/audit', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+        ['id' => 'gerencia', 'label' => 'Gerencia', 'description' => 'Centro de inteligencia, reportes y análisis de procesos.', 'icon' => 'chart', 'order' => 10, 'visible' => true, 'department' => 'gerencia', 'badge' => null, 'count' => null, 'items' => [
+            ['id' => 'dashboard-home', 'module' => '', 'label' => 'Resumen ejecutivo', 'route' => '/', 'permission' => 'dashboard.view', 'icon' => 'home', 'order' => 10, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'management-intelligence', 'module' => 'intelligence', 'label' => 'Centro de Inteligencia Gerencial', 'route' => '/intelligence', 'permission' => 'dashboard.view', 'icon' => 'chart', 'order' => 20, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'executive-center', 'module' => 'reports', 'label' => 'Reportes gerenciales', 'route' => '/reports', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 30, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
+            ['id' => 'process-analytics', 'module' => 'reports', 'label' => 'Análisis de procesos', 'route' => '/reports/trends', 'permission' => 'reports.view', 'icon' => 'chart', 'order' => 40, 'visible' => true, 'badge' => null, 'count' => null, 'favorite' => false],
         ]],
     ],
 ];

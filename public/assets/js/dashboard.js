@@ -457,13 +457,21 @@
     function updateFilterSummary(data) {
         const selectedProcess = document.getElementById('selected-process');
         const selectedPeriod = document.getElementById('selected-period');
+        const selectedSeason = document.getElementById('selected-season');
+        const selectedCostCenter = document.getElementById('selected-cost-center');
 
         const filters = data.filters || {};
         if (selectedProcess) {
-            selectedProcess.textContent = filters.process || 'Todos';
+            selectedProcess.textContent = getSelectedOptionText('process');
         }
         if (selectedPeriod) {
             selectedPeriod.textContent = `${filters.date_from || ''} – ${filters.date_to || ''}`.trim();
+        }
+        if (selectedSeason) {
+            selectedSeason.textContent = getSelectedOptionText('season_id');
+        }
+        if (selectedCostCenter) {
+            selectedCostCenter.textContent = getSelectedOptionText('cost_center_id');
         }
     }
 
@@ -549,7 +557,11 @@
         const filterForm = document.getElementById('dashboard-filter-form');
         if (filterForm) {
             filterForm.addEventListener('submit', refreshDashboard);
-            filterForm.querySelectorAll('input, select').forEach((input) => input.addEventListener('change', refreshDashboard));
+            filterForm.addEventListener('change', (event) => {
+                if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+                    refreshDashboard(event);
+                }
+            });
         }
     }
 

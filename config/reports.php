@@ -100,8 +100,8 @@ return [
         'filters' => ['farm', 'season', 'cost_center'],
     ],
     'trends' => [
-        'title' => 'Tendencias',
-        'description' => 'Evolución de costos, producción y mano de obra.',
+        'title' => 'Análisis de procesos',
+        'description' => 'Evolución y desempeño de costos, producción y mano de obra por proceso.',
         'icon' => 'chart',
         'permission' => 'reports.view',
         'route' => '/reports/trends',

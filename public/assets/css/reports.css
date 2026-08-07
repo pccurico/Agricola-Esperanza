@@ -550,3 +550,29 @@
     border-radius: 14px;
     background: #fff;
 }
+.executive-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
+.executive-analysis-card {
+    min-width: 0;
+}
+.executive-analysis-card .panel-header small {
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+}
+.executive-analysis-card .panel-body {
+    min-height: 280px;
+}
+.executive-analysis-card canvas {
+    width: 100% !important;
+    height: 260px !important;
+}
+@media (max-width: 920px) {
+    .executive-analysis-grid {
+        grid-template-columns: 1fr;
+    }
+}

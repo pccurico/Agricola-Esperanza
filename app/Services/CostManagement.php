@@ -37,35 +37,6 @@ final class CostManagement extends BaseService
         ];
     }
 
-    public function cashTransactions(): array
-    {
-        $query = $this->connection->prepare('SELECT id, transaction_date, transaction_type, category, description, amount, reference, status FROM cash_transactions WHERE company_id = ? ORDER BY transaction_date DESC, id DESC');
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
-    }
-
-    public function cashSummary(): array
-    {
-        $query = $this->connection->prepare('SELECT COALESCE(SUM(CASE WHEN transaction_type = \'INCOME\' AND status = \'POSTED\' THEN amount ELSE 0 END), 0) AS income, COALESCE(SUM(CASE WHEN transaction_type = \'EXPENSE\' AND status = \'POSTED\' THEN amount ELSE 0 END), 0) AS expense FROM cash_transactions WHERE company_id = ?');
-        $query->execute([$this->companyId]);
-        $summary = $query->fetch() ?: [];
-        $summary['balance'] = (float) ($summary['income'] ?? 0) - (float) ($summary['expense'] ?? 0);
-        return $summary;
-    }
-
-    public function createCashTransaction(array $input, int $userId): void
-    {
-        foreach (['transaction_date', 'transaction_type', 'category', 'description', 'amount'] as $field) {
-            if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Completa todos los datos del movimiento de caja.');
-            }
-        }
-        if (!in_array($input['transaction_type'], ['INCOME', 'EXPENSE'], true) || !is_numeric($input['amount']) || (float) $input['amount'] <= 0) {
-            throw new RuntimeException('El tipo o monto del movimiento de caja no es válido.');
-        }
-        $this->execute('INSERT INTO cash_transactions (company_id, transaction_date, transaction_type, category, description, amount, reference, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$this->companyId, $input['transaction_date'], $input['transaction_type'], trim($input['category']), trim($input['description']), $input['amount'], trim((string) ($input['reference'] ?? '')) ?: null, $userId]);
-    }
-
     public function create(array $input, int $userId): void
     {
         foreach (['season_id', 'cost_center_id', 'entry_date', 'description', 'amount'] as $field) {

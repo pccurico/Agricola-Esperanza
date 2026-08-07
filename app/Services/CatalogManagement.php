@@ -35,14 +35,36 @@ final class CatalogManagement extends BaseService
         return $query->fetchAll();
     }
 
+    public function automaticCode(string $catalogCode, string $label, ?int $excludeId = null): string
+    {
+        $catalog = $this->catalog($catalogCode);
+        if (!$catalog) {
+            throw new RuntimeException('El catálogo no existe.');
+        }
+        $base = strtoupper(trim((string) preg_replace('/[^A-Z0-9]+/i', '_', strtr(trim($label), ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n', 'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ñ' => 'N']))));
+        $base = trim($base, '_') ?: 'SUBCATEGORIA';
+        $base = substr($base, 0, 70);
+        $code = $base;
+        $suffix = 2;
+        do {
+            $query = $this->connection->prepare('SELECT COUNT(*) FROM system_catalog_values WHERE catalog_id = ? AND company_id = ? AND code = ? AND id <> ?');
+            $query->execute([(int) $catalog['id'], $this->companyId, $code, $excludeId ?? 0]);
+            $exists = (int) $query->fetchColumn() > 0;
+            if ($exists) {
+                $code = substr($base, 0, 70 - strlen((string) $suffix)) . '_' . $suffix++;
+            }
+        } while ($exists);
+        return $code;
+    }
+
     public function createCompanyValue(int $userId, string $catalogCode, string $code, string $label, int $sortOrder = 0, ?string $metadataJson = null): int
     {
         $catalog = $this->catalog($catalogCode);
         if (!$catalog || $catalog['scope'] !== 'COMPANY') {
-            throw new RuntimeException('El catÃ¡logo no admite valores por empresa.');
+            throw new RuntimeException('El catálogo no admite valores por empresa.');
         }
         if (trim($code) === '' || trim($label) === '') {
-            throw new RuntimeException('El cÃ³digo y la etiqueta son obligatorios.');
+            throw new RuntimeException('El código y la etiqueta son obligatorios.');
         }
         $query = $this->connection->prepare(
             'INSERT INTO system_catalog_values (catalog_id, company_id, code, label, sort_order, metadata_json) VALUES (?, ?, ?, ?, ?, ?)'
@@ -53,12 +75,31 @@ final class CatalogManagement extends BaseService
         return $id;
     }
 
+    public function updateCompanyValue(int $userId, int $valueId, string $catalogCode, string $label, int $sortOrder, string $metadataJson): void
+    {
+        $catalog = $this->catalog($catalogCode);
+        if (!$catalog || $catalog['scope'] !== 'COMPANY') {
+            throw new RuntimeException('El catálogo no admite valores por empresa.');
+        }
+        if (trim($label) === '') {
+            throw new RuntimeException('El nombre visible es obligatorio.');
+        }
+        $exists = $this->connection->prepare('SELECT id FROM system_catalog_values WHERE id = ? AND catalog_id = ? AND company_id = ? AND active = 1 LIMIT 1');
+        $exists->execute([$valueId, (int) $catalog['id'], $this->companyId]);
+        if (!$exists->fetchColumn()) {
+            throw new RuntimeException('La subcategoría no existe para la empresa.');
+        }
+        $query = $this->connection->prepare('UPDATE system_catalog_values SET label = ?, sort_order = ?, metadata_json = ? WHERE id = ? AND catalog_id = ? AND company_id = ?');
+        $query->execute([trim($label), $sortOrder, $metadataJson, $valueId, (int) $catalog['id'], $this->companyId]);
+        $this->audit->record($userId, 'UPDATE', 'system_catalog_values', $valueId, ['catalog' => $catalogCode]);
+    }
+
     public function deactivateValue(int $userId, int $valueId): void
     {
         $query = $this->connection->prepare('UPDATE system_catalog_values SET active = 0 WHERE id = ? AND company_id = ?');
         $query->execute([$valueId, $this->companyId]);
         if ($query->rowCount() === 0) {
-            throw new RuntimeException('El valor de catÃ¡logo no existe para la empresa.');
+            throw new RuntimeException('El valor de catálogo no existe para la empresa.');
         }
         $this->audit->record($userId, 'DEACTIVATE', 'system_catalog_values', $valueId);
     }
@@ -71,4 +112,3 @@ final class CatalogManagement extends BaseService
         return $catalog ?: null;
     }
 }
-

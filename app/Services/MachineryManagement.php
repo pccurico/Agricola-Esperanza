@@ -227,27 +227,6 @@ final class MachineryManagement extends BaseService
         return $query->fetchAll();
     }
 
-    public function options(): array
-    {
-        return [
-            'machinery_types' => $this->catalogValues('MACHINERY_TYPE'),
-            'maintenance_types' => $this->catalogValues('MAINTENANCE_TYPE'),
-        ];
-    }
-
-    private function catalogValues(string $catalogCode): array
-    {
-        return $this->fetchRows(
-            'SELECT v.code, v.label
-             FROM system_catalog_values v
-             INNER JOIN system_catalogs c ON c.id = v.catalog_id
-             WHERE c.code = ? AND c.active = 1 AND v.active = 1
-               AND (v.company_id IS NULL OR v.company_id = ?)
-             ORDER BY v.sort_order, v.label',
-            [$catalogCode, $this->companyId],
-        );
-    }
-
     public function createMachinery(array $input): void
     {
         foreach (['code', 'name', 'machinery_type'] as $field) {

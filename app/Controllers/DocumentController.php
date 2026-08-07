@@ -19,11 +19,6 @@ final class DocumentController extends BaseController
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();
         }
-        $filters = [
-            'supplier_id' => (int) ($_GET['supplier_id'] ?? 0),
-            'client_id' => (int) ($_GET['client_id'] ?? 0),
-            'document_type' => trim((string) ($_GET['document_type'] ?? '')),
-        ];
-        return [...$service->options(), 'documents' => $service->documents($filters), 'filters' => $filters, 'error' => $error, 'success' => $success];
+        return [...$service->options(), 'documents' => $service->documents(), 'error' => $error, 'success' => $success];
     }
 }

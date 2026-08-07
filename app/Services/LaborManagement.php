@@ -27,57 +27,6 @@ final class LaborManagement extends BaseService
         return $query->fetchAll();
     }
 
-    public function assignments(): array
-    {
-        $query = $this->connection->prepare('SELECT a.id, a.start_date, a.end_date, a.department, a.position, w.full_name, f.name AS farm_name, b.name AS block_name FROM worker_assignments a INNER JOIN workers w ON w.id = a.worker_id LEFT JOIN farms f ON f.id = a.farm_id LEFT JOIN blocks b ON b.id = a.block_id WHERE w.company_id = ? ORDER BY a.start_date DESC, a.id DESC');
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
-    }
-
-    public function leaveRequests(): array
-    {
-        $query = $this->connection->prepare('SELECT l.id, l.leave_type, l.start_date, l.end_date, l.days_count, l.status, l.notes, w.full_name FROM worker_leave_requests l INNER JOIN workers w ON w.id = l.worker_id WHERE w.company_id = ? ORDER BY l.start_date DESC, l.id DESC');
-        $query->execute([$this->companyId]);
-        return $query->fetchAll();
-    }
-
-    public function createAssignment(array $input): void
-    {
-        foreach (['worker_id', 'start_date'] as $field) {
-            if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Trabajador y fecha de inicio son obligatorios.');
-            }
-        }
-        $this->belongs('workers', $input['worker_id']);
-        if (!empty($input['farm_id'])) {
-            $this->belongs('farms', $input['farm_id']);
-        }
-        if (!empty($input['block_id'])) {
-            $this->belongs('blocks', $input['block_id']);
-        }
-        if (!empty($input['end_date']) && $input['end_date'] < $input['start_date']) {
-            throw new RuntimeException('La fecha de término no puede ser anterior al inicio.');
-        }
-        $this->execute('INSERT INTO worker_assignments (worker_id, farm_id, block_id, department, position, start_date, end_date, is_primary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [(int) $input['worker_id'], $input['farm_id'] ?: null, $input['block_id'] ?: null, trim((string) ($input['department'] ?? '')) ?: null, trim((string) ($input['position'] ?? '')) ?: null, $input['start_date'], $input['end_date'] ?: null, 1]);
-    }
-
-    public function createLeaveRequest(array $input): void
-    {
-        foreach (['worker_id', 'leave_type', 'start_date', 'end_date'] as $field) {
-            if (trim((string) ($input[$field] ?? '')) === '') {
-                throw new RuntimeException('Trabajador, tipo y fechas son obligatorios.');
-            }
-        }
-        if ($input['end_date'] < $input['start_date']) {
-            throw new RuntimeException('La fecha de término no puede ser anterior al inicio.');
-        }
-        $this->belongs('workers', $input['worker_id']);
-        $start = new \DateTimeImmutable($input['start_date']);
-        $end = new \DateTimeImmutable($input['end_date']);
-        $days = $start->diff($end)->days + 1;
-        $this->execute('INSERT INTO worker_leave_requests (worker_id, leave_type, start_date, end_date, days_count, status, notes) VALUES (?, ?, ?, ?, ?, \'PENDING\', ?)', [(int) $input['worker_id'], trim((string) $input['leave_type']), $input['start_date'], $input['end_date'], $days, trim((string) ($input['notes'] ?? '')) ?: null]);
-    }
-
     public function workerProfile(int $workerId): array
     {
         $worker = $this->connection->prepare('SELECT id, company_id, full_name, tax_id, worker_type, default_rate, active FROM workers WHERE id = ? AND company_id = ? LIMIT 1');
@@ -217,25 +166,7 @@ final class LaborManagement extends BaseService
 
     public function options(): array
     {
-        return [
-            'seasons' => $this->fetch('SELECT id, name FROM seasons WHERE company_id = ? AND active = 1 ORDER BY starts_on DESC'),
-            'farms' => $this->fetch('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name'),
-            'blocks' => $this->fetch('SELECT id, code, name FROM blocks WHERE company_id = ? AND active = 1 ORDER BY code'),
-            'labor_types' => $this->catalogValues('LABOR_TYPE'),
-        ];
-    }
-
-    private function catalogValues(string $catalogCode): array
-    {
-        return $this->fetchRows(
-            'SELECT v.code, v.label
-             FROM system_catalog_values v
-             INNER JOIN system_catalogs c ON c.id = v.catalog_id
-             WHERE c.code = ? AND c.active = 1 AND v.active = 1
-               AND (v.company_id IS NULL OR v.company_id = ?)
-             ORDER BY v.sort_order, v.label',
-            [$catalogCode, $this->companyId],
-        );
+        return ['seasons' => $this->fetch('SELECT id, name FROM seasons WHERE company_id = ? AND active = 1 ORDER BY starts_on DESC'), 'farms' => $this->fetch('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name'), 'blocks' => $this->fetch('SELECT id, code, name FROM blocks WHERE company_id = ? AND active = 1 ORDER BY code')];
     }
 
     public function createWorker(array $input): int

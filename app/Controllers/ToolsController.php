@@ -10,9 +10,12 @@ final class ToolsController extends BaseController
 {
     public function handle(): array
     {
-        $service = new ToolsService(database()->connection(), dirname(__DIR__, 2), (int) ($_SESSION['company_id'] ?? 0), (int) ($_SESSION['user_id'] ?? 0));
+        $rootPath = dirname(__DIR__, 2);
+        $service = new ToolsService(database()->connection(), $rootPath, (int) ($_SESSION['company_id'] ?? 0), (int) ($_SESSION['user_id'] ?? 0));
+        $demoService = new \AgroPCC\Services\DemoDataManager(database()->connection(), $rootPath, (int) ($_SESSION['company_id'] ?? 0));
         $error = null;
         $success = null;
+        $operation = null;
         $isAjaxUpdate = $_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'remote_update' && (isset($_POST['ajax']) || str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json'));
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['remote_progress'])) {
@@ -24,15 +27,19 @@ final class ToolsController extends BaseController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $action = (string) ($_POST['action'] ?? '');
                 $supportedAction = match ($action) {
-                    'backup', 'sync_schema', 'repair', 'restore', 'update', 'remote_update' => true,
+                    'backup', 'delete_backup', 'sync_schema', 'repair', 'restore', 'update', 'remote_update', 'demo_install', 'demo_reinstall', 'demo_remove' => true,
                     default => false,
                 };
 
                 if (!$supportedAction) {
                     $error = 'Acción no soportada.';
                 } else {
-                    match ($action) {
+                    $operation = match ($action) {
                         'backup' => $service->createBackup(),
+                        'delete_backup' => $service->deleteBackup((int) ($_POST['backup_id'] ?? 0)),
+                        'demo_install' => $demoService->install((int) ($_SESSION['user_id'] ?? 0)),
+                        'demo_reinstall' => $demoService->reinstall((int) ($_SESSION['user_id'] ?? 0)),
+                        'demo_remove' => $demoService->remove(),
                         'sync_schema' => $service->syncSchema(),
                         'repair' => $service->repairApplication(),
                         'restore' => $service->restoreBackup((int) ($_POST['backup_id'] ?? 0)),
@@ -43,7 +50,11 @@ final class ToolsController extends BaseController
 
                     $success = match ($action) {
                         'backup' => 'Respaldo generado correctamente.',
-                        'sync_schema' => 'Sincronización de esquema aplicada correctamente.',
+                        'delete_backup' => 'Respaldo eliminado correctamente.',
+                        'demo_install' => 'Datos demo cargados correctamente.',
+                        'demo_reinstall' => 'Datos demo actualizados correctamente.',
+                        'demo_remove' => 'Datos demo eliminados correctamente.',
+                        'sync_schema' => (($operation['verified'] ?? false) ? 'Sincronización completada y verificada.' : 'Sincronización ejecutada, pero aún quedan migraciones pendientes.'),
                         'repair' => 'Reparación ejecutada correctamente.',
                         'restore' => 'Restauración ejecutada correctamente.',
                         'update' => 'Actualización ejecutada correctamente.',
@@ -78,9 +89,12 @@ final class ToolsController extends BaseController
 
         return [
             'status' => $status,
+            'demo_status' => $demoService->status(),
             'backups' => $service->backups(),
             'logs' => $service->recentLogs(),
             'remote_progress' => $service->remoteProgressStatus(),
+            'operation' => $operation,
+            'operation_action' => $_SERVER['REQUEST_METHOD'] === 'POST' ? (string) ($_POST['action'] ?? '') : '',
             'error' => $error,
             'success' => $success,
         ];

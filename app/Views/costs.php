@@ -1,5 +1,4 @@
 <!doctype html>
-<?php $cash_transactions = $cash_transactions ?? []; $cash_summary = $cash_summary ?? ['income' => 0, 'expense' => 0, 'balance' => 0]; ?>
 <html lang="es">
 
 <head>
@@ -16,7 +15,7 @@
                     <p class="eyebrow">Control financiero</p>
                     <h1><?= htmlspecialchars($category_label) ?></h1>
                     <p class="setup-copy">Registra cada movimiento y asígnalo a una temporada, fundo y centro de costo.</p>
-                </div><a class="secondary-link" href="./">Volver al dashboard</a>
+                </div><a class="secondary-link" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al dashboard</a>
             </header><?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?><?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success) ?></div><?php endif; ?><section class="admin-columns">
                 <article class="admin-panel">
                     <header class="panel-header">
@@ -52,17 +51,6 @@
                                     </tr><?php endforeach; ?></tbody>
                         </table>
                     </div>
-                </article>
-            </section>
-            <section class="admin-columns">
-                <article class="admin-panel">
-                    <header class="panel-header"><div><h2>Flujo de caja</h2><p>Registra ingresos y egresos reales para conocer el saldo.</p></div></header>
-                    <div class="stats-grid"><div class="stat-card"><span>Ingresos</span><strong>$<?= number_format((float) ($cash_summary['income'] ?? 0), 0, ',', '.') ?></strong></div><div class="stat-card"><span>Egresos</span><strong>$<?= number_format((float) ($cash_summary['expense'] ?? 0), 0, ',', '.') ?></strong></div><div class="stat-card"><span>Saldo</span><strong>$<?= number_format((float) ($cash_summary['balance'] ?? 0), 0, ',', '.') ?></strong></div></div>
-                    <form method="post" class="admin-form"><input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="action" value="create_cash_transaction"><div class="form-row"><label>Tipo<select name="transaction_type" required><option value="INCOME">Ingreso</option><option value="EXPENSE">Egreso</option></select></label><label>Fecha<input type="date" name="transaction_date" value="<?= date('Y-m-d') ?>" required></label><label>Categoría<input name="category" maxlength="80" required></label><label>Monto<input type="number" name="amount" min="0.01" step="0.01" required></label></div><div class="form-row"><label>Descripción<input name="description" maxlength="255" required></label><label>Referencia<input name="reference" maxlength="120"></label></div><div class="form-actions"><button class="primary-button" type="submit">Registrar movimiento</button></div></form>
-                </article>
-                <article class="admin-panel">
-                    <header class="panel-header"><h2>Movimientos de caja</h2><p><?= count($cash_transactions) ?> registros contabilizados</p></header>
-                    <div class="table-scroll"><table class="admin-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Categoría</th><th>Monto</th></tr></thead><tbody><?php foreach ($cash_transactions as $cash): ?><tr><td><?= htmlspecialchars($cash['transaction_date'], ENT_QUOTES, 'UTF-8') ?></td><td><span class="status-pill <?= $cash['transaction_type'] === 'INCOME' ? 'status-active' : 'status-inactive' ?>"><?= $cash['transaction_type'] === 'INCOME' ? 'Ingreso' : 'Egreso' ?></span></td><td><?= htmlspecialchars($cash['description'], ENT_QUOTES, 'UTF-8') ?></td><td><?= htmlspecialchars($cash['category'], ENT_QUOTES, 'UTF-8') ?></td><td><b>$<?= number_format((float) $cash['amount'], 0, ',', '.') ?></b></td></tr><?php endforeach; ?></tbody></table></div>
                 </article>
             </section>
         </section>

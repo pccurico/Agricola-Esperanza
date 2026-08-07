@@ -38,7 +38,7 @@ final class MigrationRunner extends BaseService
                             $this->connection->exec($statement);
                         } catch (\PDOException $exception) {
                             $errorInfo = $exception->errorInfo;
-                            if ((int) ($errorInfo[1] ?? 0) !== 1061) {
+                            if (!in_array((int) ($errorInfo[1] ?? 0), [1060, 1061], true)) {
                                 throw $exception;
                             }
                         }
@@ -64,4 +64,3 @@ final class MigrationRunner extends BaseService
         $this->connection->prepare('INSERT IGNORE INTO schema_migrations (version) VALUES (?)')->execute([$version]);
     }
 }
-

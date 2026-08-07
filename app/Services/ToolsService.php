@@ -35,7 +35,8 @@ final class ToolsService extends BaseService
         }
         $latestInstalled = $this->latestAppliedMigration();
         $latestAvailable = $this->latestAvailableMigration();
-        $updateAvailable = $latestInstalled !== '' && $latestAvailable !== '' && $latestInstalled !== $latestAvailable;
+        $pendingMigrations = $this->pendingMigrations();
+        $updateAvailable = $pendingMigrations !== [];
 
         $remoteRelease = $this->remoteReleaseStatus();
         $remoteVersion = (string) ($remoteRelease['tag_name'] ?? '');
@@ -48,6 +49,7 @@ final class ToolsService extends BaseService
             'installed_version' => $latestInstalled ?: 'sin-migraciones',
             'available_version' => $latestAvailable ?: 'sin-migraciones',
             'can_update' => $updateAvailable,
+            'pending_migrations' => $pendingMigrations,
             'missing_tables' => $missingTables,
             'missing_columns' => $missingColumns,
             'backup_count' => count($this->backups()),
@@ -183,11 +185,17 @@ final class ToolsService extends BaseService
         $this->logSystemEvent('tools.restore', 'INFO', 'Restauración completada', ['backup_id' => $backupId]);
     }
 
-    public function syncSchema(): void
+    public function syncSchema(): array
     {
-        $this->logSystemEvent('tools.schema', 'INFO', 'Sincronización de esquema iniciada', []);
+        $before = $this->latestAppliedMigration();
+        $pendingBefore = $this->pendingMigrations();
+        $this->logSystemEvent('tools.schema', 'INFO', 'Sincronización de esquema iniciada', ['before' => $before, 'pending' => $pendingBefore]);
         (new MigrationRunner($this->connection, $this->rootPath))->run();
-        $this->logSystemEvent('tools.schema', 'INFO', 'Sincronización de esquema completada', []);
+        $after = $this->latestAppliedMigration();
+        $pendingAfter = $this->pendingMigrations();
+        $result = ['before' => $before ?: 'sin-migraciones', 'after' => $after ?: 'sin-migraciones', 'applied' => array_values(array_diff($pendingBefore, $pendingAfter)), 'pending' => $pendingAfter, 'verified' => $pendingAfter === []];
+        $this->logSystemEvent('tools.schema', $result['verified'] ? 'INFO' : 'WARNING', $result['verified'] ? 'Sincronización de esquema completada y verificada' : 'Sincronización finalizada con migraciones pendientes', $result);
+        return $result;
     }
 
     public function repairApplication(): void
@@ -280,6 +288,32 @@ final class ToolsService extends BaseService
         return $validBackups;
     }
 
+    public function deleteBackup(int $backupId): void
+    {
+        if ($backupId <= 0) {
+            throw new RuntimeException('El respaldo seleccionado no es válido.');
+        }
+        $query = $this->connection->prepare('SELECT id, file_path FROM backup_records WHERE id = ? AND company_id = ? LIMIT 1');
+        $query->execute([$backupId, $this->companyId]);
+        $backup = $query->fetch();
+        if (!$backup) {
+            throw new RuntimeException('El respaldo solicitado no existe para esta empresa.');
+        }
+
+        $backupFile = $this->resolveBackupFilePath((string) $backup['file_path']);
+        $backupDirectory = realpath($this->rootPath . '/storage/backups');
+        $resolvedFile = is_file($backupFile) ? realpath($backupFile) : false;
+        if ($resolvedFile !== false && $backupDirectory !== false && !str_starts_with($resolvedFile, $backupDirectory . DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('El archivo del respaldo está fuera de la carpeta autorizada.');
+        }
+        if ($resolvedFile !== false && !unlink($resolvedFile)) {
+            throw new RuntimeException('No fue posible eliminar el archivo del respaldo.');
+        }
+
+        $this->connection->prepare('DELETE FROM backup_records WHERE id = ? AND company_id = ?')->execute([$backupId, $this->companyId]);
+        $this->logSystemEvent('tools.backup', 'INFO', 'Respaldo eliminado', ['backup_id' => $backupId]);
+    }
+
     private function resolveBackupFilePath(string $filePath): string
     {
         $filePath = str_replace('\\', '/', trim($filePath));
@@ -337,7 +371,7 @@ final class ToolsService extends BaseService
 
     private function latestAppliedMigration(): string
     {
-        $query = $this->connection->prepare('SELECT version FROM schema_migrations ORDER BY applied_at DESC, version DESC LIMIT 1');
+        $query = $this->connection->prepare('SELECT version FROM schema_migrations ORDER BY CAST(SUBSTRING_INDEX(version, "_", 1) AS UNSIGNED) DESC, version DESC LIMIT 1');
         $query->execute();
         $version = $query->fetchColumn();
         $query->closeCursor();
@@ -346,13 +380,27 @@ final class ToolsService extends BaseService
 
     private function latestAvailableMigration(): string
     {
-        $files = glob($this->rootPath . '/database/migrations/*.sql') ?: [];
-        $versions = [];
-        foreach ($files as $file) {
-            $versions[] = pathinfo($file, PATHINFO_FILENAME);
-        }
-        sort($versions, SORT_STRING);
+        $versions = $this->availableMigrations();
         return $versions === [] ? '' : (string) end($versions);
+    }
+
+    private function pendingMigrations(): array
+    {
+        $available = $this->availableMigrations();
+        if ($available === []) {
+            return [];
+        }
+        $query = $this->connection->query('SELECT version FROM schema_migrations');
+        $installed = array_map('strval', $query->fetchAll(PDO::FETCH_COLUMN));
+        return array_values(array_diff($available, $installed));
+    }
+
+    private function availableMigrations(): array
+    {
+        $files = glob($this->rootPath . '/database/migrations/*.sql') ?: [];
+        $versions = array_map(static fn (string $file): string => pathinfo($file, PATHINFO_FILENAME), $files);
+        sort($versions, SORT_STRING);
+        return $versions;
     }
 
     private function remoteReleaseStatus(): array
@@ -730,4 +778,3 @@ final class ToolsService extends BaseService
     }
 
 }
-

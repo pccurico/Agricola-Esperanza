@@ -133,7 +133,53 @@ final class DemoDataManager extends BaseService
         if (!is_array($data) || !is_array($data['tables'] ?? null)) {
             throw new RuntimeException('El archivo de datos demo no tiene un formato vÃ¡lido.');
         }
+        $data['version'] = '2.0';
+        $data['tables'] = $this->expandOperationalTables($data['tables']);
         return $data;
+    }
+
+    private function expandOperationalTables(array $tables): array
+    {
+        $targetTables = [
+            'purchase_orders', 'inventory_movements', 'labor_entries', 'production_entries',
+            'expense_entries', 'machinery_maintenance', 'fuel_movements', 'inventory_transfers',
+            'internal_requests', 'documents', 'notifications', 'calendar_events', 'tasks'
+        ];
+        foreach ($targetTables as $table) {
+            $rows = $tables[$table] ?? [];
+            if (!is_array($rows) || $rows === [] || count($rows) >= 200) {
+                continue;
+            }
+            $seedRows = array_values($rows);
+            for ($index = count($rows); $index < 200; $index++) {
+                $source = $seedRows[$index % count($seedRows)];
+                $copy = $source;
+                $copy['key'] = (string) $source['key'] . '-' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
+                foreach (['code', 'order_number', 'document_number', 'invoice_number', 'reference', 'lot_number'] as $field) {
+                    if (array_key_exists($field, $copy) && $copy[$field] !== null) {
+                        $copy[$field] = (string) $copy[$field] . '-' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
+                    }
+                }
+                foreach ($copy as $field => $value) {
+                    if (is_string($value) && preg_match('/^\\d{4}-\\d{2}-\\d{2}(?: \\d{2}:\\d{2}:\\d{2})?$/', $value)) {
+                        $copy[$field] = $this->shiftDemoDate($value, $index);
+                    }
+                }
+                $rows[] = $copy;
+            }
+            $tables[$table] = $rows;
+        }
+        return $tables;
+    }
+
+    private function shiftDemoDate(string $value, int $offset): string
+    {
+        $format = str_contains($value, ' ') ? 'Y-m-d H:i:s' : 'Y-m-d';
+        $date = \DateTimeImmutable::createFromFormat($format, $value);
+        if (!$date) {
+            return $value;
+        }
+        return $date->modify('+' . ($offset * 2) . ' days')->format($format);
     }
 
     private function insertTable(string $table, mixed $rows, int $batchId): void
@@ -241,4 +287,3 @@ final class DemoDataManager extends BaseService
         return (int) $query->fetchColumn();
     }
 }
-

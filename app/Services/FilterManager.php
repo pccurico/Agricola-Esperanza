@@ -27,7 +27,7 @@ class FilterManager
                 continue;
             }
 
-            if (in_array($key, ['farm_id', 'block_id'], true)) {
+            if (in_array($key, ['farm_id', 'block_id', 'season_id', 'cost_center_id'], true)) {
                 $resolved[$key] = max(0, (int) $incomingValue);
                 continue;
             }

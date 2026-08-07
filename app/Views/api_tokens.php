@@ -25,7 +25,7 @@ $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
 				</div>
 				<div class="hero-actions">
 					<nav class="hero-nav">
-						<a class="secondary-link" href="./">Volver al dashboard</a>
+						<a class="secondary-link" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al dashboard</a>
 					</nav>
 				</div>
 			</div>
@@ -104,4 +104,3 @@ $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
 <script src="assets/js/table-layout.js" defer></script>
 </body>
 </html>
-

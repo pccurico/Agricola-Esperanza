@@ -16,7 +16,7 @@ $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
 <body class="admin-page">
     <main class="admin-shell">
         <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
-        <section class="module-content">
+        <section class="module-content module-v2 inventory-v2 notifications-v2">
             <header class="admin-header"><div><p class="eyebrow">Centro de actividad</p><div class="notification-summary-cards"><article class="notification-summary-card notification-summary-card-unread"><span class="notification-summary-label">No leídas</span><strong><?= $unreadCount ?></strong></article><article class="notification-summary-card notification-summary-card-read"><span class="notification-summary-label">Leídas</span><strong><?= $readCount ?></strong></article></div><p class="setup-copy">Alertas y recordatorios de la operación agrícola.</p></div><a class="secondary-link" href="./">Volver al dashboard</a></header>
             <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <?php if ($unreadCount > 0): ?><form method="post" class="notifications-toolbar"><input type="hidden" name="csrf" value="<?= $csrf ?>"><input type="hidden" name="action" value="read_all"><button class="secondary-link" type="submit">Marcar todas como leídas</button></form><?php endif; ?>

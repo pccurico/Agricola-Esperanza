@@ -178,6 +178,8 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     item_id BIGINT UNSIGNED NOT NULL,
     warehouse_id BIGINT UNSIGNED NULL,
     season_id BIGINT UNSIGNED NULL,
+    cost_center_id BIGINT UNSIGNED NULL,
+    farm_id BIGINT UNSIGNED NULL,
     block_id BIGINT UNSIGNED NULL,
     movement_type VARCHAR(40) NOT NULL,
     quantity DECIMAL(15,3) NOT NULL,
@@ -190,9 +192,12 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     CONSTRAINT fk_inventory_movements_item FOREIGN KEY (item_id) REFERENCES inventory_items(id),
     CONSTRAINT fk_inventory_movements_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_season FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE SET NULL,
+    CONSTRAINT fk_inventory_movements_center FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id) ON DELETE SET NULL,
+    CONSTRAINT fk_inventory_movements_farm FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_block FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE SET NULL,
     CONSTRAINT fk_inventory_movements_user FOREIGN KEY (created_by) REFERENCES users(id),
-    KEY idx_inventory_movements_reporting (company_id, item_id, movement_date)
+    KEY idx_inventory_movements_reporting (company_id, item_id, movement_date),
+    KEY idx_inventory_movements_assignment (company_id, season_id, cost_center_id, farm_id, block_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS audit_logs (

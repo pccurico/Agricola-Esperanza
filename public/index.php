@@ -90,7 +90,7 @@ if (($_GET['asset'] ?? '') === 'attachment') {
     exit;
 }
 
-$modulePermissions = ['users' => 'users.view', 'roles' => 'roles.manage', 'role' => 'roles.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage', 'backups' => 'setup.manage', 'dashboard_data' => 'dashboard.view'];
+$modulePermissions = ['users' => 'users.view', 'roles' => 'roles.manage', 'role' => 'roles.manage', 'masters' => 'masters.view', 'production' => 'production.view', 'profile' => 'dashboard.view', 'procurement' => 'procurement.view', 'budgets' => 'budgets.view', 'machinery' => 'machinery.view', 'costs' => 'costs.view', 'inventory' => 'inventory.view', 'reports' => 'reports.view', 'labor' => 'labor.view', 'settings' => 'setup.manage', 'audit' => 'reports.view', 'catalogs' => 'setup.manage', 'receptions' => 'procurement.receive', 'warehouses' => 'warehouse.view', 'requests' => 'requests.view', 'notifications' => 'notifications.view', 'planning' => 'tasks.view', 'documents' => 'documents.view', 'api' => 'api_tokens.manage', 'demo' => 'demo.manage', 'tools' => 'setup.manage', 'backups' => 'setup.manage', 'dashboard_data' => 'dashboard.view', 'intelligence' => 'dashboard.view'];
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
 $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
@@ -343,8 +343,23 @@ if ($module === 'costs') {
 
 if ($module === 'inventory') {
     $inventory = (new AgroPCC\Controllers\InventoryController())->handle();
-    extract($inventory, EXTR_SKIP);
+    $inventoryItems = $inventory['inventory_items'] ?? [];
+    $movements = $inventory['movements'] ?? [];
+    $item_options = $inventory['item_options'] ?? [];
+    $categories = $inventory['categories'] ?? [];
+    $subcategories = $inventory['subcategories'] ?? [];
+    $units = $inventory['units'] ?? [];
+    $warehouses = $inventory['warehouses'] ?? [];
+    $error = $inventory['error'] ?? null;
+    $success = $inventory['success'] ?? null;
     require dirname(__DIR__) . '/app/Views/inventory.php';
+    exit;
+}
+
+if ($module === 'intelligence') {
+    $intelligenceResponse = (new AgroPCC\Controllers\ManagementIntelligenceController())->handle();
+    $intelligence = $intelligenceResponse['intelligence'] ?? [];
+    require dirname(__DIR__) . '/app/Views/management_intelligence.php';
     exit;
 }
 

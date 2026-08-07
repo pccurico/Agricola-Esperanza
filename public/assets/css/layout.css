@@ -95,6 +95,13 @@
     letter-spacing: -0.04em;
 }
 
+.admin-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+
 .admin-shell.sidebar-collapsed,
 .dashboard-shell.sidebar-collapsed {
     grid-template-columns: 72px minmax(0, 1fr);
@@ -132,6 +139,10 @@
     .sidebar-collapsed.admin-shell,
     .sidebar-collapsed.dashboard-shell {
         display: block;
+    }
+
+    .admin-columns {
+        grid-template-columns: 1fr;
     }
 
     .module-sidebar,

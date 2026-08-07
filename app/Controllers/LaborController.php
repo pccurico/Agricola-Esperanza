@@ -58,14 +58,6 @@ final class LaborController extends BaseController
                 $selectedSeasonId = (int) ($_POST['season_id'] ?? 0);
                 $success = 'Labor registrada correctamente.';
             }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_assignment') {
-                $service->createAssignment($_POST);
-                $success = 'Asignación registrada correctamente.';
-            }
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_leave_request') {
-                $service->createLeaveRequest($_POST);
-                $success = 'Solicitud de ausencia registrada correctamente.';
-            }
         } catch (\Throwable $exception) {
             $error = $exception->getMessage();
         }
@@ -80,6 +72,6 @@ final class LaborController extends BaseController
 
         $showMode = ($viewName === 'worker-form' && (string) ($_GET['show'] ?? '') === '1');
 
-        return [...$service->options(), 'workers' => $workers, 'entries' => $service->entries(), 'assignments' => $service->assignments(), 'leave_requests' => $service->leaveRequests(), 'error' => $error, 'success' => $success, 'selected_worker_id' => $selectedWorkerId, 'selected_season_id' => $selectedSeasonId, 'profile_data' => $profileData, 'view_name' => $viewName, 'show_mode' => $showMode, 'worker_form' => $service->workerFormData($selectedWorkerId)];
+        return [...$service->options(), 'workers' => $workers, 'entries' => $service->entries(), 'error' => $error, 'success' => $success, 'selected_worker_id' => $selectedWorkerId, 'selected_season_id' => $selectedSeasonId, 'profile_data' => $profileData, 'view_name' => $viewName, 'show_mode' => $showMode, 'worker_form' => $service->workerFormData($selectedWorkerId)];
     }
 }

@@ -29,7 +29,7 @@ final class ProcurementController extends BaseController
             }
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'receive_order') {
                 $service->receiveOrder($_POST, (int) $_SESSION['user_id']);
-                $success = 'Recepción registrada y existencias actualizadas.';
+                $success = 'RecepciÃ³n registrada y existencias actualizadas.';
             }
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_reception') {
                 $service->updateReception($_POST, (int) $_SESSION['user_id']);

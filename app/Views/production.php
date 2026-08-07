@@ -19,7 +19,7 @@
                         <p class="lead-text">Anota tus cosechas y resultados por fundo y cuartel.</p>
                     </div>
                     <div class="hero-actions">
-                        <a class="btn btn-outline" href="./">Volver al dashboard</a>
+                        <a class="btn btn-outline" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al dashboard</a>
                     </div>
                 </div>
                 <div class="hero-kpis">

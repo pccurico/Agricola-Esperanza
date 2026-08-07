@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body class="setup-page login-page">
-    <main class="setup-card login-card">
+    <main class="setup-card login-card login-card--split">
+        <div class="login-layout">
         <section class="login-brand" aria-label="Identidad de la empresa">
             <?php if (!empty($company['logo_path'])): ?>
                 <img class="login-company-logo" src="?asset=logo" alt="Logo de <?= htmlspecialchars((string) $company['trade_name'], ENT_QUOTES, 'UTF-8') ?>">
             <?php else: ?>
                 <span class="setup-mark">✦</span>
             <?php endif; ?>
-            <p class="eyebrow login-eyebrow">Gestión agrícola</p>
+            <p class="eyebrow login-eyebrow">Gestión Agrícola</p>
             <h1 class="login-company-name"><?= htmlspecialchars((string) ($company['trade_name'] ?? 'Sistema de Gestión Agrícola PCCURICO'), ENT_QUOTES, 'UTF-8') ?></h1>
         </section>
         <section class="login-form-panel" aria-label="Acceso al sistema">
@@ -31,6 +32,7 @@
                 <button class="primary-button" type="submit">Ingresar al sistema</button>
             </form>
         </section>
+        </div>
     </main>
     <footer class="login-footer"><a href="https://www.pccurico.cl" target="_blank" rel="noopener noreferrer">www.pccurico.cl</a> · JCares · 2026 · <?= htmlspecialchars((string) app_config('app.version', 'v1.0.0'), ENT_QUOTES, 'UTF-8') ?></footer>
 </body>

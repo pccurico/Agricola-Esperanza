@@ -91,7 +91,7 @@ switch ($reportType) {
             ['key' => 'total_cost', 'label' => 'Gastos totales', 'value' => $money($reportSummary['total'] ?? 0), 'detail' => 'Costos y compras'],
             ['key' => 'budget', 'label' => 'Presupuesto ejecutado', 'value' => $money($budgetData['actual'] ?? 0), 'detail' => 'Saldo real'],
             ['key' => 'execution', 'label' => 'Ejecución', 'value' => $number($budgetData['execution'] ?? 0, 1) . '%', 'detail' => 'Porcentaje'],
-            ['key' => 'cash_balance', 'label' => 'Saldo de caja', 'value' => $money((float) ($reportSummary['cash']['income'] ?? 0) - (float) ($reportSummary['cash']['expense'] ?? 0)), 'detail' => 'Movimientos contabilizados'],
+            ['key' => 'centers', 'label' => 'Centros', 'value' => count($centers ?? []), 'detail' => 'Cuentas activas'],
         ];
         break;
     default:
@@ -142,7 +142,7 @@ $reportHighlightCards = match ($reportType) {
         ['key' => 'total_cost', 'label' => 'Gastos totales', 'value' => $money($reportSummary['total'] ?? 0), 'detail' => 'Costos y compras', 'bar_value' => 80],
         ['key' => 'budget', 'label' => 'Presupuesto', 'value' => $money($budgetData['planned'] ?? 0), 'detail' => 'Planificado', 'bar_value' => 74],
         ['key' => 'execution', 'label' => 'Ejecución', 'value' => $number($budgetData['execution'] ?? 0, 1) . '%', 'detail' => 'Porcentaje del plan', 'bar_value' => 70],
-        ['key' => 'cash_balance', 'label' => 'Saldo de caja', 'value' => $money((float) ($reportSummary['cash']['income'] ?? 0) - (float) ($reportSummary['cash']['expense'] ?? 0)), 'detail' => 'Ingresos menos egresos', 'bar_value' => 66],
+        ['key' => 'centers', 'label' => 'Centros de costo', 'value' => count($centers ?? []), 'detail' => 'Cuentas activas', 'bar_value' => 66],
     ],
     default => [
         ['key' => 'production_per_hectare', 'label' => 'Producción por hectárea', 'value' => $number($reportSummary['production_per_hectare'] ?? 0, 2), 'detail' => 'Indicador agrícola efectivo', 'bar_value' => 72],
@@ -225,7 +225,7 @@ $reportEmptyStates = [
                     <h2><?= htmlspecialchars($reportUiLabels['filters'], ENT_QUOTES, 'UTF-8') ?></h2>
                 </div>
             </div>
-            <form class="report-filter-form" method="get" data-report-form novalidate>
+            <form class="report-filter-form" method="get" data-report-form data-report-key="<?= htmlspecialchars($reportType, ENT_QUOTES, 'UTF-8') ?>" novalidate>
                 <div class="report-filter-row">
                     <div class="report-filter-group report-filter-period">
                         <div class="date-inputs">
@@ -317,95 +317,42 @@ $reportEmptyStates = [
         <section class="report-visual-grid">
             <?php foreach ($reportSummaryCards as $card): ?>
                 <article class="report-visual-card" data-summary-key="<?= htmlspecialchars($card['key'] ?? $card['label'], ENT_QUOTES, 'UTF-8') ?>">
-                    <div class="report-visual-meta">
-                        <section class="module-content reports-v2">
-                            <header class="page-hero">
-                                <div class="hero-meta">
-                                    <div class="hero-title">
-                                        <p class="eyebrow">Informes</p>
-                                        <h1><?= htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8') ?></h1>
-                                        <p class="lead-text"><?= htmlspecialchars($reportDescription, ENT_QUOTES, 'UTF-8') ?></p>
-                                    </div>
-                                    <div class="hero-actions">
-                                        <a class="btn" href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'csv'), ENT_QUOTES, 'UTF-8') ?>">CSV</a>
-                                        <a class="btn" href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'xlsx'), ENT_QUOTES, 'UTF-8') ?>">Excel</a>
-                                        <a class="btn" href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'pdf'), ENT_QUOTES, 'UTF-8') ?>">PDF</a>
-                                        <a class="btn btn-outline" href="/reports">Centro de inteligencia</a>
-                                    </div>
-                                </div>
-                                <div class="hero-kpis">
-                                    <div class="kpi-grid">
-                                        <?php foreach ($reportSummaryCards as $card): ?>
-                                            <article class="stat-card">
-                                                <small><?= htmlspecialchars($card['label'], ENT_QUOTES, 'UTF-8') ?></small>
-                                                <strong><?= htmlspecialchars((string) $card['value'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                                <div class="progress-mini" aria-hidden="true"><div class="progress-mini-bar" style="width: <?= (int) ($card['bar_value'] ?? 55) ?>%"></div></div>
-                                            </article>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                            </header>
+                    <div class="report-visual-meta"><small><?= htmlspecialchars($card['label'], ENT_QUOTES, 'UTF-8') ?></small><strong><?= htmlspecialchars((string) $card['value'], ENT_QUOTES, 'UTF-8') ?></strong></div>
+                    <div class="progress-mini" aria-hidden="true"><div class="progress-mini-bar" style="width: <?= (int) ($card['bar_value'] ?? 55) ?>%"></div></div>
+                </article>
+            <?php endforeach; ?>
+        </section>
 
-                            <div class="page-grid v2">
-                                <main class="main-column">
-                                    <section class="section-card panel-filters">
-                                        <div class="panel-header"><div><h2><?= htmlspecialchars($reportUiLabels['filters'], ENT_QUOTES, 'UTF-8') ?></h2></div></div>
-                                        <div class="panel-body">
-                                        <form method="get" data-report-form novalidate>
-                                            <div class="form-group">
-                                                <label>Desde</label>
-                                                <input type="date" name="from" value="<?= htmlspecialchars((string) ($reportFilters['date_from'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Hasta</label>
-                                                <input type="date" name="to" value="<?= htmlspecialchars((string) ($reportFilters['date_to'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                            </div>
-                                            <div class="form-row form-row--wrap">
-                                                <?php foreach (($selectedReportConfig['filters'] ?? []) as $filterKey): ?>
-                                                    <?php if ($filterKey !== 'year' && $filterKey !== 'month' && $filterKey !== 'week' && $filterKey !== 'day' && $filterKey !== 'date_range'): ?>
-                                                        <div class="form-group"><?php echo $renderFilter($filterKey); ?></div>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-                                            </div>
-                                            <div class="form-actions"><button class="primary-button" type="submit">Actualizar</button> <button type="button" class="btn btn-outline" data-filter-reset>Limpiar</button></div>
-                                        </form>
-                                        </div>
-                                    </section>
+        <section class="report-chart-grid">
+            <article class="section-card report-chart-card"><div class="panel-header"><h2>Resumen</h2></div><div class="panel-body"><canvas id="reportOverviewChart" aria-label="Gráfico del informe"></canvas></div></article>
+            <article class="section-card report-chart-card"><div class="panel-header"><h2>Tendencias</h2></div><div class="panel-body">
+                <?php foreach (['costs' => 'Costos', 'production' => 'Producción', 'labor' => 'Mano de obra', 'budget' => 'Presupuesto'] as $key => $label): ?>
+                    <?php $max = $maxTrend($trends[$key] ?? []); ?>
+                    <div class="trend-block"><small><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></small><?php foreach (($trends[$key] ?? []) as $row): ?><div class="trend-row"><small><?= htmlspecialchars((string) $row['period'], ENT_QUOTES, 'UTF-8') ?></small><i data-trend="<?= min(100, ((float) $row['value'] / max(1, $max)) * 100) ?>"></i><b><?= $key === 'production' ? $number($row['value'] ?? 0, 2) : $money($row['value'] ?? 0) ?></b></div><?php endforeach; ?></div>
+                <?php endforeach; ?>
+            </div></article>
+        </section>
 
-                                    <section class="section-card report-charts">
-                                        <div class="chart-rows">
-                                            <div class="chart-card"><h3>Resumen</h3><canvas id="reportOverviewChart" aria-label="Gráfico del informe"></canvas></div>
-                                            <div class="chart-card"><h3>Tendencias</h3><?php foreach (['costs' => 'Costos', 'production' => 'Producción', 'labor' => 'Mano de obra', 'budget' => 'Presupuesto'] as $key => $label): ?><div class="trend-block"><small><?= $label ?></small><?php $max = $maxTrend($trends[$key] ?? []); ?><?php foreach (($trends[$key] ?? []) as $row): ?><div class="trend-row"><small><?= htmlspecialchars((string) $row['period'], ENT_QUOTES, 'UTF-8') ?></small><i data-trend="<?= min(100, ((float) $row['value'] / max(1,$max)) * 100) ?>"></i><b><?= $key === 'production' ? $number($row['value'] ?? 0, 2) : $money($row['value'] ?? 0) ?></b></div><?php endforeach; ?><?php endforeach; ?></div>
-                                        </div>
-                                    </section>
+        <?php if ($reportType === 'executive'): ?>
+            <section class="executive-analysis-grid" data-executive-analysis>
+                <article class="section-card executive-analysis-card"><div class="panel-header"><h2>Costo por proceso</h2><small>¿Dónde se está gastando más?</small></div><div class="panel-body"><canvas id="executiveProcessCostChart" aria-label="Costo total por proceso"></canvas></div></article>
+                <article class="section-card executive-analysis-card"><div class="panel-header"><h2>Participación del costo</h2><small>¿Qué procesos concentran el presupuesto?</small></div><div class="panel-body"><canvas id="executiveProcessShareChart" aria-label="Participación del costo por proceso"></canvas></div></article>
+                <article class="section-card executive-analysis-card"><div class="panel-header"><h2>Evolución de producción</h2><small>¿Cómo evoluciona la producción?</small></div><div class="panel-body"><canvas id="executiveProductionTrendChart" aria-label="Producción mensual"></canvas></div></article>
+                <article class="section-card executive-analysis-card"><div class="panel-header"><h2>Uso de mano de obra</h2><small>¿Dónde se concentra el trabajo?</small></div><div class="panel-body"><canvas id="executiveLaborChart" aria-label="Jornadas por trabajador"></canvas></div></article>
+            </section>
+        <?php endif; ?>
 
-                                    <?php if (!empty($reportFocus)): ?>
-                                        <section class="section-card report-details">
-                                            <?php if (!empty($reportFocus['tables'])): foreach ($reportFocus['tables'] as $tbl): ?>
-                                                <div class="table-block"><h3><?= htmlspecialchars($tbl['title'] ?? 'Detalle', ENT_QUOTES, 'UTF-8') ?></h3><table class="data-table"><thead><tr><?php foreach ($tbl['columns'] ?? [] as $col): ?><th><?= htmlspecialchars((string) $col, ENT_QUOTES, 'UTF-8') ?></th><?php endforeach; ?></tr></thead><tbody><?php foreach ($tbl['rows'] ?? [] as $r): ?><tr><?php foreach ($tbl['columns'] as $colKey => $col): ?><td><?= htmlspecialchars((string) ($r[$colKey] ?? $r[$col] ?? ''), ENT_QUOTES, 'UTF-8') ?></td><?php endforeach; ?></tr><?php endforeach; ?></tbody></table></div>
-                                            <?php endforeach; endif; ?>
-                                        </section>
-                                    <?php endif; ?>
-                                </main>
-
-                                <aside class="sidebar-column v2">
-                                    <section class="section-card">
-                                        <div class="panel-header"><h4>Resumen rápido</h4></div>
-                                        <div class="panel-body">
-                                        <ul class="compact-list">
-                                            <?php foreach ($reportHighlightCards as $card): ?>
-                                                <li><strong><?= htmlspecialchars((string) $card['value'], ENT_QUOTES, 'UTF-8') ?></strong><small><?= htmlspecialchars($card['label'], ENT_QUOTES, 'UTF-8') ?></small></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                        </div>
-                                    </section>
-
-                                    <section class="section-card">
-                                        <div class="panel-header"><h4>Acciones</h4></div>
-                                        <div class="panel-body">
-                                        <nav class="module-links"><a href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'csv'), ENT_QUOTES, 'UTF-8') ?>">Exportar CSV</a><a href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'xlsx'), ENT_QUOTES, 'UTF-8') ?>">Exportar Excel</a><a href="<?= htmlspecialchars($buildReportUrl($reportType, [], 'pdf'), ENT_QUOTES, 'UTF-8') ?>">Exportar PDF</a></nav>
-                                        </div>
-                                    </section>
-                                </aside>
-                            </div>
-                        </section>
+        <?php if (!empty($reportFocus['tables'])): ?>
+            <section class="section-card report-details">
+                <?php foreach ($reportFocus['tables'] as $table): ?>
+                    <div class="table-block"><h3><?= htmlspecialchars($table['title'] ?? 'Detalle', ENT_QUOTES, 'UTF-8') ?></h3><table class="data-table"><thead><tr><?php foreach ($table['columns'] ?? [] as $column): ?><th><?= htmlspecialchars((string) $column, ENT_QUOTES, 'UTF-8') ?></th><?php endforeach; ?></tr></thead><tbody><?php foreach ($table['rows'] ?? [] as $row): ?><tr><?php foreach ($table['columns'] ?? [] as $columnKey => $column): ?><td><?= htmlspecialchars((string) ($row[$columnKey] ?? $row[$column] ?? ''), ENT_QUOTES, 'UTF-8') ?></td><?php endforeach; ?></tr><?php endforeach; ?></tbody></table></div>
+                <?php endforeach; ?>
+            </section>
+        <?php endif; ?>
+    </section>
+</main>
+<script>window.reportData = <?= json_encode($reportSummary, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;</script>
+<script src="/assets/js/chart.min.js" defer></script>
+<script src="/assets/js/reports.js" defer></script>
+</body>
+</html>

@@ -37,8 +37,9 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
                 }
             }
         }
-        $fromDate = DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($filters['date_from'] ?? '')) ?: $today->modify('first day of this month');
-        $toDate = DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($filters['date_to'] ?? '')) ?: $today;
+        $defaultRange = $this->defaultDateRange();
+        $fromDate = DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($filters['date_from'] ?? '')) ?: DateTimeImmutable::createFromFormat('!Y-m-d', $defaultRange['date_from']);
+        $toDate = DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($filters['date_to'] ?? '')) ?: DateTimeImmutable::createFromFormat('!Y-m-d', $defaultRange['date_to']);
         if ($toDate < $fromDate) {
             [$fromDate, $toDate] = [$toDate, $fromDate];
         }
@@ -304,28 +305,29 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
     public function defaultDateRange(): array
     {
         $query = $this->connection->prepare(
-            'SELECT GREATEST(' .
-            "COALESCE((SELECT MAX(entry_date) FROM expense_entries WHERE company_id = ?), '0000-00-00')," .
-            "COALESCE((SELECT MAX(labor_date) FROM labor_entries WHERE company_id = ?), '0000-00-00')," .
-            "COALESCE((SELECT MAX(production_date) FROM production_entries WHERE company_id = ?), '0000-00-00')," .
-            "COALESCE((SELECT MAX(movement_date) FROM inventory_movements WHERE company_id = ?), '0000-00-00')" .
-            ') AS latest_date'
+            'SELECT MIN(activity_date) AS first_date, MAX(activity_date) AS latest_date FROM (' .
+            'SELECT entry_date AS activity_date FROM expense_entries WHERE company_id = ? ' .
+            'UNION ALL SELECT labor_date FROM labor_entries WHERE company_id = ? ' .
+            'UNION ALL SELECT production_date FROM production_entries WHERE company_id = ? ' .
+            'UNION ALL SELECT movement_date FROM inventory_movements WHERE company_id = ?' .
+            ') activity_dates'
         );
         $query->execute([$this->companyId, $this->companyId, $this->companyId, $this->companyId]);
-        $latestDate = (string) $query->fetchColumn();
+        $dates = $query->fetch() ?: [];
+        $firstDate = (string) ($dates['first_date'] ?? '');
+        $latestDate = (string) ($dates['latest_date'] ?? '');
 
-        if ($latestDate === '' || $latestDate === '0000-00-00') {
+        if ($firstDate === '' || $latestDate === '') {
             $today = new DateTimeImmutable('today');
             return [
-                'date_from' => $today->format('Y-m-01'),
+                'date_from' => $today->format('Y-m-d'),
                 'date_to' => $today->format('Y-m-d'),
             ];
         }
 
-        $latest = DateTimeImmutable::createFromFormat('!Y-m-d', $latestDate) ?: new DateTimeImmutable('today');
         return [
-            'date_from' => $latest->modify('first day of this month')->format('Y-m-d'),
-            'date_to' => $latest->format('Y-m-d'),
+            'date_from' => $firstDate,
+            'date_to' => $latestDate,
         ];
     }
 
@@ -422,4 +424,3 @@ final class DashboardService extends BaseService implements Dashboard\DashboardD
         return $query->fetchAll();
     }
 }
-

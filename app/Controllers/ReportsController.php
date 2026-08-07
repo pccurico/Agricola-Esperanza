@@ -68,6 +68,14 @@ final class ReportsController extends BaseController
             'supervisor' => 'supervisor_id',
             'warehouse' => 'warehouse_id',
             'supplier' => 'supplier_id',
+            'product' => 'product_id',
+            'category' => 'category',
+            'family' => 'family',
+            'crop' => 'crop',
+            'variety' => 'variety',
+            'machine_type' => 'machine_type',
+            'crew' => 'crew_id',
+            'stock_status' => 'stock_status',
             'process' => 'process',
         ];
 
@@ -78,7 +86,7 @@ final class ReportsController extends BaseController
             }
             if ($toKey === 'date_from' || $toKey === 'date_to') {
                 $filters[$toKey] = (string) $value;
-            } elseif ($toKey === 'process') {
+            } elseif (in_array($toKey, ['process', 'category', 'family', 'crop', 'variety', 'machine_type', 'stock_status'], true)) {
                 $filters[$toKey] = (string) $value;
             } else {
                 $filters[$toKey] = (int) $value;
@@ -298,7 +306,7 @@ final class ReportsController extends BaseController
 
     private function countPendingPurchases(): int
     {
-        $query = database()->connection()->prepare('SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("SENT", "PARTIAL")');
+        $query = database()->connection()->prepare('SELECT COUNT(*) FROM purchase_orders WHERE company_id = ? AND status IN ("OPEN", "PENDING")');
         $query->execute([(int) $_SESSION['company_id']]);
         return (int) $query->fetchColumn();
     }

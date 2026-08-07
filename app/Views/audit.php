@@ -15,7 +15,7 @@
                     <p class="eyebrow">Historial</p>
                     <h1>Actividad</h1>
                     <p class="setup-copy">Revisa las acciones realizadas por los usuarios.</p>
-                </div><a class="secondary-link" href="./">Volver al dashboard</a>
+                </div><a class="secondary-link" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al dashboard</a>
             </header>
             <article class="admin-panel">
                 <div class="table-scroll">

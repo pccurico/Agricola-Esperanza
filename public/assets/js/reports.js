@@ -336,6 +336,51 @@
         });
     }
 
+    function renderExecutiveAdditionalCharts(data) {
+        const charts = [];
+        const processRows = normalizeRows(data.processes ?? [], 'process', 'total').slice(0, 8);
+        const productionRows = normalizeRows(data.trends?.production ?? [], 'period', 'value');
+        const laborRows = normalizeRows(data.workers ?? [], 'full_name', 'quantity').slice(0, 8);
+        const renderSlot = (id, hasData, render) => {
+            const canvas = document.getElementById(id);
+            const card = canvas?.closest('.executive-analysis-card');
+            if (!canvas || !card) {
+                return;
+            }
+            card.hidden = !hasData;
+            if (hasData) {
+                charts.push(render(canvas));
+            }
+        };
+
+        renderSlot('executiveProcessCostChart', processRows.length > 0, canvas => createChart(canvas, {
+            ...chartDefaults,
+            data: {labels: processRows.map(row => row.label), datasets: [{label: 'Costo total', data: processRows.map(row => row.value), backgroundColor: 'rgba(22, 101, 52, 0.78)', borderColor: 'rgba(22, 101, 52, 1)', borderWidth: 1}]},
+        }));
+        renderSlot('executiveProcessShareChart', processRows.length > 0, canvas => createChart(canvas, {
+            type: 'doughnut',
+            data: {labels: processRows.map(row => row.label), datasets: [{data: processRows.map(row => row.value), backgroundColor: ['#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0', '#dcfce7'], borderColor: '#ffffff', borderWidth: 2}]},
+            options: {...chartDefaults.options, cutout: '58%', plugins: {...chartDefaults.options.plugins, legend: {position: 'right', labels: {color: '#475569', boxWidth: 12}}}},
+        }));
+        renderSlot('executiveProductionTrendChart', productionRows.length > 0, canvas => createChart(canvas, {
+            ...chartDefaults,
+            type: 'line',
+            data: {labels: productionRows.map(row => row.label), datasets: [{label: 'Producción', data: productionRows.map(row => row.value), borderColor: '#0f766e', backgroundColor: 'rgba(15, 118, 110, 0.16)', fill: true, tension: 0.35, pointRadius: 3}]},
+        }));
+        renderSlot('executiveLaborChart', laborRows.length > 0, canvas => createChart(canvas, {
+            ...chartDefaults,
+            data: {labels: laborRows.map(row => row.label), datasets: [{label: 'Jornadas', data: laborRows.map(row => row.value), backgroundColor: 'rgba(37, 99, 235, 0.76)', borderColor: '#1d4ed8', borderWidth: 1}]},
+            options: {...chartDefaults.options, indexAxis: 'y'},
+        }));
+
+        return charts;
+    }
+
+    function destroyExecutiveCharts() {
+        (window.executiveCharts || []).forEach(destroyChart);
+        window.executiveCharts = [];
+    }
+
     function renderKpisChart(data, canvas) {
         const rows = [
             {label: 'Alertas', value: data.alerts?.length ?? 0},
@@ -410,7 +455,11 @@
 
         const handler = handlers[reportType] || renderEmptyChart;
         destroyChart(window.currentReportChart);
+        destroyExecutiveCharts();
         window.currentReportChart = handler(data, canvas);
+        if (reportType === 'executive') {
+            window.executiveCharts = renderExecutiveAdditionalCharts(data);
+        }
     }
 
     function formatCurrency(value) {
@@ -527,6 +576,10 @@
             }
             params.push([key, normalized]);
         });
+        const reportKey = form.dataset.reportKey;
+        if (reportKey && !params.some(([key]) => key === 'report_key')) {
+            params.push(['report_key', reportKey]);
+        }
         params.push(['ajax', '1']);
         return new URLSearchParams(params).toString();
     }

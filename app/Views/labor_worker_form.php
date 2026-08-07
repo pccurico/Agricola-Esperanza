@@ -17,7 +17,7 @@
                     <p class="setup-copy"><?= !empty($show_mode) ? 'Detalle de trabajador en modo solo lectura.' : 'Registro completo del trabajador con datos personales, contrato, remuneración y perfil profesional.' ?></p>
                 </div>
                 <div class="header-actions">
-                    <a class="secondary-link" href="?module=labor">Volver a Trabajador</a>
+                    <a class="secondary-link" href="?module=labor" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver a Trabajador</a>
                 </div>
             </header>
             <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error) ?></div><?php endif; ?>

@@ -14,6 +14,8 @@ final class DashboardController extends BaseController
             'date_to' => '',
             'farm_id' => 0,
             'block_id' => 0,
+            'season_id' => 0,
+            'cost_center_id' => 0,
             'process' => '',
         ], $service->filterOptions());
         $widgetFactory = new \AgroPCC\Services\Dashboard\WidgetFactory();
@@ -62,6 +64,8 @@ final class DashboardController extends BaseController
                             'process' => (string) ($_POST['process'] ?? ''),
                             'farm_id' => (int) ($_POST['farm_id'] ?? 0),
                             'block_id' => (int) ($_POST['block_id'] ?? 0),
+                            'season_id' => (int) ($_POST['season_id'] ?? 0),
+                            'cost_center_id' => (int) ($_POST['cost_center_id'] ?? 0),
                         ],
                         'widgets' => array_values(array_filter(array_map('trim', (array) ($_POST['widgets'] ?? [])))),
                     ];

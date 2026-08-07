@@ -187,3 +187,98 @@
     font-size: 12px;
     font-weight: 900;
 }
+
+.module-sidebar .sidebar-brand {
+    justify-content: center;
+    overflow: hidden;
+}
+
+.module-sidebar .sidebar-company-logo {
+    display: block;
+    width: auto;
+    max-width: 120px;
+    height: 32px;
+    object-fit: contain;
+    transform: scale(2);
+}
+
+.sidebar-collapsed .module-sidebar .sidebar-company-logo {
+    width: 40px;
+    height: 40px;
+    transform: none;
+}
+
+.sidebar-collapsed .module-sidebar .erp-topbar-toggle {
+    justify-content: center;
+    padding-inline: 8px;
+}
+
+.sidebar-collapsed .module-sidebar .erp-topbar-toggle span {
+    display: none;
+}
+
+.sidebar-collapsed .module-sidebar .erp-topbar-toggle svg {
+    display: block;
+    flex: 0 0 18px;
+}
+
+.module-sidebar [data-group-id="ejecutivo"] {
+    display: none;
+}
+
+.module-sidebar [data-navigation-item-id="master-farms"],
+.module-sidebar [data-navigation-item-id="products-module"],
+.module-sidebar [data-navigation-item-id="workforce-module"],
+.module-sidebar [data-navigation-item-id="harvest-module"],
+.module-sidebar [data-navigation-item-id="executive-center"] {
+    display: none;
+}
+
+.module-sidebar .sidebar-brand-text {
+    display: none;
+}
+
+.module-sidebar .dashboard-nav {
+    scrollbar-width: none;
+}
+
+.module-sidebar .dashboard-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.module-sidebar .navigation-items {
+    max-height: 0;
+    overflow: hidden;
+    padding-top: 0;
+    padding-bottom: 0;
+    transition: max-height var(--transition), padding var(--transition);
+}
+
+.module-sidebar .navigation-group.is-open .navigation-items {
+    max-height: 640px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.module-sidebar .nav-icon,
+.module-sidebar .navigation-group-icon {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
+.module-sidebar .nav-icon svg,
+.module-sidebar .navigation-group-icon svg,
+.module-sidebar .navigation-chevron svg,
+.module-sidebar .erp-topbar-toggle svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}

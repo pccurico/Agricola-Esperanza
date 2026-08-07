@@ -26,6 +26,7 @@ $selectName = static function (array $items, int $selected, string $default): st
 $selectedFarm = $selectName($filterOptions['farms'] ?? [], (int) ($selectedFilters['farm_id'] ?? 0), 'Todos');
 $selectedBlock = $selectName($filterOptions['blocks'] ?? [], (int) ($selectedFilters['block_id'] ?? 0), 'Todos');
 $selectedSeason = $selectName($filterOptions['seasons'] ?? [], (int) ($selectedFilters['season_id'] ?? 0), 'Todas');
+$selectedCostCenter = $selectName($filterOptions['cost_centers'] ?? [], (int) ($selectedFilters['cost_center_id'] ?? 0), 'Todos');
 $selectedProcess = trim((string) ($selectedFilters['process'] ?? '')) !== '' ? trim((string) ($selectedFilters['process'] ?? '')) : 'Todos';
 $selectedPeriod = trim((string) ($selectedFilters['date_from'] ?? '')) . ' – ' . trim((string) ($selectedFilters['date_to'] ?? ''));
 $budgetKpi = null;
@@ -68,9 +69,7 @@ $dashboardJson = json_encode([
         <div class="page-hero">
             <div class="hero-meta">
                 <div class="hero-title">
-                    <p class="eyebrow">Panel de control</p>
-                    <h1>Resumen operativo — <?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></h1>
-                    <p class="lead-text">Indicadores clave y accesos rápidos del ERP PCCURICO.</p>
+                    <h1>Panel de Control</h1>
                 </div>
                 <div class="hero-actions">
                     <nav class="hero-nav">
@@ -111,10 +110,9 @@ $dashboardJson = json_encode([
 
         <section class="section-card dashboard-filter-bar">
             <div class="panel-header"><div><h2>Filtros de análisis</h2><p>Actualiza los indicadores y gráficos del período seleccionado.</p></div></div>
-            <form method="get" class="dashboard-filter-grid">
-                <label>Desde<input type="date" name="date_from" value="<?= htmlspecialchars((string) ($selectedFilters['date_from'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
-                <label>Hasta<input type="date" name="date_to" value="<?= htmlspecialchars((string) ($selectedFilters['date_to'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <form method="get" id="dashboard-filter-form" class="dashboard-filter-grid">
                 <label>Temporada<select name="season_id"><option value="">Todas</option><?php foreach ($filterOptions['seasons'] ?? [] as $season): ?><option value="<?= (int) $season['id'] ?>" <?= (int) ($selectedFilters['season_id'] ?? 0) === (int) $season['id'] ? 'selected' : '' ?>><?= htmlspecialchars($season['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+                <label>Centro de costo<select name="cost_center_id"><option value="">Todos</option><?php foreach ($filterOptions['cost_centers'] ?? [] as $costCenter): ?><option value="<?= (int) $costCenter['id'] ?>" <?= (int) ($selectedFilters['cost_center_id'] ?? 0) === (int) $costCenter['id'] ? 'selected' : '' ?>><?= htmlspecialchars($costCenter['category'] . ' · ' . $costCenter['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                 <label>Fundo<select name="farm_id"><option value="">Todos</option><?php foreach ($filterOptions['farms'] ?? [] as $farm): ?><option value="<?= (int) $farm['id'] ?>" <?= (int) ($selectedFilters['farm_id'] ?? 0) === (int) $farm['id'] ? 'selected' : '' ?>><?= htmlspecialchars($farm['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                 <label>Cuartel<select name="block_id"><option value="">Todos</option><?php foreach ($filterOptions['blocks'] ?? [] as $block): ?><option value="<?= (int) $block['id'] ?>" <?= (int) ($selectedFilters['block_id'] ?? 0) === (int) $block['id'] ? 'selected' : '' ?>><?= htmlspecialchars($block['code'] . ' · ' . $block['name'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
                 <label>Proceso<select name="process"><option value="">Todos</option><?php foreach ($filterOptions['processes'] ?? [] as $process): ?><option value="<?= htmlspecialchars($process['process'], ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($selectedFilters['process'] ?? '') === (string) $process['process'] ? 'selected' : '' ?>><?= htmlspecialchars($process['process'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
@@ -157,10 +155,12 @@ $dashboardJson = json_encode([
                         <div class="panel-header"><h3>Filtros activos</h3></div>
                         <div class="panel-body">
                             <div class="card-list compact">
-                                <div class="item-card"><small>Período</small><strong><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong></div>
-                                <div class="item-card"><small>Fundo</small><strong><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong></div>
-                                <div class="item-card"><small>Cuartel</small><strong><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong></div>
-                                <div class="item-card"><small>Proceso</small><strong><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Período</small><strong id="selected-period"><?= htmlspecialchars($selectedPeriod, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Temporada</small><strong id="selected-season"><?= htmlspecialchars($selectedSeason, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Centro de costo</small><strong id="selected-cost-center"><?= htmlspecialchars($selectedCostCenter, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Fundo</small><strong id="selected-farm"><?= htmlspecialchars($selectedFarm, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Cuartel</small><strong id="selected-block"><?= htmlspecialchars($selectedBlock, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                <div class="item-card"><small>Proceso</small><strong id="selected-process"><?= htmlspecialchars($selectedProcess, ENT_QUOTES, 'UTF-8') ?></strong></div>
                             </div>
                         </div>
                     </section>

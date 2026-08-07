@@ -31,7 +31,7 @@ $dashboardKpis = is_array($dashboardMetrics['kpis'] ?? null) ? $dashboardMetrics
                 <h1>Maquinaria</h1>
                 <p class="setup-copy">Registra equipos, mantenciones y consumo de combustible.</p>
             </div>
-            <a class="secondary-link" href="./">Volver al dashboard</a>
+            <a class="secondary-link" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al dashboard</a>
         </header>
 
         <?php if ($error): ?>

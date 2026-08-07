@@ -26,7 +26,7 @@ $activeRecordsCount = (int) ($active['records_count'] ?? 0);
         <section class="module-content">
             <header class="admin-header">
                 <div><p class="eyebrow">Herramientas</p><h1>Demo Data Manager</h1><p class="setup-copy">Carga un entorno de demostración completo usando únicamente datos de prueba identificados.</p></div>
-                <a class="secondary-link" href="./">Volver al resumen</a>
+                <a class="secondary-link" href="./" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Volver al resumen</a>
             </header>
             <?php if ($error): ?><div class="setup-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <?php if ($success): ?><div class="setup-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>

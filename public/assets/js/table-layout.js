@@ -2,6 +2,9 @@
 (() => {
     'use strict';
     document.querySelectorAll('table').forEach(table => {
+        // Skip tables in inventory module
+        if (table.closest('.inventory-v2')) return;
+
         const headings = [...table.querySelectorAll('thead th')].map(cell => cell.textContent.trim());
         if (!headings.length) return;
         table.classList.add('responsive-data-table');

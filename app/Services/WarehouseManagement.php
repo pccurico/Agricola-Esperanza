@@ -17,28 +17,28 @@ final class WarehouseManagement extends BaseService
     {
         $query = $this->connection->prepare('SELECT w.id, w.code, w.name, w.active, f.name AS farm_name FROM warehouses w LEFT JOIN farms f ON f.id = w.farm_id WHERE w.company_id = ? ORDER BY w.name');
         $query->execute([$this->companyId]);
-        return $query->fetchAll();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function locations(): array
     {
         $query = $this->connection->prepare('SELECT l.id, l.code, l.name, w.code AS warehouse_code, w.name AS warehouse_name FROM warehouse_locations l INNER JOIN warehouses w ON w.id = l.warehouse_id WHERE l.company_id = ? ORDER BY w.name, l.code');
         $query->execute([$this->companyId]);
-        return $query->fetchAll();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function lots(): array
     {
         $query = $this->connection->prepare('SELECT l.id, l.lot_number, l.expires_on, l.quantity, i.name AS item_name, w.name AS warehouse_name FROM inventory_lots l INNER JOIN inventory_items i ON i.id = l.item_id LEFT JOIN warehouses w ON w.id = l.warehouse_id WHERE l.company_id = ? ORDER BY l.expires_on IS NULL, l.expires_on, l.lot_number');
         $query->execute([$this->companyId]);
-        return $query->fetchAll();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function transfers(): array
     {
         $query = $this->connection->prepare('SELECT t.id, t.quantity, t.transfer_date, t.status, i.name AS item_name, wf.name AS from_warehouse, wt.name AS to_warehouse FROM inventory_transfers t INNER JOIN inventory_items i ON i.id = t.item_id INNER JOIN warehouses wf ON wf.id = t.from_warehouse_id INNER JOIN warehouses wt ON wt.id = t.to_warehouse_id WHERE t.company_id = ? ORDER BY t.transfer_date DESC, t.id DESC');
         $query->execute([$this->companyId]);
-        return $query->fetchAll();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function createWarehouse(array $input, int $userId): int
@@ -123,7 +123,11 @@ final class WarehouseManagement extends BaseService
         $items->execute([$this->companyId]);
         $farms = $this->connection->prepare('SELECT id, name FROM farms WHERE company_id = ? AND active = 1 ORDER BY name');
         $farms->execute([$this->companyId]);
-        return ['items' => $items->fetchAll(), 'farms' => $farms->fetchAll(), 'warehouses' => $this->warehouses()];
+        return [
+            'items' => $items->fetchAll(PDO::FETCH_ASSOC),
+            'farms' => $farms->fetchAll(PDO::FETCH_ASSOC),
+            'warehouses' => $this->warehouses(),
+        ];
     }
 
     private function belongs(string $table, mixed $id): void
@@ -152,4 +156,3 @@ final class WarehouseManagement extends BaseService
         (new AuditLog($this->connection, $this->companyId))->record($userId, $action, $entity, $id);
     }
 }
-

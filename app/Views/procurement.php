@@ -23,12 +23,7 @@ $success = $success ?? null;
 <body class="admin-page">
     <main class="admin-shell">
         <?php require dirname(__DIR__) . '/Views/partials/module-navigation.php'; ?>
-        <section class="module-content">
-            <header class="admin-header">
-                <div><p class="eyebrow">Compras</p><h1>Compras y proveedores</h1><p class="setup-copy">Registra proveedores, prepara órdenes y recibe los insumos en la bodega.</p></div>
-                <a class="secondary-link" href="./">Volver al resumen</a>
-            </header>
-            <section class="module-content procurement-v2 module-v2">
+        <section class="module-content procurement-v2 module-v2">
                 <header class="page-hero">
                     <div class="hero-meta">
                         <div class="hero-title">
@@ -111,7 +106,6 @@ $success = $success ?? null;
                         </section>
                     </aside>
                 </div>
-            </section>
         </section>
     </main>
 </body>

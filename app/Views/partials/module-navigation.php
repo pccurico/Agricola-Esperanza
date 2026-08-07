@@ -24,7 +24,8 @@ $visibleGroups = [];
 foreach ($navConfig['groups'] as $group) {
     if (($group['visible'] ?? true) !== true) continue;
     $dept = (string) ($group['department'] ?? 'general');
-    $allowed = $navigationRoleIsSystem || $navigationRoleDepartment === 'general' || $dept === 'general' || $dept === $navigationRoleDepartment || ($navigationRoleDepartment === 'bodega' && $dept === 'administracion');
+    $canExecutiveAccess = in_array((string) ($group['id'] ?? ''), ['ejecutivo', 'gerencia'], true) && ($navigationAuth->can($navigationRole, 'dashboard.view', $navigationUserId) || $navigationAuth->can($navigationRole, 'reports.view', $navigationUserId));
+    $allowed = $navigationRoleIsSystem || $canExecutiveAccess || $navigationRoleDepartment === 'general' || $dept === 'general' || $dept === $navigationRoleDepartment || ($navigationRoleDepartment === 'bodega' && $dept === 'administracion');
     if (!$allowed) continue;
     $items = array_values(array_filter($group['items'], static function (array $item) use ($navigationAuth, $navigationRole, $navigationUserId) {
         if (($item['visible'] ?? true) !== true) return false;
@@ -40,21 +41,27 @@ foreach ($navConfig['groups'] as $group) {
 usort($visibleGroups, static fn($a, $b) => (int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0));
 ?>
 <aside class="module-sidebar" data-navigation-sidebar>
-    <div class="flex items-center gap-2 h-16 px-4 sidebar-brand">
-        <div class="flex items-center justify-center h-9 w-9 rounded-lg dashboard-brand-icon"><?= $icon('plant') ?></div>
-        <div class="min-w-0 leading-tight sidebar-brand-text">
-            <p class="text-sm font-bold tracking-tight truncate"><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></p>
-            <p class="text-[11px] truncate muted">Gestión Agrícola</p>
-        </div>
+    <div class="flex items-center justify-center h-16 px-4 sidebar-brand" aria-label="<?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?>">
+        <?php if ($companyLogo): ?>
+            <img class="sidebar-company-logo" src="?asset=logo" alt="Logo de <?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?>">
+        <?php else: ?>
+            <div class="flex items-center justify-center h-9 w-9 rounded-lg dashboard-brand-icon"><?= $icon('plant') ?></div>
+        <?php endif; ?>
     </div>
 
     <label class="navigation-search" aria-label="Buscar módulo"><span><?= $icon('search') ?></span><input type="search" data-navigation-search placeholder="Buscar módulo" autocomplete="off"></label>
 
     <nav class="dashboard-nav" aria-label="Navegación principal">
-        <a class="dashboard-nav-item <?= ($currentModule === '' ? 'active' : '') ?>" href="./" data-navigation-item data-search-label="resumen">
+        <a class="dashboard-nav-item <?= ($currentModule === '' ? 'active' : '') ?>" href="./" data-navigation-item data-search-label="inicio resumen">
             <span class="nav-icon"><?= $icon('home') ?></span>
-            <span class="navigation-item-label">Resumen</span>
+            <span class="navigation-item-label">Inicio</span>
         </a>
+        <?php if ($navigationAuth->can($navigationRole, 'setup.manage', $navigationUserId)): ?>
+            <a class="dashboard-nav-item <?= ($currentModule === 'tools' ? 'active' : '') ?>" href="<?= htmlspecialchars(module_url('tools'), ENT_QUOTES, 'UTF-8') ?>" data-navigation-item data-navigation-item-id="tools-module" data-search-label="herramientas sistema">
+                <span class="nav-icon"><?= $icon('wrench') ?></span>
+                <span class="navigation-item-label">Herramientas</span>
+            </a>
+        <?php endif; ?>
 
         <?php foreach ($visibleGroups as $group):
             $groupId = htmlspecialchars($group['id'], ENT_QUOTES, 'UTF-8');
@@ -68,7 +75,7 @@ usort($visibleGroups, static fn($a, $b) => (int)($a['order'] ?? 0) <=> (int)($b[
                 </button>
                 <div class="navigation-items" id="navigation-items-<?= $groupId ?>">
                     <?php foreach ($group['items'] as $item): $active = ($item['module'] ?? '') === $currentModule; $href = $item['route'] === '/' ? './' : $item['route']; ?>
-                        <a class="dashboard-nav-item <?= $active ? 'active' : '' ?>" href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>" data-navigation-item data-search-label="<?= htmlspecialchars(strtolower($item['label'] . ' ' . $group['label']), ENT_QUOTES, 'UTF-8') ?>">
+                        <a class="dashboard-nav-item <?= $active ? 'active' : '' ?>" href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>" data-navigation-item data-navigation-item-id="<?= htmlspecialchars((string) ($item['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-search-label="<?= htmlspecialchars(strtolower($item['label'] . ' ' . $group['label']), ENT_QUOTES, 'UTF-8') ?>">
                             <span class="nav-icon"><?= $icon($item['icon'] ?? 'boxes') ?></span>
                             <span class="navigation-item-label"><?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') ?></span>
                         </a>
@@ -80,7 +87,7 @@ usort($visibleGroups, static fn($a, $b) => (int)($a['order'] ?? 0) <=> (int)($b[
     </nav>
 
     <div class="p-2 border-t border-sidebar-border/80 shrink-0">
-        <button class="w-full erp-topbar-toggle" type="button" data-navigation-collapse aria-label="Colapsar menú"><?= $icon('menu') ?> <span>Colapsar menú</span></button>
+        <button class="w-full erp-topbar-toggle" type="button" data-navigation-collapse aria-label="Esconder Menú"><?= $icon('menu') ?> <span>Esconder Menú</span></button>
     </div>
 </aside>
 
